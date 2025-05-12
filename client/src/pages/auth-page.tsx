@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
 const loginSchema = z.object({
-  username: z.string().min(2, "שם משתמש חייב להכיל לפחות 2 תווים"),
+  email: z.string().email("אנא הכנס כתובת דוא״ל תקינה"),
   password: z.string().min(6, "סיסמה חייבת להכיל לפחות 6 תווים"),
 });
 
@@ -35,7 +35,7 @@ export default function AuthPage() {
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -43,7 +43,6 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -121,23 +120,24 @@ export default function AuthPage() {
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username">שם משתמש</Label>
+                      <Label htmlFor="login-email">דוא״ל</Label>
                       <Input
-                        id="username"
-                        placeholder="הכנס שם משתמש"
-                        {...loginForm.register("username")}
+                        id="login-email"
+                        type="email"
+                        placeholder="הכנס כתובת דוא״ל"
+                        {...loginForm.register("email")}
                       />
-                      {loginForm.formState.errors.username && (
+                      {loginForm.formState.errors.email && (
                         <p className="text-sm text-red-500">
-                          {loginForm.formState.errors.username.message}
+                          {loginForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="password">סיסמה</Label>
+                      <Label htmlFor="login-password">סיסמה</Label>
                       <Input
-                        id="password"
+                        id="login-password"
                         type="password"
                         placeholder="הכנס סיסמה"
                         {...loginForm.register("password")}
@@ -176,25 +176,11 @@ export default function AuthPage() {
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="reg-username">שם משתמש</Label>
+                      <Label htmlFor="register-email">דוא״ל</Label>
                       <Input
-                        id="reg-username"
-                        placeholder="בחר שם משתמש"
-                        {...registerForm.register("username")}
-                      />
-                      {registerForm.formState.errors.username && (
-                        <p className="text-sm text-red-500">
-                          {registerForm.formState.errors.username.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">דוא"ל (לא חובה)</Label>
-                      <Input
-                        id="email"
+                        id="register-email"
                         type="email"
-                        placeholder="הכנס דואל"
+                        placeholder="הכנס כתובת דוא״ל"
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
