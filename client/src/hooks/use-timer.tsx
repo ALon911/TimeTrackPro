@@ -80,6 +80,8 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
 
   const stop = useCallback((): void => {
     setIsRunning(false);
+    setIsCompleted(false);
+    // Just stop the timer without resetting
   }, []);
 
   const reset = useCallback((): void => {

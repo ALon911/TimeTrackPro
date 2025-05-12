@@ -45,35 +45,40 @@ export function TimeTracker() {
     };
   }, []);
   
-  // Play sound when timer completes
+  // Play sound when timer completes and save the time entry
   useEffect(() => {
-    if (isCompleted && audioRef.current) {
+    if (isCompleted && audioRef.current && startTime && selectedTopic) {
+      // Play completion sound
       audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-      toast({
-        title: 'הטיימר הסתיים',
-        description: 'הזמן המוגדר הסתיים',
+      
+      // Calculate the exact duration based on the original preset
+      // This ensures we save the full preset time, not the actual elapsed time
+      const endTime = new Date();
+      
+      // For countdown timers, we want to save the full preset duration
+      const calculatedDuration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      // Save the time entry
+      createTimeEntryMutation.mutate({
+        topicId: parseInt(selectedTopic),
+        description: description || null,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        duration: calculatedDuration,
+        isManual: false
       });
       
-      if (startTime && selectedTopic) {
-        const endTime = new Date();
-        const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
-        
-        createTimeEntryMutation.mutate({
-          topicId: parseInt(selectedTopic),
-          description: description || null,
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-          duration: duration,
-          isManual: false
-        });
-        
-        // Reset after saving
-        reset();
-        setDescription("");
-        setStartTime(null);
-      }
+      toast({
+        title: 'הטיימר הסתיים',
+        description: 'הזמן נשמר בהצלחה',
+      });
+      
+      // Reset after saving
+      reset();
+      setDescription("");
+      setStartTime(null);
     }
-  }, [isCompleted]);
+  }, [isCompleted, startTime, selectedTopic, description, reset, createTimeEntryMutation, toast]);
 
   // Create time entry mutation
   const createTimeEntryMutation = useMutation({
@@ -135,27 +140,20 @@ export function TimeTracker() {
     });
   }, [validateTopicSelection, startWithDuration, toast]);
 
-  // Handle timer stop and save time entry
+  // Handle timer stop (cancellation)
   const handleStop = useCallback(() => {
-    if (!startTime || !selectedTopic) return;
-    
+    // When stopping the timer, we just cancel it without saving any time entry
     stop();
-    const endTime = new Date();
-    
-    createTimeEntryMutation.mutate({
-      topicId: parseInt(selectedTopic),
-      description: description || null,
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      duration: seconds,
-      isManual: false
-    });
-    
-    // Reset after saving
     reset();
     setDescription("");
     setStartTime(null);
-  }, [startTime, selectedTopic, stop, createTimeEntryMutation, seconds, reset, description]);
+    
+    toast({
+      title: 'טיימר בוטל',
+      description: 'הטיימר בוטל ולא נשמר זמן',
+    });
+    
+  }, [stop, reset, toast]);
 
   // Reset timer if page is unmounted while running
   useEffect(() => {
@@ -255,7 +253,7 @@ export function TimeTracker() {
             className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
           >
             <PauseIcon className="ml-1 h-4 w-4" />
-            <span>עצור ושמור</span>
+            <span>ביטול טיימר</span>
           </Button>
         )}
       </div>
