@@ -52,9 +52,8 @@ export class DatabaseStorage implements IStorage {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        email TEXT
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
       )
     `);
 
@@ -94,8 +93,8 @@ export class DatabaseStorage implements IStorage {
       console.log('Seeding database with sample data...');
       
       // Create default user directly with SQL (password = 'password')
-      const userStmt = this.db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-      const userResult = userStmt.run('user', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f');
+      const userStmt = this.db.prepare('INSERT INTO users (email, password) VALUES (?, ?)');
+      const userResult = userStmt.run('user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f');
       const userId = userResult.lastInsertRowid as number;
       
       // Create default topics directly with SQL
@@ -211,23 +210,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const stmt = this.db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
-    const result = stmt.run(insertUser.username, insertUser.password, insertUser.email || null);
+    const stmt = this.db.prepare('INSERT INTO users (email, password) VALUES (?, ?)');
+    const result = stmt.run(insertUser.email, insertUser.password);
     const id = result.lastInsertRowid as number;
     return { ...insertUser, id };
   }
 
-  async updateUser(id: number, userData: Partial<{ username: string; email: string }>): Promise<User | undefined> {
+  async updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
     const updates: string[] = [];
     const params: any[] = [];
-
-    if (userData.username !== undefined) {
-      updates.push('username = ?');
-      params.push(userData.username);
-    }
 
     if (userData.email !== undefined) {
       updates.push('email = ?');
