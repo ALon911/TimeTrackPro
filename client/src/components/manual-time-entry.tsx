@@ -99,7 +99,7 @@ export function ManualTimeEntry() {
           </SelectTrigger>
           <SelectContent>
             {isLoadingTopics ? (
-              <SelectItem value="">טוען נושאים...</SelectItem>
+              <SelectItem value="loading">טוען נושאים...</SelectItem>
             ) : topics && topics.length > 0 ? (
               topics.map((topic: any) => (
                 <SelectItem key={topic.id} value={topic.id.toString()}>
@@ -107,7 +107,7 @@ export function ManualTimeEntry() {
                 </SelectItem>
               ))
             ) : (
-              <SelectItem value="">אין נושאים להצגה</SelectItem>
+              <SelectItem value="no-topics">אין נושאים להצגה</SelectItem>
             )}
           </SelectContent>
         </Select>
