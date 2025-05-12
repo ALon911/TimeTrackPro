@@ -45,6 +45,32 @@ export function TimeTracker() {
     };
   }, []);
   
+  // Create time entry mutation
+  const createTimeEntryMutation = useMutation({
+    mutationFn: async (timeEntry: any) => {
+      const res = await apiRequest('POST', '/api/time-entries', timeEntry);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/time-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/daily'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/most-tracked'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/recent-sessions'] });
+      toast({
+        title: 'זמן נשמר',
+        description: 'רשומת הזמן נשמרה בהצלחה',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'שגיאה',
+        description: `שגיאה בשמירת הזמן: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+  
   // Play sound when timer completes and save the time entry
   useEffect(() => {
     if (isCompleted && audioRef.current && startTime && selectedTopic) {
@@ -79,32 +105,6 @@ export function TimeTracker() {
       setStartTime(null);
     }
   }, [isCompleted, startTime, selectedTopic, description, reset, createTimeEntryMutation, toast]);
-
-  // Create time entry mutation
-  const createTimeEntryMutation = useMutation({
-    mutationFn: async (timeEntry: any) => {
-      const res = await apiRequest('POST', '/api/time-entries', timeEntry);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/time-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats/daily'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats/most-tracked'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats/recent-sessions'] });
-      toast({
-        title: 'זמן נשמר',
-        description: 'רשומת הזמן נשמרה בהצלחה',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'שגיאה',
-        description: `שגיאה בשמירת הזמן: ${error.message}`,
-        variant: 'destructive',
-      });
-    },
-  });
 
   // Validate topic selection
   const validateTopicSelection = useCallback(() => {
