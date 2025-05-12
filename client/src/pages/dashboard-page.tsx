@@ -52,7 +52,7 @@ export default function DashboardPage() {
           </button>
           <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
           <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-            <span className="text-sm font-medium">{user?.username?.charAt(0) || 'מ'}</span>
+            <span className="text-sm font-medium">{user?.email?.charAt(0) || 'מ'}</span>
           </div>
         </header>
         
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         <div className="flex-1 p-4 md:p-6">
           {/* Welcome Section */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-1">שלום, {user?.username || 'משתמש'}!</h2>
+            <h2 className="text-2xl font-bold mb-1">שלום!</h2>
             <p className="text-neutral-600">{formattedDate}</p>
           </div>
           
