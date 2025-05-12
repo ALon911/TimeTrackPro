@@ -119,7 +119,8 @@ export function TimeTracker() {
     return true;
   }, [selectedTopic, toast]);
 
-  // Handle regular timer start (counting up)
+  // שומרים פונקציה זו למרות שאינה בשימוש ישיר כרגע
+  // למקרה שנצטרך אותה בעתיד
   const handleStart = useCallback(() => {
     if (!validateTopicSelection()) return;
     
@@ -238,14 +239,7 @@ export function TimeTracker() {
               <span>40 דקות</span>
             </Button>
             
-            {/* Manual timer */}
-            <Button 
-              onClick={handleStart} 
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 flex items-center"
-            >
-              <PlayIcon className="ml-1 h-4 w-4" />
-              <span>התחל (ללא הגבלה)</span>
-            </Button>
+            {/* אין צורך בשעון שסופר מעלה - הסרנו את האפשרות */}
           </>
         ) : (
           <Button 
