@@ -9,9 +9,12 @@ interface UseTimerOptions {
 interface UseTimerReturn {
   seconds: number;
   isRunning: boolean;
+  isPaused: boolean;
   start: () => void;
   startWithDuration: (durationInMinutes: number) => void;
   stop: () => void;
+  pause: () => void;
+  resume: () => void;
   reset: () => void;
   formatTime: () => string;
   isCompleted: boolean;
@@ -22,6 +25,7 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   const [isRunning, setIsRunning] = useState<boolean>(autoStart);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isCountDown, setIsCountDown] = useState<boolean>(countDown);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Clean up interval on unmount
@@ -78,8 +82,23 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     setIsRunning(true);
   }, []);
 
+  const pause = useCallback((): void => {
+    if (isRunning) {
+      setIsRunning(false);
+      setIsPaused(true);
+    }
+  }, [isRunning]);
+  
+  const resume = useCallback((): void => {
+    if (isPaused) {
+      setIsRunning(true);
+      setIsPaused(false);
+    }
+  }, [isPaused]);
+  
   const stop = useCallback((): void => {
     setIsRunning(false);
+    setIsPaused(false);
     setIsCompleted(false);
     // Just stop the timer without resetting
   }, []);
@@ -99,10 +118,13 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
 
   return { 
     seconds, 
-    isRunning, 
+    isRunning,
+    isPaused,
     start, 
     startWithDuration, 
-    stop, 
+    stop,
+    pause,
+    resume,
     reset, 
     formatTime,
     isCompleted 
