@@ -22,10 +22,10 @@ export interface TimeEntryFilters {
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>; // Kept for backward compatibility
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<{ username: string; email: string }>): Promise<User | undefined>;
+  updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined>;
   
   // Topic methods
   getTopics(userId: number): Promise<Topic[]>;
