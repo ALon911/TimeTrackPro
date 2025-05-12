@@ -1,0 +1,167 @@
+import { useAuth } from "@/hooks/use-auth";
+import { Sidebar } from "@/components/sidebar";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
+import { TimeTracker } from "@/components/time-tracker";
+import { StatCard } from "@/components/stat-card";
+import { WeeklyChart } from "@/components/charts/weekly-chart";
+import { TopicDistributionChart } from "@/components/charts/topic-distribution-chart";
+import { TimeEntriesTable } from "@/components/time-entries-table";
+import { MobileNavigation } from "@/components/mobile-navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, CalendarCheck2, Calendar, TrendingUp, ListChecks } from "lucide-react";
+
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const today = new Date();
+  const formattedDate = format(today, "EEEE, d בMMMM yyyy", { locale: he });
+
+  const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
+    queryKey: ["/api/stats/daily"],
+  });
+
+  const { data: weeklyStats, isLoading: isLoadingWeekly } = useQuery({
+    queryKey: ["/api/stats/weekly"],
+  });
+
+  const { data: mostTracked, isLoading: isLoadingMostTracked } = useQuery({
+    queryKey: ["/api/stats/most-tracked"],
+  });
+
+  const { data: recentSessions, isLoading: isLoadingRecent } = useQuery({
+    queryKey: ["/api/stats/recent-sessions"],
+  });
+
+  // Helper function to format seconds to HH:MM:SS
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row" dir="rtl">
+      <Sidebar />
+      
+      <main className="flex-1 flex flex-col min-h-screen">
+        {/* Mobile Header */}
+        <header className="bg-white shadow-sm p-4 flex md:hidden items-center justify-between">
+          <button className="p-1">
+            <span className="material-icons">menu</span>
+          </button>
+          <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+            <span className="text-sm font-medium">{user?.username?.charAt(0) || 'מ'}</span>
+          </div>
+        </header>
+        
+        {/* Dashboard Content */}
+        <div className="flex-1 p-4 md:p-6">
+          {/* Welcome Section */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-1">שלום, {user?.username || 'משתמש'}!</h2>
+            <p className="text-neutral-600">{formattedDate}</p>
+          </div>
+          
+          {/* Timer Section */}
+          <section className="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h3 className="text-xl font-semibold mb-4">מעקב זמן</h3>
+            <TimeTracker />
+          </section>
+          
+          {/* Stats Overview */}
+          <section className="mb-8">
+            <h3 className="text-xl font-semibold mb-4">סטטיסטיקה</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {isLoadingDaily ? (
+                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard
+                  title="סהכ היום"
+                  value={formatDuration(dailyStats?.total || 0)}
+                  icon={<CalendarCheck2 className="h-5 w-5" />}
+                  iconBg="bg-blue-100"
+                  iconColor="text-primary"
+                  change={dailyStats?.percentChange || 0}
+                  increase={dailyStats?.increase || false}
+                  compareText="משמול"
+                />
+              )}
+              
+              {isLoadingWeekly ? (
+                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard
+                  title="סהכ השבוע"
+                  value={formatDuration(weeklyStats?.total || 0)}
+                  icon={<Calendar className="h-5 w-5" />}
+                  iconBg="bg-purple-100"
+                  iconColor="text-secondary"
+                  change={weeklyStats?.percentChange || 0}
+                  increase={weeklyStats?.increase || false}
+                  compareText="משבוע שעבר"
+                />
+              )}
+              
+              {isLoadingMostTracked ? (
+                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : mostTracked ? (
+                <StatCard
+                  title="הנושא המוביל"
+                  value={mostTracked?.topic?.name || "אין נתונים"}
+                  icon={<TrendingUp className="h-5 w-5" />}
+                  iconBg="bg-blue-100"
+                  iconColor="text-primary"
+                  infoText={`${formatDuration(mostTracked?.totalTime || 0)} שעות החודש`}
+                />
+              ) : (
+                <StatCard
+                  title="הנושא המוביל"
+                  value="אין נתונים"
+                  icon={<TrendingUp className="h-5 w-5" />}
+                  iconBg="bg-blue-100"
+                  iconColor="text-primary"
+                  infoText="אין נתונים להצגה"
+                />
+              )}
+              
+              {isLoadingRecent ? (
+                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard
+                  title="מספר רשומות"
+                  value={recentSessions?.length.toString() || "0"}
+                  icon={<ListChecks className="h-5 w-5" />}
+                  iconBg="bg-green-100"
+                  iconColor="text-success"
+                  infoText={`${recentSessions?.length || 0} רשומות השבוע`}
+                />
+              )}
+            </div>
+          </section>
+          
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <WeeklyChart />
+            <TopicDistributionChart />
+          </div>
+          
+          {/* Recent Activity Section */}
+          <TimeEntriesTable limit={4} showViewAllLink={true} />
+        </div>
+      </main>
+      
+      <MobileNavigation />
+    </div>
+  );
+}
