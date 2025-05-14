@@ -6,14 +6,13 @@ import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { apiRequest } from '@/lib/queryClient';
 
 export default function AddDirectMemberPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState('');
   const [teamId, setTeamId] = useState<number | null>(null);
@@ -42,15 +41,12 @@ export default function AddDirectMemberPage() {
           }
         } catch (err) {
           setError('שגיאה בטעינת פרטי הצוות');
-        } finally {
-          setLoading(false);
         }
       };
       
       fetchTeam();
     } else {
       setError('מזהה צוות לא תקין');
-      setLoading(false);
     }
   }, [location]);
   
@@ -71,13 +67,21 @@ export default function AddDirectMemberPage() {
     setSubmitting(true);
     
     try {
-      const response = await apiRequest('POST', `/api/teams/${teamId}/direct-member`, {
-        email,
-        role: 'member'
+      // Use a direct fetch instead of apiRequest
+      const response = await fetch('/api/direct-add-team-member', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teamId,
+          email
+        }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'שגיאה בהוספת המשתמש');
       }
       
@@ -99,19 +103,11 @@ export default function AddDirectMemberPage() {
     }
   };
   
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-border" />
-      </div>
-    );
-  }
-  
   return (
     <div className="container max-w-md py-10">
       <Card>
         <CardHeader>
-          <CardTitle>הוספת משתמש לצוות {teamName}</CardTitle>
+          <CardTitle>הוספת משתמש לצוות {teamName || ''}</CardTitle>
           <CardDescription>
             הזן את כתובת האימייל של המשתמש להוספה ישירה לצוות
           </CardDescription>
@@ -150,22 +146,32 @@ export default function AddDirectMemberPage() {
           )}
         </CardContent>
         {!success && (
-          <CardFooter className="flex justify-end">
-            <Button 
-              type="button" 
-              className="w-full"
-              onClick={handleSubmit}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  מוסיף משתמש...
-                </>
-              ) : (
-                'הוסף משתמש'
-              )}
-            </Button>
+          <CardFooter>
+            <div className="flex w-full space-x-2 flex-row-reverse">
+              <Button 
+                type="button" 
+                className="flex-1"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    מוסיף משתמש...
+                  </>
+                ) : (
+                  'הוסף משתמש'
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline"
+                className="flex-1"
+                onClick={() => window.close()}
+              >
+                סגור
+              </Button>
+            </div>
           </CardFooter>
         )}
       </Card>
