@@ -7,9 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useTimer } from '@/hooks/use-timer';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { PlayIcon, PauseIcon, PlusIcon, TimerIcon, Clock5Icon, BellIcon, XIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ManualTimeEntry } from '@/components/manual-time-entry';
+import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon } from 'lucide-react';
 
 export function TimeTracker() {
   const { data: topics, isLoading } = useQuery({ 
@@ -407,24 +405,7 @@ export function TimeTracker() {
         ) : null}
       </div>
       
-      {/* Manual Time Entry */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="w-full flex items-center justify-center gap-2 py-5 text-lg"
-          >
-            <PlusIcon className="ml-2 h-5 w-5" />
-            הוסף רשומת זמן באופן ידני
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>הוספת רשומת זמן ידנית</DialogTitle>
-          </DialogHeader>
-          <ManualTimeEntry />
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
