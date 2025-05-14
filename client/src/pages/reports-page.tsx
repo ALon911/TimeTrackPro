@@ -128,11 +128,73 @@ export default function ReportsPage() {
     return team?.name || "";
   };
 
+  // Handle export to Excel
+  const handleExportPersonalData = async () => {
+    try {
+      // Use window.location to create a download
+      window.location.href = '/api/export';
+      
+      toast({
+        title: "ייצוא התחיל",
+        description: "הדוח האישי שלך יורד כקובץ אקסל",
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({
+        title: "שגיאה בייצוא",
+        description: "לא הצלחנו לייצא את הנתונים. נסה שוב מאוחר יותר.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleExportTeamData = async () => {
+    if (!selectedTeam) {
+      toast({
+        title: "בחר צוות",
+        description: "יש לבחור צוות לפני ייצוא",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Use window.location to create a download
+      window.location.href = `/api/teams/${selectedTeam}/export`;
+      
+      toast({
+        title: "ייצוא התחיל",
+        description: "דוח הצוות יורד כקובץ אקסל",
+      });
+    } catch (error) {
+      console.error("Error exporting team data:", error);
+      toast({
+        title: "שגיאה בייצוא",
+        description: "לא הצלחנו לייצא את נתוני הצוות. נסה שוב מאוחר יותר.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-1">דוחות</h2>
-        <p className="text-muted-foreground">סקירת הנתונים וסטטיסטיקות</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">דוחות</h2>
+          <p className="text-muted-foreground">סקירת הנתונים וסטטיסטיקות</p>
+        </div>
+        
+        {activeTab === "personal" ? (
+          <Button onClick={handleExportPersonalData} variant="outline" className="flex items-center gap-1">
+            <FileDown className="h-4 w-4" />
+            <span>ייצא לאקסל</span>
+          </Button>
+        ) : selectedTeam ? (
+          <Button onClick={handleExportTeamData} variant="outline" className="flex items-center gap-1">
+            <FileDown className="h-4 w-4" />
+            <span>ייצא לאקסל</span>
+          </Button>
+        ) : null}
       </div>
       
       <Tabs defaultValue="personal" value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
