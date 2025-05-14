@@ -75,16 +75,30 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
     // Get the invitation by token first, if not found try by ID
     let invitation;
     
-    // Check if tokenOrId is a number or a string token
-    if (/^\d+$/.test(tokenOrId)) {
-      // It's a number, treat as ID
-      const invitationId = parseInt(tokenOrId);
-      invitation = await storage.getTeamInvitationById(invitationId);
-      console.log('Looking up invitation by ID:', invitationId, invitation);
-    } else {
-      // It's a string, treat as token
-      invitation = await storage.getTeamInvitationByToken(tokenOrId);
-      console.log('Looking up invitation by token:', tokenOrId, invitation);
+    // Log full request details for debugging
+    console.log('Invitation response request details:', { 
+      tokenOrId, 
+      action, 
+      userId, 
+      headers: req.headers,
+      cookies: req.cookies
+    });
+    
+    try {
+      // Check if tokenOrId is a number or a string token
+      if (/^\d+$/.test(tokenOrId)) {
+        // It's a number, treat as ID
+        const invitationId = parseInt(tokenOrId);
+        invitation = await storage.getTeamInvitationById(invitationId);
+        console.log('Looking up invitation by ID:', invitationId, invitation);
+      } else {
+        // It's a string, treat as token
+        console.log('Searching for invitation with token:', tokenOrId);
+        invitation = await storage.getTeamInvitationByToken(tokenOrId);
+        console.log('Looking up invitation by token result:', invitation);
+      }
+    } catch (err) {
+      console.error('Error looking up invitation:', err);
     }
     
     if (!invitation) {

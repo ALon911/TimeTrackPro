@@ -966,8 +966,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeamInvitationByToken(token: string): Promise<TeamInvitation | undefined> {
-    const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE token = ?');
-    return stmt.get(token) as TeamInvitation | undefined;
+    console.log('DB: Looking up invitation with token:', token);
+    
+    try {
+      // Check valid token
+      if (!token || token.length < 10) {
+        console.log('DB: Invalid token format:', token);
+        return undefined;
+      }
+      
+      const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE token = ?');
+      console.log('DB: SQL prepared, executing with token:', token);
+      
+      const result = stmt.get(token) as TeamInvitation | undefined;
+      console.log('DB: Token lookup result:', result);
+      
+      return result;
+    } catch (err) {
+      console.error('DB: Error in getTeamInvitationByToken:', err);
+      return undefined;
+    }
   }
   
   async getTeamInvitationById(id: number): Promise<TeamInvitation | undefined> {

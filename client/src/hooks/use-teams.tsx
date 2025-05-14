@@ -169,8 +169,16 @@ export function useTeams() {
   // מענה להזמנה (קבלה או דחייה)
   const respondToInvitationMutation = useMutation({
     mutationFn: async (data: { token: string; action: 'accept' | 'decline' }) => {
-      const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`);
-      return await res.json();
+      console.log('Responding to invitation:', data);
+      try {
+        const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`);
+        const result = await res.json();
+        console.log('Invitation response result:', result);
+        return result;
+      } catch (error) {
+        console.error('Error responding to invitation:', error);
+        throw error;
+      }
     },
     onSuccess: (_, variables) => {
       const action = variables.action === 'accept' ? 'התקבלה' : 'נדחתה';
