@@ -36,17 +36,29 @@ export function formatDuration(seconds: number) {
 }
 
 export function formatDurationHumanReadable(seconds: number) {
-  const hours = Math.floor(seconds / 3600);
+  if (seconds === 0) return '0 שניות';
+  
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
   
   const parts = [];
+  
+  if (days > 0) {
+    parts.push(`${days} ${days === 1 ? 'יום' : 'ימים'}`);
+  }
   
   if (hours > 0) {
     parts.push(`${hours} ${hours === 1 ? 'שעה' : 'שעות'}`);
   }
   
-  if (minutes > 0 || hours === 0) {
+  if (minutes > 0) {
     parts.push(`${minutes} ${minutes === 1 ? 'דקה' : 'דקות'}`);
+  }
+  
+  if (secs > 0 && (parts.length === 0 || seconds < 60)) {
+    parts.push(`${secs} ${secs === 1 ? 'שניה' : 'שניות'}`);
   }
   
   return parts.join(' ו-');

@@ -173,13 +173,17 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
       
       // Get team information for better response
       const team = await storage.getTeam(teamId);
+      console.log('Team info for response:', team);
+      
+      // Safety check for team name to avoid undefined
+      const teamName = team && team.name ? team.name : 'חדש';
       
       res.json({ 
         success: true, 
-        message: `הזמנה התקבלה בהצלחה. הצטרפת לצוות "${team?.name || ''}".`,
+        message: `הזמנה התקבלה בהצלחה. הצטרפת לצוות "${teamName}".`,
         team: team ? {
           id: team.id,
-          name: team.name
+          name: teamName
         } : null
       });
     } else {

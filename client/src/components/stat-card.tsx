@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import { ReactNode } from "react";
 
-interface StatCardProps {
+export interface StatCardProps {
   title: string;
   value: string;
   icon: ReactNode;
@@ -12,6 +12,10 @@ interface StatCardProps {
   increase?: boolean;
   compareText?: string;
   infoText?: string;
+  secondaryValue?: string;
+  color?: string;
+  trend?: number;
+  trendLabel?: string;
 }
 
 export function StatCard({
@@ -24,6 +28,10 @@ export function StatCard({
   increase,
   compareText,
   infoText,
+  secondaryValue,
+  color,
+  trend,
+  trendLabel,
 }: StatCardProps) {
   return (
     <Card className="bg-card rounded-xl shadow-sm p-5 border border-border">
@@ -55,6 +63,28 @@ export function StatCard({
         {infoText && (
           <div className="mt-4 text-muted-foreground text-sm">
             {infoText}
+          </div>
+        )}
+        
+        {secondaryValue && (
+          <div className="mt-4 flex items-center">
+            <span className={`text-sm font-medium ${color || 'text-primary'}`}>
+              {secondaryValue}
+            </span>
+          </div>
+        )}
+        
+        {trend !== undefined && trendLabel && (
+          <div className="mt-4 flex items-center text-sm">
+            <span className={trend >= 0 ? "text-success flex items-center" : "text-error flex items-center"}>
+              {trend >= 0 ? (
+                <ArrowUpIcon className="ml-1 h-4 w-4" />
+              ) : (
+                <ArrowDownIcon className="ml-1 h-4 w-4" />
+              )}
+              {Math.abs(trend)}%
+            </span>
+            <span className="text-muted-foreground mr-2">{trendLabel}</span>
           </div>
         )}
       </CardContent>
