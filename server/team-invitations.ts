@@ -56,12 +56,13 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
   }
 });
 
-// Respond to an invitation (accept or decline) using invitation ID
-invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthenticated, async (req, res) => {
+// Respond to an invitation (accept or decline) using invitation token or ID
+invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthenticated, async (req, res) => {
   try {
-    const invitationId = parseInt(req.params.invitationId);
+    const tokenOrId = req.params.tokenOrId;
     const action = req.params.action;
     const userId = req.user?.id;
+    console.log('Responding to invitation:', { tokenOrId, action, userId });
     
     if (!userId) {
       return res.status(401).json({ error: 'Must be authenticated to respond to an invitation' });
@@ -71,8 +72,20 @@ invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthent
       return res.status(400).json({ error: 'Invalid action. Must be "accept" or "decline"' });
     }
     
-    // Get the invitation
-    const invitation = await storage.getTeamInvitationById(invitationId);
+    // Get the invitation by token first, if not found try by ID
+    let invitation;
+    
+    // Check if tokenOrId is a number or a string token
+    if (/^\d+$/.test(tokenOrId)) {
+      // It's a number, treat as ID
+      const invitationId = parseInt(tokenOrId);
+      invitation = await storage.getTeamInvitationById(invitationId);
+      console.log('Looking up invitation by ID:', invitationId, invitation);
+    } else {
+      // It's a string, treat as token
+      invitation = await storage.getTeamInvitationByToken(tokenOrId);
+      console.log('Looking up invitation by token:', tokenOrId, invitation);
+    }
     
     if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });
@@ -86,8 +99,11 @@ invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthent
       return res.status(400).json({ error: `Invitation has already been ${invitation.status}` });
     }
     
+    // Handle both property formats (snake_case from database and camelCase from API)
+    const expiryTimestamp = invitation.expires_at || invitation.expiresAt;
+    
     // Check if invitation is expired
-    const expiryDate = new Date(invitation.expires_at || invitation.expiresAt);
+    const expiryDate = new Date(expiryTimestamp);
     if (expiryDate < new Date()) {
       return res.status(400).json({ error: 'Invitation has expired' });
     }

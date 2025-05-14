@@ -10,7 +10,7 @@ export function useTeamStats(teamId: number | undefined) {
     error: statsError 
   } = useQuery<TeamTimeStat>({
     queryKey: [`/api/teams/${teamId}/stats`],
-    queryFn: getQueryFn({ requestInit: { credentials: 'include' } }),
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!teamId,
     retry: 3
   });
@@ -22,7 +22,7 @@ export function useTeamStats(teamId: number | undefined) {
     error: memberActivityError 
   } = useQuery<TeamMemberActivity[]>({
     queryKey: [`/api/teams/${teamId}/stats/member-activity`],
-    queryFn: getQueryFn({ requestInit: { credentials: 'include' } }),
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!teamId,
     retry: 3
   });
@@ -34,7 +34,7 @@ export function useTeamStats(teamId: number | undefined) {
     error: topicDistributionError 
   } = useQuery<TeamTopicDistribution[]>({
     queryKey: [`/api/teams/${teamId}/stats/topic-distribution`],
-    queryFn: getQueryFn({ requestInit: { credentials: 'include' } }),
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!teamId,
     retry: 3
   });
@@ -46,7 +46,7 @@ export function useTeamStats(teamId: number | undefined) {
     error: teamMembersError 
   } = useQuery({
     queryKey: [`/api/teams/${teamId}/members`],
-    queryFn: getQueryFn({ requestInit: { credentials: 'include' } }),
+    queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!teamId,
     retry: 3
   });
