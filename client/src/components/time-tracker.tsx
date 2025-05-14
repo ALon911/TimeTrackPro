@@ -120,6 +120,17 @@ export function TimeTracker() {
     }
     setIsRunning(false);
     setIsPaused(false);
+    
+    // נקה את מידע הטיימר שנשמר בלוקל סטורג'
+    localStorage.removeItem('timer_end_time');
+    localStorage.removeItem('timer_duration');
+    localStorage.removeItem('timer_is_paused');
+    localStorage.removeItem('timetracker_direct_timer');
+    localStorage.removeItem('timetracker_timer_state');
+    localStorage.removeItem('timetracker_countdown');
+    localStorage.removeItem('timetracker_ui_data');
+    
+    console.log("טיימר בוטל והמידע נמחק מהזיכרון המקומי");
   }, []);
   
   // פונקציה לעצירה זמנית
@@ -130,8 +141,12 @@ export function TimeTracker() {
       setIsPaused(true);
       setIsRunning(false);
       
+      // עדכן את מצב העצירה הזמנית בלוקל סטורג'
+      localStorage.setItem('timer_is_paused', 'true');
+      
       // שמור את הזמן שנותר בסטייט הנוכחי
       // אין צורך לחשב מחדש, הוא כבר מעודכן
+      console.log("הטיימר הושהה ונשמר במצב השהייה");
     }
   }, [isRunning]);
   
@@ -142,6 +157,10 @@ export function TimeTracker() {
       const remainingMs = seconds * 1000;
       const newEndTime = Date.now() + remainingMs;
       endTimeRef.current = newEndTime;
+      
+      // עדכן את מצב הטיימר בלוקל סטורג'
+      localStorage.setItem('timer_end_time', newEndTime.toString());
+      localStorage.setItem('timer_is_paused', 'false');
       
       // עדכן את הסטייט
       setIsRunning(true);
@@ -161,9 +180,18 @@ export function TimeTracker() {
           timerRef.current = null;
           setIsRunning(false);
           setIsCompleted(true);
+          
+          // נקה את המידע השמור כשהטיימר מסתיים
+          localStorage.removeItem('timer_end_time');
+          localStorage.removeItem('timer_duration');
+          localStorage.removeItem('timer_is_paused');
+          
+          // השמע צליל סיום
           audioManager.playTimerComplete();
         }
       }, 1000);
+      
+      console.log("הטיימר ממשיך לרוץ ונשמר במצב פעיל");
     }
   }, [isPaused, seconds]);
   
@@ -177,6 +205,17 @@ export function TimeTracker() {
     setIsRunning(false);
     setIsPaused(false);
     setIsCompleted(false);
+    
+    // נקה את מידע הטיימר שנשמר בלוקל סטורג'
+    localStorage.removeItem('timer_end_time');
+    localStorage.removeItem('timer_duration');
+    localStorage.removeItem('timer_is_paused');
+    localStorage.removeItem('timetracker_direct_timer');
+    localStorage.removeItem('timetracker_timer_state');
+    localStorage.removeItem('timetracker_countdown');
+    localStorage.removeItem('timetracker_ui_data');
+    
+    console.log("טיימר אופס והמידע נמחק מהזיכרון המקומי");
   }, []);
   
   // Audio notifications
@@ -343,7 +382,10 @@ export function TimeTracker() {
     reset();
     setStartTime(null);
     
-    // מנקים את כל הלוקל סטורג' שקשור לטיימר
+    // וידוא שכל הלוקל סטורג' שקשור לטיימר נמחק
+    localStorage.removeItem('timer_end_time');
+    localStorage.removeItem('timer_duration');
+    localStorage.removeItem('timer_is_paused');
     localStorage.removeItem('timetracker_timer_state');
     localStorage.removeItem('timetracker_countdown');
     localStorage.removeItem('timetracker_direct_timer');
