@@ -80,8 +80,8 @@ export default function TeamStatsPage() {
         
         {teamIdNumber && (
           <div className="flex gap-2">
-            <Link href={`/teams/${teamIdNumber}`}>
-              <Button variant="outline">ניהול הצוות</Button>
+            <Link href={`/teams`}>
+              <Button variant="outline">חזרה לרשימת הצוותים</Button>
             </Link>
             <Link href={`/api/teams/${teamIdNumber}/export`}>
               <Button className="gap-2">
