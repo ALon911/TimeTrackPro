@@ -6,8 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 interface Team {
   id: number;
   name: string;
-  ownerId: number;
-  createdAt: string;
+  ownerId?: number;   // השדה עשוי להגיע מהשרת כ-ownerId
+  owner_id?: number;  // או כ-owner_id
+  createdAt?: string;
+  created_at?: string;
 }
 
 interface TeamMember {

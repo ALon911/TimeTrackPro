@@ -155,7 +155,9 @@ teamsRouter.get('/api/teams/:id/members', isAuthenticated, async (req: Request, 
     const teamMembers = await storage.getTeamMembers(teamId);
     const isMember = teamMembers.some(member => member.userId === req.user?.id);
     
-    if (!isMember && team.ownerId !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'You do not have permission to view this team\'s members' });
     }
     
@@ -180,7 +182,9 @@ teamsRouter.post('/api/teams/:id/direct-member', isAuthenticated, async (req: Re
     }
     
     // Only team owner can add members directly
-    if (team.ownerId !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'Only team owners can add members directly' });
     }
     
@@ -238,12 +242,14 @@ teamsRouter.delete('/api/teams/:teamId/members/:userId', isAuthenticated, async 
     }
     
     // Only the team owner can remove members
-    if (team.ownerId !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'Only team owners can remove members' });
     }
     
     // Cannot remove the owner
-    if (userId === team.ownerId) {
+    if (userId === ownerId) {
       return res.status(400).json({ error: 'Cannot remove the team owner' });
     }
     
