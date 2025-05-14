@@ -9,7 +9,6 @@ export function useTeamStats(teamId: number | undefined) {
     error: statsError 
   } = useQuery<TeamTimeStat>({
     queryKey: ['/api/teams', teamId, 'stats'],
-    queryFn: undefined,
     enabled: !!teamId,
   });
 
@@ -20,7 +19,6 @@ export function useTeamStats(teamId: number | undefined) {
     error: memberActivityError 
   } = useQuery<TeamMemberActivity[]>({
     queryKey: ['/api/teams', teamId, 'stats/member-activity'],
-    queryFn: undefined,
     enabled: !!teamId,
   });
 
@@ -31,7 +29,6 @@ export function useTeamStats(teamId: number | undefined) {
     error: topicDistributionError 
   } = useQuery<TeamTopicDistribution[]>({
     queryKey: ['/api/teams', teamId, 'stats/topic-distribution'],
-    queryFn: undefined,
     enabled: !!teamId,
   });
 
@@ -42,7 +39,6 @@ export function useTeamStats(teamId: number | undefined) {
     error: teamMembersError 
   } = useQuery({
     queryKey: ['/api/teams', teamId, 'members'],
-    queryFn: undefined,
     enabled: !!teamId,
   });
 
