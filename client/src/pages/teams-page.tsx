@@ -107,9 +107,9 @@ export default function TeamsPage() {
             </Form>
           </DialogContent>
 
-          <div className="mb-6 flex justify-between items-center">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-xl font-semibold">רשימת הצוותים</h2>
-            <Button onClick={() => setIsCreateTeamOpen(true)}>
+            <Button onClick={() => setIsCreateTeamOpen(true)} className="w-full sm:w-auto">
               <Plus className="ml-2 h-4 w-4" />
               צור צוות חדש
             </Button>
@@ -134,12 +134,12 @@ export default function TeamsPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {teams.map((team) => (
               <Card key={team.id} className="overflow-hidden">
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-6">
                   <div className="flex justify-between items-start">
-                    <CardTitle>{team.name}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{team.name}</CardTitle>
                     {team.ownerId === user?.id && (
                       <Button 
                         variant="ghost" 
