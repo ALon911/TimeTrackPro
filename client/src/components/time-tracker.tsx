@@ -498,10 +498,8 @@ export function TimeTracker() {
   const handleStartTimer = useCallback((minutes: number) => {
     if (!validateTopicSelection()) return;
     
-    // Play start sound
-    if (startAudioRef.current) {
-      startAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
-    }
+    // Play start sound using audio manager
+    audioManager.playTimerStart();
     
     // נקיון כל מידע קודם לפני התחלת טיימר חדש
     localStorage.removeItem('timer_end_time');
