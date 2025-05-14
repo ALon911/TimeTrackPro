@@ -21,86 +21,98 @@ export function Sidebar() {
       <nav className="flex-1 py-4 overflow-y-auto no-scrollbar">
         <ul>
           <li className="mb-1">
-            <Link href="/">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">dashboard</span>
-                <span>לוח מחוונים</span>
-              </a>
-            </Link>
+            <div className="mx-2">
+              <Link href="/">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">dashboard</span>
+                  <span>לוח מחוונים</span>
+                </div>
+              </Link>
+            </div>
           </li>
           <li className="mb-1">
-            <Link href="/time-entries">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/time-entries" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">timer</span>
-                <span>מעקב זמן</span>
-              </a>
-            </Link>
+            <div className="mx-2">
+              <Link href="/time-entries">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/time-entries" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">timer</span>
+                  <span>מעקב זמן</span>
+                </div>
+              </Link>
+            </div>
           </li>
           <li className="mb-1">
-            <Link href="/topics">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/topics" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">folder</span>
-                <span>נושאים</span>
-              </a>
-            </Link>
+            <div className="mx-2">
+              <Link href="/topics">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/topics" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">folder</span>
+                  <span>נושאים</span>
+                </div>
+              </Link>
+            </div>
           </li>
           <li className="mb-1">
-            <Link href="/reports">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/reports" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">bar_chart</span>
-                <span>דוחות</span>
-              </a>
-            </Link>
+            <div className="mx-2">
+              <Link href="/reports">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/reports" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">bar_chart</span>
+                  <span>דוחות</span>
+                </div>
+              </Link>
+            </div>
           </li>
           <li className="mb-1">
-            <Link href="/teams">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/teams" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">group</span>
-                <span>צוותים</span>
-                {!isLoadingMyInvitations && myInvitations && myInvitations.length > 0 && (
-                  <div className="flex items-center mr-2">
-                    <div className="relative">
-                      <BellIcon className="h-5 w-5 text-amber-500" />
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                        {myInvitations.length}
-                      </span>
+            <div className="mx-2">
+              <Link href="/teams">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/teams" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">group</span>
+                  <span>צוותים</span>
+                  {!isLoadingMyInvitations && myInvitations && myInvitations.length > 0 && (
+                    <div className="flex items-center mr-2">
+                      <div className="relative">
+                        <BellIcon className="h-5 w-5 text-amber-500" />
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                          {myInvitations.length}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </a>
-            </Link>
+                  )}
+                </div>
+              </Link>
+            </div>
           </li>
           <li className="mb-1">
-            <Link href="/settings">
-              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
-                location === "/settings" 
-                  ? "text-primary bg-primary/10" 
-                  : "text-foreground hover:bg-muted"
-              }`}>
-                <span className="material-icons ml-3">settings</span>
-                <span>הגדרות</span>
-              </a>
-            </Link>
+            <div className="mx-2">
+              <Link href="/settings">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/settings" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">settings</span>
+                  <span>הגדרות</span>
+                </div>
+              </Link>
+            </div>
           </li>
         </ul>
       </nav>
@@ -117,9 +129,9 @@ export function Sidebar() {
             </div>
           </div>
           <Link href="/settings">
-            <a className="p-1 rounded-full hover:bg-muted">
+            <div className="p-1 rounded-full hover:bg-muted cursor-pointer">
               <span className="material-icons">settings</span>
-            </a>
+            </div>
           </Link>
         </div>
       </div>

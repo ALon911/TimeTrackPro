@@ -52,7 +52,7 @@ export function InvitationNotification() {
   };
   
   return (
-    <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-950">
+    <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 text-black dark:text-amber-50">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <BellIcon className="h-5 w-5 text-amber-500" />
@@ -63,7 +63,7 @@ export function InvitationNotification() {
             </span>
           )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-black/70 dark:text-amber-50/70">
           יש לך {myInvitations.length === 1 ? 'הזמנה' : `${myInvitations.length} הזמנות`} לצוות
         </CardDescription>
       </CardHeader>
@@ -74,7 +74,7 @@ export function InvitationNotification() {
         <div className="flex justify-end gap-2">
           <Button 
             variant="outline" 
-            className="bg-white hover:bg-neutral-100"
+            className="bg-white dark:bg-slate-800 hover:bg-neutral-100 dark:hover:bg-slate-700 text-black dark:text-white"
             disabled={respondToInvitationMutation.isPending}
             onClick={() => handleAction(invitation.token, 'decline')}
           >
@@ -82,7 +82,7 @@ export function InvitationNotification() {
             <span>דחה</span>
           </Button>
           <Button 
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 text-white"
             disabled={respondToInvitationMutation.isPending}
             onClick={() => handleAction(invitation.token, 'accept')}
           >
@@ -93,8 +93,8 @@ export function InvitationNotification() {
         <div className="mt-3 text-sm text-right">
           <Button 
             variant="link" 
-            className="p-0 h-auto text-amber-700"
-            onClick={() => navigate('/teams')}
+            className="p-0 h-auto text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
+            onClick={() => setLocation('/teams')}
           >
             לכל ההזמנות
           </Button>
