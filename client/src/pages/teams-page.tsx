@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTeams } from "@/hooks/use-teams";
-import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-react";
+import { Loader2, Plus, Users, UserPlus, UserX, Settings } from "lucide-react";
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
@@ -66,6 +66,31 @@ export default function TeamsPage() {
     });
   };
   
+  const handleRespondToInvitation = (invitation: any, invitationId: number, action: 'accept' | 'decline') => {
+    const token = invitation.token || invitationId.toString();
+    
+    respondToInvitationMutation.mutate(
+      { invitationId, token, action },
+      {
+        onSuccess: () => {
+          toast({
+            title: action === 'accept' ? "הצטרפת לצוות בהצלחה" : "ההזמנה נדחתה",
+            description: action === 'accept' 
+              ? `הצטרפת לצוות "${invitation.team?.name}"`
+              : `דחית את ההזמנה לצוות "${invitation.team?.name}"`,
+          });
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "שגיאה בתגובה להזמנה",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      }
+    );
+  };
+  
   return (
     <>
       {/* דיאלוג יצירת צוות */}
@@ -92,7 +117,7 @@ export default function TeamsPage() {
                 )}
               />
               
-              <DialogFooter>
+              <DialogFooter className="mt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -118,7 +143,7 @@ export default function TeamsPage() {
       {/* כותרת ראשית */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-1">צוותים</h2>
-        <p className="text-neutral-600">נהל את הצוותים שלך ועבוד עם אחרים</p>
+        <p className="text-muted-foreground">נהל את הצוותים שלך ועבוד עם אחרים</p>
       </div>
       
       {/* כפתור יצירת צוות */}
@@ -152,29 +177,36 @@ export default function TeamsPage() {
             const isOwner = team.owner_id === user?.id;
             
             return (
-              <Card key={team.id}>
+              <Card key={team.id} className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>{team.name}</CardTitle>
                   <CardDescription>
                     {isOwner ? 'אתה המנהל של צוות זה' : 'אתה חבר בצוות זה'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <TeamMembersDialog 
-                    teamId={team.id} 
-                    isOwner={isOwner}
-                    forceOwner={true}
-                    isOpen={activeTeamMembers === team.id}
-                    onOpenChange={(open) => setActiveTeamMembers(open ? team.id : null)}
-                  />
+                <CardContent className="flex flex-col gap-4">
+                  <div className="text-sm text-muted-foreground">
+                    לחץ על כפתורי הניהול למטה כדי לראות את חברי הצוות או להוסיף חברים חדשים
+                  </div>
                 </CardContent>
-                <CardFooter className="flex justify-end gap-2">
+                <CardFooter className="flex justify-between gap-2 bg-muted/20 p-3">
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={() => setActiveTeamMembers(team.id)}
+                    className="flex-1"
+                  >
+                    <Users className="ml-2 h-4 w-4" />
+                    חברי צוות
+                  </Button>
+                  
                   {isOwner && (
-                    <>
+                    <div className="flex gap-2 flex-1">
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => setActiveTeamInvite(team.id)}
+                        className="flex-1"
                       >
                         <UserPlus className="ml-2 h-4 w-4" />
                         הזמן
@@ -184,21 +216,13 @@ export default function TeamsPage() {
                         variant="outline" 
                         size="sm"
                         onClick={() => setActiveTeamSettings(team.id)}
+                        className="flex-1"
                       >
                         <Settings className="ml-2 h-4 w-4" />
                         הגדרות
                       </Button>
-                    </>
+                    </div>
                   )}
-                  
-                  <Button 
-                    variant="default" 
-                    size="sm"
-                    onClick={() => setActiveTeamMembers(team.id)}
-                  >
-                    <Users className="ml-2 h-4 w-4" />
-                    חברים
-                  </Button>
                 </CardFooter>
               </Card>
             );
@@ -211,16 +235,46 @@ export default function TeamsPage() {
         <section className="mt-10">
           <h3 className="text-xl font-bold mb-4">הזמנות פתוחות</h3>
           <div className="space-y-4">
-            <TeamInvitationsList 
-              invitations={myInvitations} 
-              isLoading={isLoadingMyInvitations}
-              onRespond={(invitationId, token, action) => {
-                const invitation = myInvitations.find(inv => inv.id === invitationId);
-                if (!invitation) return;
-                
-                handleRespondToInvitation(invitation, invitationId, action);
-              }}
-            />
+            {isLoadingMyInvitations ? (
+              <div className="flex justify-center items-center h-24">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              myInvitations.map((invitation) => (
+                <Alert 
+                  key={invitation.id} 
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div>
+                    <AlertTitle className="mb-2">הוזמנת להצטרף לצוות "{invitation.team?.name}"</AlertTitle>
+                    <AlertDescription>
+                      {invitation.inviter ? (
+                        <p>הוזמנת על ידי {invitation.inviter?.email || invitation.inviter?.username}</p>
+                      ) : (
+                        <p>הוזמנת להצטרף לצוות זה</p>
+                      )}
+                    </AlertDescription>
+                  </div>
+                  <div className="flex gap-2 mt-2 sm:mt-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'decline')}
+                    >
+                      <UserX className="ml-2 h-4 w-4" />
+                      דחה
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'accept')}
+                    >
+                      <UserPlus className="ml-2 h-4 w-4" />
+                      הצטרף
+                    </Button>
+                  </div>
+                </Alert>
+              ))
+            )}
           </div>
         </section>
       )}
@@ -228,6 +282,15 @@ export default function TeamsPage() {
       {/* דיאלוגים לניהול צוות */}
       {teams.map((team) => (
         <div key={`dialogs-${team.id}`}>
+          {/* דיאלוג חברי צוות */}
+          <TeamMembersDialog
+            teamId={team.id} 
+            isOwner={team.owner_id === user?.id}
+            forceOwner={true}
+            isOpen={activeTeamMembers === team.id}
+            onOpenChange={(open) => setActiveTeamMembers(open ? team.id : null)}
+          />
+          
           {/* דיאלוג הזמנת חברים */}
           <TeamInvitationDialog
             teamId={team.id}
@@ -254,83 +317,6 @@ export default function TeamsPage() {
             }}
           />
         </div>
-      ))}
-    </>
-  );
-}
-
-// רשימת הזמנות לצוותים
-function TeamInvitationsList({ 
-  invitations, 
-  isLoading,
-  onRespond,
-}: { 
-  invitations: any[]; 
-  isLoading: boolean;
-  onRespond: (invitationId: number, token: string, action: 'accept' | 'decline') => void;
-}) {
-  const handleRespondToInvitation = (invitation: any, action: 'accept' | 'decline') => {
-    const invitationId = invitation.id;
-    const token = invitation.token || invitationId.toString();
-    
-    if (invitation.token) {
-      console.log('Using token to respond to invitation:', invitation.token);
-      onRespond(invitationId, invitation.token, action);
-    } else {
-      // אם אין token, ננסה עם המזהה של ההזמנה כמחרוזת
-      console.log('Using ID as token to respond to invitation:', invitationId);
-      onRespond(invitationId, invitationId.toString(), action);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-24">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (invitations.length === 0) {
-    return (
-      <div className="text-center p-6 border rounded-lg bg-muted/10">
-        <p className="text-muted-foreground">אין לך הזמנות פתוחות כרגע</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {invitations.map((invitation) => (
-        <Alert key={invitation.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <AlertTitle className="mb-2">הוזמנת להצטרף לצוות "{invitation.team?.name}"</AlertTitle>
-            <AlertDescription>
-              {invitation.inviter ? (
-                <p>הוזמנת על ידי {invitation.inviter?.email || invitation.inviter?.username}</p>
-              ) : (
-                <p>הוזמנת להצטרף לצוות זה</p>
-              )}
-            </AlertDescription>
-          </div>
-          <div className="flex gap-2 mt-2 sm:mt-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleRespondToInvitation(invitation, 'decline')}
-            >
-              <UserX className="ml-2 h-4 w-4" />
-              דחה
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleRespondToInvitation(invitation, 'accept')}
-            >
-              <UserPlus className="ml-2 h-4 w-4" />
-              הצטרף
-            </Button>
-          </div>
-        </Alert>
       ))}
     </>
   );

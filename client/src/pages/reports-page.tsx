@@ -1,14 +1,44 @@
+import { useState } from "react";
 import { WeeklyChart } from "@/components/charts/weekly-chart";
 import { TopicDistributionChart } from "@/components/charts/topic-distribution-chart";
 import { StatCard } from "@/components/stat-card";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Calendar, Clock, TrendingUp, BarChart } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfWeek, endOfWeek, isThisWeek } from "date-fns";
+import { Loader2, Calendar, Clock, TrendingUp, BarChart, Users, Info } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { format, startOfWeek, endOfWeek } from "date-fns";
 import { he } from "date-fns/locale";
 import { TimeEntriesTable } from "@/components/time-entries-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useTeams } from "@/hooks/use-teams";
+import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
+
+interface TeamMemberActivity {
+  userId: number;
+  username: string;
+  email: string;
+  totalTime: number;
+  taskCount: number;
+}
+
+interface TeamTopicDistribution {
+  topic: {
+    id: number;
+    name: string;
+    color: string;
+  };
+  totalTime: number;
+  percentage: number;
+}
 
 export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<string>("personal");
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const { teams, isLoadingTeams } = useTeams();
+
+  // Personal stats queries
   const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
     queryKey: ["/api/stats/daily"],
   });
@@ -29,6 +59,37 @@ export default function ReportsPage() {
     queryKey: ["/api/stats/weekly-overview"],
   });
 
+  // Team stats queries
+  const { data: teamMemberActivity, isLoading: isLoadingTeamMemberActivity } = useQuery({
+    queryKey: ["/api/teams/stats/member-activity", selectedTeam],
+    queryFn: async () => {
+      if (!selectedTeam) return [];
+      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/member-activity`);
+      return await res.json();
+    },
+    enabled: !!selectedTeam,
+  });
+
+  const { data: teamTopicDistribution, isLoading: isLoadingTeamTopicDistribution } = useQuery({
+    queryKey: ["/api/teams/stats/topic-distribution", selectedTeam],
+    queryFn: async () => {
+      if (!selectedTeam) return [];
+      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/topic-distribution`);
+      return await res.json();
+    },
+    enabled: !!selectedTeam,
+  });
+
+  const { data: teamStats, isLoading: isLoadingTeamStats } = useQuery({
+    queryKey: ["/api/teams/stats", selectedTeam],
+    queryFn: async () => {
+      if (!selectedTeam) return { totalTime: 0, memberCount: 0, topicCount: 0 };
+      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats`);
+      return await res.json();
+    },
+    enabled: !!selectedTeam,
+  });
+
   const formatTime = (seconds: number) => {
     if (!seconds) return '0:00:00';
     const hours = Math.floor(seconds / 3600);
@@ -43,127 +104,323 @@ export default function ReportsPage() {
   const end = endOfWeek(today, { locale: he });
   const weekRange = `${format(start, 'd MMM', { locale: he })} - ${format(end, 'd MMM', { locale: he })}`;
 
+  // Get team name from ID
+  const getTeamName = (teamId: string) => {
+    if (!teams) return "";
+    const team = teams.find(t => t.id.toString() === teamId);
+    return team?.name || "";
+  };
+
   return (
     <>
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-1">דוחות</h2>
         <p className="text-muted-foreground">סקירת הנתונים וסטטיסטיקות</p>
       </div>
-          
-      {/* Stats Cards */}
-      <section className="mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {isLoadingDaily ? (
-            <div className="h-32 bg-card rounded-xl flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <StatCard 
-              title="היום" 
-              value={formatTime(dailyStats?.total || 0)} 
-              icon={<Calendar className="h-4 w-4" />} 
-              trend={dailyStats?.percentChange} 
-              trendLabel={dailyStats?.percentChange > 0 ? 'יותר מאתמול' : 'פחות מאתמול'}
-            />
-          )}
-          
-          {isLoadingWeekly ? (
-            <div className="h-32 bg-card rounded-xl flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <StatCard 
-              title="השבוע" 
-              value={formatTime(weeklyStats?.total || 0)} 
-              icon={<Clock className="h-4 w-4" />} 
-              trend={weeklyStats?.percentChange} 
-              trendLabel={weekRange}
-            />
-          )}
-          
-          {isLoadingMostTracked ? (
-            <div className="h-32 bg-card rounded-xl flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <StatCard 
-              title="נושא מוביל" 
-              value={mostTracked?.topic?.name || 'אין נתונים'} 
-              icon={<TrendingUp className="h-4 w-4" />} 
-              secondaryValue={formatTime(mostTracked?.totalTime || 0)}
-              color={mostTracked?.topic?.color}
-            />
-          )}
-          
-          <StatCard 
-            title="סה״כ נושאים" 
-            value={topicDistribution?.length || '0'} 
-            icon={<BarChart className="h-4 w-4" />} 
-          />
-        </div>
-      </section>
       
-      {/* Charts */}
-      <section className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>סקירה שבועית</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingWeeklyOverview ? (
-              <div className="h-64 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : weeklyOverview?.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-                <p>אין נתונים להצגה</p>
-                <p className="text-sm">התחל לעקוב אחר הזמן שלך כדי לראות סטטיסטיקות כאן</p>
-              </div>
-            ) : (
-              <div className="h-64">
-                <WeeklyChart data={weeklyOverview || []} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="personal" value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="personal">הדוחות שלי</TabsTrigger>
+          <TabsTrigger value="team" disabled={teams?.length === 0}>דוחות צוות</TabsTrigger>
+        </TabsList>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>התפלגות לפי נושא</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingDistribution ? (
-              <div className="h-64 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : topicDistribution?.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-                <p>אין נתונים להצגה</p>
-                <p className="text-sm">צור נושאים והתחל לעקוב אחר הזמן שלך</p>
-              </div>
-            ) : (
-              <div className="h-64">
-                <TopicDistributionChart data={topicDistribution || []} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-      
-      {/* Recent Sessions */}
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>פעילות אחרונה</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TimeEntriesTable 
-              limit={5} 
-              showViewAllLink={true}
-            />
-          </CardContent>
-        </Card>
-      </section>
+        <TabsContent value="personal" className="mt-6">
+          {/* Personal Stats Cards */}
+          <section className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {isLoadingDaily ? (
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard 
+                  title="היום" 
+                  value={formatTime(dailyStats?.total || 0)} 
+                  icon={<Calendar className="h-4 w-4" />} 
+                  trend={dailyStats?.percentChange} 
+                  trendLabel={dailyStats?.percentChange > 0 ? 'יותר מאתמול' : 'פחות מאתמול'}
+                />
+              )}
+              
+              {isLoadingWeekly ? (
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard 
+                  title="השבוע" 
+                  value={formatTime(weeklyStats?.total || 0)} 
+                  icon={<Clock className="h-4 w-4" />} 
+                  trend={weeklyStats?.percentChange} 
+                  trendLabel={weekRange}
+                />
+              )}
+              
+              {isLoadingMostTracked ? (
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <StatCard 
+                  title="נושא מוביל" 
+                  value={mostTracked?.topic?.name || 'אין נתונים'} 
+                  icon={<TrendingUp className="h-4 w-4" />} 
+                  secondaryValue={formatTime(mostTracked?.totalTime || 0)}
+                  color={mostTracked?.topic?.color}
+                />
+              )}
+              
+              <StatCard 
+                title="סה״כ נושאים" 
+                value={topicDistribution?.length || '0'} 
+                icon={<BarChart className="h-4 w-4" />} 
+              />
+            </div>
+          </section>
+          
+          {/* Personal Charts */}
+          <section className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>סקירה שבועית</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingWeeklyOverview ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : weeklyOverview?.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                    <p>אין נתונים להצגה</p>
+                    <p className="text-sm">התחל לעקוב אחר הזמן שלך כדי לראות סטטיסטיקות כאן</p>
+                  </div>
+                ) : (
+                  <div className="h-64">
+                    <WeeklyChart data={weeklyOverview || []} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>התפלגות לפי נושא</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingDistribution ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : topicDistribution?.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                    <p>אין נתונים להצגה</p>
+                    <p className="text-sm">צור נושאים והתחל לעקוב אחר הזמן שלך</p>
+                  </div>
+                ) : (
+                  <div className="h-64">
+                    <TopicDistributionChart data={topicDistribution || []} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+          
+          {/* Recent Sessions */}
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>פעילות אחרונה</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TimeEntriesTable 
+                  limit={5} 
+                  showViewAllLink={true}
+                />
+              </CardContent>
+            </Card>
+          </section>
+        </TabsContent>
+        
+        <TabsContent value="team" className="mt-6">
+          {/* Team Selection */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>בחר צוות לצפייה בנתונים</CardTitle>
+              <CardDescription>הצג סטטיסטיקות וניתוחים עבור הצוות הנבחר</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingTeams ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : teams?.length === 0 ? (
+                <div className="py-4 text-center">
+                  <p className="text-muted-foreground">אין לך צוותים פעילים כרגע</p>
+                </div>
+              ) : (
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger className="w-full max-w-xs">
+                    <SelectValue placeholder="בחר צוות" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id.toString()}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </CardContent>
+          </Card>
+          
+          {selectedTeam ? (
+            <>
+              {/* Team Stats */}
+              <div className="text-xl font-bold mb-4">צוות: {getTeamName(selectedTeam)}</div>
+              
+              {/* Team Overview Stats */}
+              <section className="mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <StatCard 
+                    title="זמן כולל של הצוות" 
+                    value={formatTime(teamStats?.totalTime || 0)} 
+                    icon={<Clock className="h-4 w-4" />}
+                  />
+                  
+                  <StatCard 
+                    title="חברי צוות" 
+                    value={teamStats?.memberCount || '0'} 
+                    icon={<Users className="h-4 w-4" />}
+                  />
+                  
+                  <StatCard 
+                    title="נושאים בצוות" 
+                    value={teamStats?.topicCount || '0'} 
+                    icon={<BarChart className="h-4 w-4" />}
+                  />
+                </div>
+              </section>
+              
+              {/* Team Member Activity */}
+              <section className="mb-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>פעילות חברי צוות</CardTitle>
+                    <CardDescription>מידע על הפעילות והזמן שמושקע על ידי כל חבר בצוות</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingTeamMemberActivity ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : !teamMemberActivity || teamMemberActivity.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Info className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">אין נתוני פעילות זמינים לצוות זה</p>
+                        <p className="text-sm text-muted-foreground mt-1">חברי הצוות צריכים להתחיל לתעד זמן</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {teamMemberActivity.map((member: TeamMemberActivity) => (
+                          <div key={member.userId} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium">{member.username || member.email}</h3>
+                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                              </div>
+                              <Badge variant="outline" className="text-primary">
+                                {member.taskCount} משימות
+                              </Badge>
+                            </div>
+                            <div className="mt-3">
+                              <div className="flex justify-between items-center text-sm mb-1">
+                                <span>זמן כולל:</span>
+                                <span className="font-medium">{formatTime(member.totalTime)}</span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-2.5">
+                                <div 
+                                  className="bg-primary h-2.5 rounded-full" 
+                                  style={{ 
+                                    width: `${Math.min(100, (member.totalTime / (teamStats?.totalTime || 1)) * 100)}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </section>
+              
+              {/* Team Topic Distribution */}
+              <section>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>התפלגות נושאים בצוות</CardTitle>
+                    <CardDescription>כיצד מתחלק הזמן בין הנושאים השונים בצוות</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingTeamTopicDistribution ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : !teamTopicDistribution || teamTopicDistribution.length === 0 ? (
+                      <div className="text-center py-8">
+                        <BarChart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">אין נתוני נושאים זמינים לצוות זה</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {teamTopicDistribution.map((item: TeamTopicDistribution) => (
+                          <div key={item.topic.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: item.topic.color || '#888' }}
+                                ></div>
+                                <span className="font-medium">{item.topic.name}</span>
+                              </div>
+                              <span className="text-sm">
+                                {formatTime(item.totalTime)} ({Math.round(item.percentage)}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className="h-2 rounded-full" 
+                                style={{ 
+                                  width: `${item.percentage}%`,
+                                  backgroundColor: item.topic.color || '#888'
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" size="sm" className="mr-auto">
+                      ייצא לאקסל
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </section>
+            </>
+          ) : (
+            <div className="text-center p-12 border rounded-lg bg-muted/10">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">בחר צוות כדי לראות את הנתונים</h3>
+              <p className="text-muted-foreground">
+                כאן תוכל לראות סטטיסטיקות על פעילות הצוות שלך
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
