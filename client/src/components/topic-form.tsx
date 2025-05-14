@@ -66,8 +66,10 @@ export function TopicForm({ topic, defaultValues, onSubmit, isPending = false, o
     }
   };
   
+  const onFormSubmit = handleSubmit(handleFormSubmit);
+  
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+    <form onSubmit={onFormSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">שם הנושא</Label>
         <Input

@@ -91,6 +91,7 @@ export default function TopicsPage() {
             <TopicForm 
               onSubmit={(data) => createMutation.mutate(data)}
               isPending={createMutation.isPending}
+              onSuccess={() => setIsAddTopicOpen(false)}
             />
           </DialogContent>
         </Dialog>
@@ -106,6 +107,7 @@ export default function TopicsPage() {
               defaultValues={editingTopic}
               onSubmit={(data) => updateMutation.mutate({ ...data, id: editingTopic.id })}
               isPending={updateMutation.isPending}
+              onSuccess={() => setEditingTopic(null)}
             />
           </DialogContent>
         </Dialog>
