@@ -14,6 +14,7 @@ import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
 import { DirectAddButton } from "@/components/direct-add-button";
+import { AddDirectMemberButton } from "@/components/add-direct-member-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -157,9 +158,8 @@ export default function TeamsPage() {
                 </CardHeader>
                 <CardContent>
                   {team.ownerId === user?.id && (
-                    <DirectAddButton
-                      teamId={team.id}
-                      teamName={team.name}
+                    <AddDirectMemberButton 
+                      teamId={team.id} 
                     />
                   )}
                 
