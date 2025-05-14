@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Edit, Trash2 } from "lucide-react";
@@ -13,29 +13,21 @@ export default function TopicsPage() {
   const { toast } = useToast();
   const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<any>(null);
-  const [dedupedTopics, setDedupedTopics] = useState<any[]>([]);
 
-  const { data: topics = [], isLoading: isLoadingTopics } = useQuery({
+  const { data: rawTopics = [], isLoading: isLoadingTopics } = useQuery({
     queryKey: ['/api/topics'],
   });
-
-  // עיבוד הנושאים להסרת כפילויות
-  useEffect(() => {
-    if (topics && Array.isArray(topics)) {
-      // יצירת מערך חדש ללא כפילויות על פי מזהה
-      const uniqueTopicsMap = new Map();
-      
-      topics.forEach((topic: any) => {
-        if (topic && topic.id) {
-          uniqueTopicsMap.set(topic.id, topic);
-        }
-      });
-
-      // המרת ה-Map חזרה למערך
-      const uniqueTopicsArray = Array.from(uniqueTopicsMap.values());
-      setDedupedTopics(uniqueTopicsArray);
-    }
-  }, [topics]);
+  
+  // Manually de-duplicate topics to ensure we never show duplicates
+  const topicsMap = new Map();
+  if (Array.isArray(rawTopics)) {
+    rawTopics.forEach(topic => {
+      if (topic && topic.id) {
+        topicsMap.set(topic.id, topic);
+      }
+    });
+  }
+  const topics = Array.from(topicsMap.values());
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -143,14 +135,14 @@ export default function TopicsPage() {
           <div className="flex justify-center p-10">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
-        ) : dedupedTopics.length === 0 ? (
+        ) : topics.length === 0 ? (
           <div className="text-center p-10 border rounded-md">
             <p className="text-muted-foreground mb-4">עדיין אין לך נושאים</p>
             <Button onClick={() => setIsAddTopicOpen(true)}>הוסף את הנושא הראשון שלך</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {dedupedTopics.map((topic: any) => (
+            {topics.map((topic: any) => (
               <Card key={topic.id} className="overflow-hidden">
                 <CardContent className="p-5">
                   <div className="flex justify-between items-start mb-2">

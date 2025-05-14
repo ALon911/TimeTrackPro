@@ -24,19 +24,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Topic routes
   app.get("/api/topics", isAuthenticated, async (req, res) => {
     try {
+      console.log("Fetching topics for user:", req.user!.id);
       const userId = req.user!.id;
-      let topics = await storage.getTopics(userId);
       
-      // Remove any duplicate topics
-      const uniqueTopics = new Map();
-      topics.forEach(topic => {
-        uniqueTopics.set(topic.id, topic);
-      });
+      // Get topics and make sure they're unique
+      const topics = await storage.getTopics(userId);
       
-      // Convert back to array
-      topics = Array.from(uniqueTopics.values());
+      // Create a Set to track seen IDs
+      const seenIds = new Set();
+      const uniqueTopics = [];
       
-      res.json(topics);
+      // Filter out duplicates
+      for (const topic of topics) {
+        if (!seenIds.has(topic.id)) {
+          seenIds.add(topic.id);
+          uniqueTopics.push(topic);
+        } else {
+          console.log("Filtered out duplicate topic:", topic.id, topic.name);
+        }
+      }
+      
+      console.log(`Found ${topics.length} topics, ${uniqueTopics.length} unique topics`);
+      res.json(uniqueTopics);
     } catch (error) {
       console.error("Error fetching topics:", error);
       res.status(500).json({ message: "Failed to fetch topics" });
