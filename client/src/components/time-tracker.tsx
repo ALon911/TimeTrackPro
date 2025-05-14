@@ -388,26 +388,8 @@ export function TimeTracker() {
     console.log("טיימר אופס והמידע נמחק מהזיכרון המקומי");
   }, []);
   
-  // Audio notifications
-  const completeAudioRef = useRef<HTMLAudioElement | null>(null);
-  const startAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Create audio elements for timer notifications
-    completeAudioRef.current = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
-    startAudioRef.current = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
-    
-    return () => {
-      if (completeAudioRef.current) {
-        completeAudioRef.current.pause();
-        completeAudioRef.current = null;
-      }
-      if (startAudioRef.current) {
-        startAudioRef.current.pause();
-        startAudioRef.current = null;
-      }
-    };
-  }, []);
+  // אין צורך ברפרנסים של אודיו - אנחנו משתמשים ב-AudioManager
+  // שכבר מטפל בטעינה והשמעה של צלילים מהתיקייה המקומית
   
   // Create time entry mutation
   const createTimeEntryMutation = useMutation({
@@ -429,10 +411,8 @@ export function TimeTracker() {
   // When timer completes, save the time entry
   useEffect(() => {
     if (isCompleted && startTime && selectedTopic) {
-      // Play completion sound
-      if (completeAudioRef.current) {
-        completeAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
-      }
+      // Play completion sound using audio manager
+      audioManager.playTimerComplete();
       
       // Save time entry when timer completes
       const endTime = new Date();
