@@ -715,41 +715,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
   
-  // Fallback route for SPA - all routes that are not API routes will serve the index.html
-  // Handle special Vite paths differently
-  app.get('/@vite*', (req, res) => {
-    console.log('Vite path requested, returning 404:', req.path);
-    res.status(404).send('Asset not found');
-  });
-  
-  app.get('/@react-refresh', (req, res) => {
-    console.log('React refresh requested, returning 404:', req.path);
-    res.status(404).send('Asset not found');
-  });
-
-  // General fallback route
-  app.get('*', (req, res, next) => {
-    // Skip API routes
-    if (req.path.startsWith('/api/')) {
-      return next();
-    }
-    
-    // Skip assets and files with extensions (except for Vite special paths)
-    if (req.path.includes('.') && !req.path.startsWith('/@')) {
-      return next();
-    }
-    
-    console.log('Fallback route hit for path:', req.path);
-    const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error sending index.html file:', err);
-        next(err);
-      } else {
-        console.log('Successfully served index.html for:', req.path);
+  // Skip the catch-all route in development
+  // In development mode we're not using our own spa fallback
+  // but letting Vite handle all non-api routes
+  if (process.env.NODE_ENV !== 'development') {
+    // Fallback route for SPA - all routes that are not API routes will serve the index.html
+    app.get('*', (req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/')) {
+        return next();
       }
+      
+      // Skip assets and files with extensions
+      if (req.path.includes('.')) {
+        return next();
+      }
+      
+      console.log('Fallback route hit for path:', req.path);
+      const indexPath = path.resolve('client/index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error('Error sending index.html file:', err);
+          next(err);
+        } else {
+          console.log('Successfully served index.html for:', req.path);
+        }
+      });
     });
-  });
+  } else {
+    console.log('Running in development mode - not setting up fallback route');
+  }
 
   const httpServer = createServer(app);
   return httpServer;
