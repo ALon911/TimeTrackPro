@@ -10,6 +10,7 @@ import { teamsRouter } from "./teams-simple";
 import { z } from "zod";
 import path from "path";
 import { directMemberRouter } from "./direct-member-route";
+import { invitationsRouter } from "./team-invitations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -369,40 +370,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manually add endpoint for user's pending invitations
-  app.get('/api/teams/invitations/my', isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user?.id;
-    
-      if (!userId) {
-        return res.status(401).json([]);
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json([]);
-      }
-      
-      const invitations = await storage.getTeamInvitationsByEmail(user.email);
-      
-      // Filter out pending invitations only
-      const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
-      
-      // Don't expose tokens in the response
-      const safeInvitations = pendingInvitations.map(({ token, ...rest }) => rest);
-      
-      res.json(safeInvitations);
-    } catch (error) {
-      console.error('Error fetching user invitations:', error);
-      res.status(500).json([]);
-    }
-  });
+  // We've moved the invitations endpoints to team-invitations.ts
   
   // Register teams routes
   app.use('', teamsRouter);
   
   // Register direct member routes
   app.use('', directMemberRouter);
+  
+  // Register team invitations routes
+  app.use('', invitationsRouter);
   
   // Serve HTML add member page directly
   app.get('/add-member-popup/:teamId', (req, res) => {
