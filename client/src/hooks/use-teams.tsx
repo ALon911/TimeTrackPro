@@ -33,6 +33,7 @@ interface TeamInvitation {
   token: string;
   expiresAt: string;
   team?: Team;
+  teamName?: string; // שם הצוות
 }
 
 export interface TeamFormData {

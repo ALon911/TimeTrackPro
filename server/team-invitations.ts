@@ -28,8 +28,24 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
     const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
     console.log('Pending invitations:', pendingInvitations);
     
+    // Modify the format to include team information
+    const enhancedInvitations = pendingInvitations.map(inv => {
+      // Convert snake_case to camelCase
+      return {
+        id: inv.id,
+        teamId: inv.team_id,
+        email: inv.email,
+        status: inv.status,
+        teamName: inv.team_name, // This comes from our SQL query
+        invitedBy: inv.invited_by,
+        expiresAt: inv.expires_at,
+        token: inv.token,
+      };
+    });
+    console.log('Enhanced invitations:', enhancedInvitations);
+    
     // Don't expose tokens in the response
-    const safeInvitations = pendingInvitations.map(({ token, ...rest }) => rest);
+    const safeInvitations = enhancedInvitations.map(({ token, ...rest }) => rest);
     console.log('Safe invitations to return:', safeInvitations);
     
     res.json(safeInvitations);

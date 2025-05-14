@@ -230,9 +230,9 @@ function TeamInvitationsList() {
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-medium text-lg">הזמנה לצוות</h3>
+                <h3 className="font-medium text-lg">הזמנה לצוות {invitation.teamName || "לא ידוע"}</h3>
                 <p className="text-muted-foreground">
-                  הוזמנת להצטרף לצוות.
+                  הוזמנת להצטרף לצוות {invitation.teamName || "לא ידוע"}.
                 </p>
               </div>
               <div className="flex gap-2">
