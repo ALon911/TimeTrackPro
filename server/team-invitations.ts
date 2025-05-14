@@ -56,13 +56,16 @@ invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthent
       return res.status(404).json({ error: 'Invitation not found' });
     }
     
+    // Log the invitation to see its structure
+    console.log('Invitation object:', invitation);
+    
     // Check if invitation is already processed
     if (invitation.status !== 'pending') {
       return res.status(400).json({ error: `Invitation has already been ${invitation.status}` });
     }
     
     // Check if invitation is expired
-    const expiryDate = new Date(invitation.expiresAt);
+    const expiryDate = new Date(invitation.expires_at || invitation.expiresAt);
     if (expiryDate < new Date()) {
       return res.status(400).json({ error: 'Invitation has expired' });
     }
@@ -75,7 +78,13 @@ invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthent
     
     if (action === 'accept') {
       // Check if user is already a member
-      const members = await storage.getTeamMembers(invitation.teamId);
+      const teamId = invitation.team_id || invitation.teamId;
+      if (!teamId) {
+        console.error('Team ID missing in invitation:', invitation);
+        return res.status(500).json({ error: 'Invalid invitation data: missing team ID' });
+      }
+      
+      const members = await storage.getTeamMembers(teamId);
       const isAlreadyMember = members.some(member => member.userId === userId);
       
       if (isAlreadyMember) {
@@ -85,7 +94,7 @@ invitationsRouter.post('/api/teams/invitations/:invitationId/:action', isAuthent
       
       // Add user to team
       await storage.addTeamMember({
-        teamId: invitation.teamId,
+        teamId: teamId,
         userId: userId,
         role: 'member',
       });
