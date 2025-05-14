@@ -174,6 +174,43 @@ export default function TeamsPage() {
                     />
                     
                     {team.ownerId === user?.id && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex items-center"
+                        onClick={() => {
+                          const email = prompt("הזן אימייל של משתמש קיים להוספה ישירות לצוות:");
+                          if (!email) return;
+                          
+                          // שליחת בקשה ישירה לשרת
+                          fetch(`/api/teams/${team.id}/members`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              email,
+                              role: "member"
+                            }),
+                          })
+                          .then(response => {
+                            if (response.ok) {
+                              alert(`המשתמש ${email} נוסף לצוות בהצלחה`);
+                            } else {
+                              alert("שגיאה בהוספת משתמש");
+                            }
+                          })
+                          .catch(err => {
+                            alert("שגיאה בהוספת משתמש: " + err.message);
+                          });
+                        }}
+                      >
+                        <UserPlus className="ml-1 h-4 w-4" />
+                        הוסף משתמש ישירות
+                      </Button>
+                    )}
+                    
+                    {team.ownerId === user?.id && (
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />
                     )}
                     
