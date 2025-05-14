@@ -1010,7 +1010,7 @@ export class DatabaseStorage implements IStorage {
       SELECT tm.user_id, u.email, SUM(te.duration) as total_seconds
       FROM team_members tm
       JOIN users u ON tm.user_id = u.id
-      LEFT JOIN time_entries te ON u.id = te.user_id AND te.team_id = tm.team_id
+      LEFT JOIN time_entries te ON u.id = te.user_id
       WHERE tm.team_id = ?
       GROUP BY tm.user_id
       ORDER BY total_seconds DESC
@@ -1041,14 +1041,21 @@ export class DatabaseStorage implements IStorage {
       SELECT t.id, t.name, t.color, SUM(te.duration) as total_seconds
       FROM topics t
       JOIN time_entries te ON t.id = te.topic_id
-      WHERE te.team_id = ?
+      JOIN team_members tm ON te.user_id = tm.user_id
+      WHERE tm.team_id = ?
       GROUP BY t.id
       ORDER BY total_seconds DESC
     `);
     
     const topics = topicsStmt.all(teamId) as any[];
     
-    const totalStmt = this.db.prepare('SELECT SUM(duration) as total FROM time_entries WHERE team_id = ?');
+    // Get total seconds of all team members
+    const totalStmt = this.db.prepare(`
+      SELECT SUM(te.duration) as total
+      FROM time_entries te
+      JOIN team_members tm ON te.user_id = tm.user_id
+      WHERE tm.team_id = ?
+    `);
     const totalResult = totalStmt.get(teamId) as any;
     const totalSeconds = totalResult?.total || 0;
     
