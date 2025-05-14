@@ -28,6 +28,7 @@ interface TimerState {
   isPaused: boolean;
   isCompleted: boolean;
   isCountDown: boolean;
+  originalDuration?: number; // משך הזמן המקורי שנקבע לטיימר
   startTime: string | null;
   totalDuration: number;
   selectedTopic: string;
@@ -144,25 +145,39 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     };
   }, []);
 
+  // הוספת רפרנס לזיהוי אם הטיימר הוא כבר ספירה לאחור (למניעת התנגשויות)
+  const isCountdownRef = useRef<boolean>(false);
+  
   // Timer effect - הלוגיקה של הטיימר
   useEffect(() => {
     if (isRunning) {
       // מזהה את סוג הטיימר שמוגדר ב-state
       console.log(`Timer running in ${isCountDown ? 'countdown' : 'count-up'} mode`);
       
+      // שומרים את הסטטוס הנוכחי של הטיימר במשתנה הרפרנס
+      isCountdownRef.current = isCountDown;
+      
       intervalRef.current = setInterval(() => {
         setSeconds(prevSeconds => {
-          // ספירה לאחור
-          if (isCountDown) {
+          // ספירה לאחור - חשוב! אנחנו משתמשים ברפרנס במקום בסטייט למניעת בעיות רנדור
+          if (isCountdownRef.current) {
             console.log(`Countdown timer: ${prevSeconds} seconds remaining`);
+            
             // אם הגענו לאפס או פחות
             if (prevSeconds <= 1) {
               setIsRunning(false);
               setIsCompleted(true);
+              clearInterval(intervalRef.current!);
               // השמעת צליל סיום
               audioManager.playTimerComplete();
+              
+              // נשמור בלוקל סטורג' שהטיימר הסתיים
+              localStorage.removeItem('timetracker_countdown');
+              localStorage.removeItem('timetracker_timer');
+              
               return 0;
             }
+            
             // המשך ספירה לאחור
             return prevSeconds - 1;
           } 
@@ -193,23 +208,38 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   const startWithDuration = useCallback((durationInMinutes: number): void => {
     // Convert minutes to seconds
     const totalSeconds = durationInMinutes * 60;
+    
+    // עדכון המשתנים שינהלו את הלוגיקה של הטיימר
     setSeconds(totalSeconds);
     setIsCountDown(true); // חשוב לסמן שזה טיימר ספירה לאחור
     setIsCompleted(false);
     setIsRunning(true);
     
+    // עדכון הרפרנס כדי לוודא שהטיימר יספור לאחור באופן עקבי
+    isCountdownRef.current = true;
+    
+    // שמירת משך הזמן המקורי של הטיימר
+    originalDurationRef.current = totalSeconds;
+    
     // שמירת מידע מלא על מצב הטיימר כולל העובדה שמדובר בספירה לאחור
     try {
+      // מחיקת כל מצבי הטיימר הישנים מ-localStorage לפני השמירה
+      localStorage.removeItem('timetracker_timer');
+      localStorage.removeItem('timetracker_ui');
+      localStorage.removeItem('timetracker_countdown');
+      
+      // יצירת אובייקט עם נתוני הטיימר
       const timerState: TimerState = {
         seconds: totalSeconds,
         isRunning: true,
         isPaused: false,
         isCompleted: false,
         isCountDown: true,
+        originalDuration: totalSeconds, // שמירת הזמן המקורי חשובה לחישובים
         startTime: null,
         totalDuration: 0,
-        selectedTopic: '',
-        description: '',
+        selectedTopic: selectedTopic, // שמירת הנושא הנוכחי
+        description: description, // שמירת התיאור הנוכחי
         lastUpdated: Date.now()
       };
       
@@ -219,14 +249,13 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
       // שמירה מיידית של המצב ב-localStorage
       saveTimerState(timerState);
       
-      // מחיקת כל מצבי הטיימר הישנים מ-localStorage
-      localStorage.removeItem('timetracker_timer');
-      localStorage.removeItem('timetracker_ui');
-      
-      // שמירה במפתח חדש וייעודי לטיימרים של ספירה לאחור
+      // שמירה במפתח חדש וייעודי לטיימרים של ספירה לאחור עם מידע מדויק
       localStorage.setItem('timetracker_countdown', JSON.stringify({
         duration: totalSeconds,
-        startTime: Date.now()
+        originalDuration: totalSeconds,
+        startTime: Date.now(),
+        isCountDown: true,
+        selectedTopic: selectedTopic 
       }));
       
     } catch (error) {
