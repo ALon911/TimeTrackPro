@@ -53,7 +53,49 @@ export class DatabaseStorage implements IStorage {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create teams table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create team_members table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS team_members (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT NOT NULL DEFAULT 'member',
+        joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(team_id, user_id)
+      )
+    `);
+
+    // Create team_invitations table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS team_invitations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        email TEXT NOT NULL,
+        token TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        invited_by INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (invited_by) REFERENCES users(id)
       )
     `);
 
@@ -64,7 +106,9 @@ export class DatabaseStorage implements IStorage {
         user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         color TEXT NOT NULL DEFAULT '#6366f1',
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        team_id INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL
       )
     `);
 
@@ -79,8 +123,10 @@ export class DatabaseStorage implements IStorage {
         end_time TEXT NOT NULL,
         duration INTEGER NOT NULL,
         is_manual INTEGER NOT NULL DEFAULT 0,
+        team_id INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
+        FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL
       )
     `);
   }

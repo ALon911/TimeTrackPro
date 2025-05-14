@@ -26,6 +26,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Topic methods
   getTopics(userId: number): Promise<Topic[]>;
@@ -33,6 +34,7 @@ export interface IStorage {
   createTopic(topic: InsertTopic): Promise<Topic>;
   updateTopic(id: number, topic: Partial<InsertTopic>): Promise<Topic | undefined>;
   deleteTopic(id: number): Promise<boolean>;
+  getTeamTopics(teamId: number): Promise<Topic[]>;
   
   // Time entry methods
   getTimeEntries(userId: number, filters?: TimeEntryFilters): Promise<TimeEntry[]>;
@@ -48,6 +50,31 @@ export interface IStorage {
   getTopicDistribution(userId: number): Promise<TopicDistribution[]>;
   getWeeklyOverview(userId: number): Promise<WeeklyData[]>;
   getRecentSessions(userId: number, limit?: number): Promise<TimeEntrySummary[]>;
+  
+  // Team methods
+  getTeams(userId: number): Promise<Team[]>;
+  getTeam(id: number): Promise<Team | undefined>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: number, teamData: Partial<{ name: string }>): Promise<Team | undefined>;
+  deleteTeam(id: number): Promise<boolean>;
+  
+  // Team members methods
+  getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]>;
+  addTeamMember(teamMember: InsertTeamMember): Promise<TeamMember>;
+  removeTeamMember(teamId: number, userId: number): Promise<boolean>;
+  updateTeamMemberRole(teamId: number, userId: number, role: string): Promise<TeamMember | undefined>;
+  
+  // Team invitations methods
+  createTeamInvitation(invitation: InsertTeamInvitation & { token: string }): Promise<TeamInvitation>;
+  getTeamInvitationByToken(token: string): Promise<TeamInvitation | undefined>;
+  getTeamInvitationsByEmail(email: string): Promise<TeamInvitation[]>;
+  getTeamInvitationsByTeam(teamId: number): Promise<TeamInvitation[]>;
+  updateTeamInvitationStatus(id: number, status: string): Promise<TeamInvitation | undefined>;
+  
+  // Team statistics methods
+  getTeamStats(teamId: number): Promise<TeamTimeStat>;
+  getTeamTopicDistribution(teamId: number): Promise<TeamTopicDistribution[]>;
+  getTeamMemberActivity(teamId: number): Promise<TeamMemberActivity[]>;
   
   // Session store
   sessionStore: session.Store;

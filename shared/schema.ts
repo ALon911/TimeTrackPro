@@ -8,11 +8,82 @@ export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
+});
+
+// Teams schema (for group time tracking)
+export const teams = sqliteTable("teams", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  ownerId: integer("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).pick({
+  name: true,
+  ownerId: true,
+});
+
+// Team members schema (relationship between users and teams)
+export const teamMembers = sqliteTable("team_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("member"), // Options: owner, admin, member
+  joinedAt: text("joined_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).pick({
+  teamId: true,
+  userId: true,
+  role: true,
+});
+
+// Team invitations schema (for pending invitations)
+export const teamInvitations = sqliteTable("team_invitations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  token: text("token").notNull(),
+  status: text("status").notNull().default("pending"),
+  invitedBy: integer("invited_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  expiresAt: text("expires_at")
+    .notNull()
+    .$defaultFn(() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 7); // Default expiration: 7 days
+      return date.toISOString();
+    }),
+});
+
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).pick({
+  teamId: true,
+  email: true,
+  invitedBy: true,
 });
 
 // Topics schema
@@ -21,6 +92,7 @@ export const topics = sqliteTable("topics", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   color: text("color").notNull().default("#6366f1"),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "set null" }),
 });
 
 export const insertTopicSchema = createInsertSchema(topics);
@@ -35,6 +107,7 @@ export const timeEntries = sqliteTable("time_entries", {
   endTime: text("end_time").notNull(),
   duration: integer("duration").notNull(), // Duration in seconds
   isManual: integer("is_manual", { mode: "boolean" }).notNull().default(false),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "set null" }),
 });
 
 export const insertTimeEntrySchema = createInsertSchema(timeEntries);
@@ -69,9 +142,49 @@ export type TimeEntrySummary = {
   durationSeconds: number;
 };
 
+// Team statistics types
+export type TeamTimeStat = {
+  teamId: number;
+  teamName: string;
+  membersCount: number;
+  totalSeconds: number;
+  breakdownByUser: {
+    userId: number;
+    email: string;
+    seconds: number;
+    percentage: number;
+  }[];
+};
+
+export type TeamTopicDistribution = {
+  topic: Topic;
+  percentage: number;
+  totalSeconds: number;
+  breakdownByUser: {
+    userId: number;
+    email: string;
+    seconds: number;
+    percentage: number;
+  }[];
+};
+
+export type TeamMemberActivity = {
+  userId: number;
+  email: string;
+  totalSeconds: number;
+  mostActiveHour: number;
+  lastActiveDay: string;
+};
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertTeamInvitation = z.infer<typeof insertTeamInvitationSchema>;
 export type Topic = typeof topics.$inferSelect;
 export type InsertTopic = z.infer<typeof insertTopicSchema>;
 export type TimeEntry = typeof timeEntries.$inferSelect;
