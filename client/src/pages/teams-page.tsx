@@ -11,6 +11,8 @@ import { z } from "zod";
 import { useTeams } from "@/hooks/use-teams";
 import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-react";
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
+import { TeamMembersDialog } from "@/components/team-members-dialog";
+import { TeamSettingsDialog } from "@/components/team-settings-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -157,18 +159,11 @@ export default function TeamsPage() {
                     פעולות
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center"
-                      onClick={() => {
-                        setSelectedTeamId(team.id);
-                        // כאן נפתח חלון של חברי צוות
-                      }}
-                    >
-                      <Users className="ml-1 h-4 w-4" />
-                      חברי צוות
-                    </Button>
+                    <TeamMembersDialog 
+                      teamId={team.id}
+                      teamName={team.name}
+                      isOwner={team.ownerId === user?.id}
+                    />
                     
                     {team.ownerId === user?.id && (
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />
