@@ -15,6 +15,7 @@ import SettingsPage from "@/pages/settings-page";
 import TeamsPage from "@/pages/teams-page";
 import TeamStatsPage from "@/pages/team-stats-page";
 import AddDirectMemberPage from "@/pages/add-direct-member";
+import InvitationHandlerPage from "@/pages/invitation-handler-page";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/teams/:teamId/add-member" component={AddDirectMemberPage} />
+      <Route path="/invitations/:token" component={InvitationHandlerPage} />
       <Route component={NotFound} />
     </Switch>
   );
