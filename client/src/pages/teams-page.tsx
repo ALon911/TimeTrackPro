@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/sidebar";
+import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,154 +51,148 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row" dir="rtl">
-      <Sidebar />
-      
-      <main className="flex-1 flex flex-col min-h-screen">
-        <div className="flex-1 p-4 md:p-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2 tracking-tight">הצוותים שלי</h1>
-            <p className="text-muted-foreground">נהל את הצוותים שלך והזמן חברים חדשים</p>
-          </div>
+    <Layout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 tracking-tight">הצוותים שלי</h1>
+        <p className="text-muted-foreground">נהל את הצוותים שלך והזמן חברים חדשים</p>
+      </div>
 
-          {/* הזמנות ממתינות - הוזז למעלה */}
-          <div className="mb-10">
-            <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
-            <TeamInvitationsList />
-          </div>
+      {/* הזמנות ממתינות - הוזז למעלה */}
+      <div className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
+        <TeamInvitationsList />
+      </div>
 
-          {/* טופס יצירת צוות */}
-          <Dialog open={isCreateTeamOpen} onOpenChange={setIsCreateTeamOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>צור צוות חדש</DialogTitle>
-              <DialogDescription>
-                צור צוות חדש כדי לעקוב אחר זמנים ולשתף פעולה עם אחרים.
-              </DialogDescription>
-            </DialogHeader>
+      {/* טופס יצירת צוות */}
+      <Dialog open={isCreateTeamOpen} onOpenChange={setIsCreateTeamOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>צור צוות חדש</DialogTitle>
+            <DialogDescription>
+              צור צוות חדש כדי לעקוב אחר זמנים ולשתף פעולה עם אחרים.
+            </DialogDescription>
+          </DialogHeader>
             
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>שם הצוות</FormLabel>
-                      <FormControl>
-                        <Input placeholder="הזן את שם הצוות" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>שם הצוות</FormLabel>
+                    <FormControl>
+                      <Input placeholder="הזן את שם הצוות" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateTeamOpen(false)}
+                >
+                  ביטול
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createTeamMutation.isPending}
+                >
+                  {createTeamMutation.isPending && (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   )}
-                />
-                
-                <DialogFooter>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsCreateTeamOpen(false)}
-                  >
-                    ביטול
-                  </Button>
-                  <Button 
-                    type="submit"
-                    disabled={createTeamMutation.isPending}
-                  >
-                    {createTeamMutation.isPending && (
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    )}
-                    צור צוות
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+                  צור צוות
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
           </DialogContent>
         </Dialog>
 
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-xl font-semibold">רשימת הצוותים</h2>
-          <Button onClick={() => setIsCreateTeamOpen(true)} className="w-full sm:w-auto">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl font-semibold">רשימת הצוותים</h2>
+        <Button onClick={() => setIsCreateTeamOpen(true)} className="w-full sm:w-auto">
+          <Plus className="ml-2 h-4 w-4" />
+          צור צוות חדש
+        </Button>
+      </div>
+
+      {/* רשימת צוותים */}
+      {isLoadingTeams ? (
+        <div className="flex justify-center items-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="text-center p-10 border rounded-lg bg-muted/10">
+          <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium">אין צוותים</h3>
+          <p className="mt-2 text-muted-foreground">
+            עדיין לא יצרת או הצטרפת לצוותים כלשהם.
+          </p>
+          <Button className="mt-4" onClick={() => setIsCreateTeamOpen(true)}>
             <Plus className="ml-2 h-4 w-4" />
             צור צוות חדש
           </Button>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {teams.map((team) => (
+            <Card key={team.id} className="overflow-hidden">
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg sm:text-xl">{team.name}</CardTitle>
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDeleteTeam(team.id)}
+                    >
+                      <Trash2 className="h-5 w-5 text-red-500" />
+                    </Button>
+                  )}
+                </div>
+                <CardDescription>
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) ? 'מנהל הצוות' : 'חבר צוות'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
 
-        {/* רשימת צוותים */}
-        {isLoadingTeams ? (
-          <div className="flex justify-center items-center h-40">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : teams.length === 0 ? (
-          <div className="text-center p-10 border rounded-lg bg-muted/10">
-            <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">אין צוותים</h3>
-            <p className="mt-2 text-muted-foreground">
-              עדיין לא יצרת או הצטרפת לצוותים כלשהם.
-            </p>
-            <Button className="mt-4" onClick={() => setIsCreateTeamOpen(true)}>
-              <Plus className="ml-2 h-4 w-4" />
-              צור צוות חדש
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {teams.map((team) => (
-              <Card key={team.id} className="overflow-hidden">
-                <CardHeader className="p-4 sm:p-6">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg sm:text-xl">{team.name}</CardTitle>
-                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteTeam(team.id)}
-                      >
-                        <Trash2 className="h-5 w-5 text-red-500" />
-                      </Button>
-                    )}
-                  </div>
-                  <CardDescription>
-                    {(team.ownerId === user?.id || team.owner_id === user?.id) ? 'מנהל הצוות' : 'חבר צוות'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              
+                <div className="text-sm text-muted-foreground mb-2 mt-4">
+                  פעולות
+                </div>
+                
 
                 
-                  <div className="text-sm text-muted-foreground mb-2 mt-4">
-                    פעולות
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  <TeamMembersDialog 
+                    teamId={team.id}
+                    teamName={team.name}
+                    isOwner={(team.ownerId === user?.id || team.owner_id === user?.id)}
+                  />
                   
 
                   
-                  <div className="flex flex-wrap gap-2">
-                    <TeamMembersDialog 
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
+                    <TeamInvitationDialog teamId={team.id} teamName={team.name} />
+                  )}
+                  
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
+                    <TeamSettingsDialog 
                       teamId={team.id}
                       teamName={team.name}
-                      isOwner={(team.ownerId === user?.id || team.owner_id === user?.id)}
                     />
-                    
-
-                    
-                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
-                      <TeamInvitationDialog teamId={team.id} teamName={team.name} />
-                    )}
-                    
-                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
-                      <TeamSettingsDialog 
-                        teamId={team.id}
-                        teamName={team.name}
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
-    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </Layout>
   );
 }
 
