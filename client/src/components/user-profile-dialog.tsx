@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 interface UserProfileDialogProps {
   children: React.ReactNode;
@@ -21,6 +21,7 @@ export function UserProfileDialog({ children }: UserProfileDialogProps) {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -37,6 +38,11 @@ export function UserProfileDialog({ children }: UserProfileDialogProps) {
         variant: "destructive",
       });
     }
+  };
+  
+  const navigateTo = (path: string) => {
+    setOpen(false);
+    setLocation(path);
   };
 
   return (
@@ -57,18 +63,22 @@ export function UserProfileDialog({ children }: UserProfileDialogProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Button variant="outline" className="justify-start" asChild>
-            <Link href="/settings">
-              <User className="mr-2 h-4 w-4" />
-              הגדרות פרופיל
-            </Link>
+          <Button 
+            variant="outline" 
+            className="justify-start" 
+            onClick={() => navigateTo("/settings")}
+          >
+            <User className="mr-2 h-4 w-4" />
+            הגדרות פרופיל
           </Button>
 
-          <Button variant="outline" className="justify-start" asChild>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              הגדרות מערכת
-            </Link>
+          <Button 
+            variant="outline" 
+            className="justify-start" 
+            onClick={() => navigateTo("/settings")}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            הגדרות מערכת
           </Button>
 
           <Button variant="destructive" onClick={handleLogout} disabled={logoutMutation.isPending}>
