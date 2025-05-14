@@ -182,14 +182,14 @@ export default function TeamStatsPage() {
                     <div className="flex justify-between mb-1">
                       <span className="text-sm">חלק יחסי מהזמן הכולל של הצוות</span>
                       <span className="text-sm font-medium">
-                        {teamStats?.totalSeconds ? 
+                        {teamStats?.totalSeconds && teamStats.totalSeconds > 0 && member.totalSeconds > 0 ? 
                           `${Math.round((member.totalSeconds / teamStats.totalSeconds) * 100)}%` : 
-                          '0%'
+                          '-'
                         }
                       </span>
                     </div>
                     <Progress 
-                      value={teamStats?.totalSeconds ? 
+                      value={teamStats?.totalSeconds && teamStats.totalSeconds > 0 && member.totalSeconds > 0 ? 
                         (member.totalSeconds / teamStats.totalSeconds) * 100 : 0
                       } 
                     />
@@ -221,7 +221,9 @@ export default function TeamStatsPage() {
                       ></div>
                       <CardTitle>{topic.topic.name}</CardTitle>
                     </div>
-                    <div className="text-xl font-bold">{topic.percentage.toFixed(1)}%</div>
+                    <div className="text-xl font-bold">
+                      {topic.totalSeconds > 0 ? `${topic.percentage.toFixed(1)}%` : '-'}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
