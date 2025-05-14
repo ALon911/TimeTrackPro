@@ -15,8 +15,8 @@ export function WeeklyChart() {
 
   if (isError || !data) {
     return (
-      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-neutral-500">שגיאה בטעינת הנתונים</p>
+      <div className="h-64 flex items-center justify-center bg-card dark:bg-slate-800 rounded-lg border border-neutral-200 dark:border-slate-700">
+        <p className="text-neutral-500 dark:text-neutral-400">שגיאה בטעינת הנתונים</p>
       </div>
     );
   }
@@ -34,9 +34,9 @@ export function WeeklyChart() {
       const duration = formatDuration(payload[0].payload.totalDuration);
       
       return (
-        <div className="bg-white p-2 border border-gray-200 shadow-md rounded-md">
-          <p className="font-medium text-sm">{payload[0].payload.day}</p>
-          <p className="text-primary">{duration}</p>
+        <div className="bg-white dark:bg-slate-800 p-2 border border-neutral-200 dark:border-slate-700 shadow-md rounded-md">
+          <p className="font-medium text-sm dark:text-neutral-200">{payload[0].payload.day}</p>
+          <p className="text-primary dark:text-blue-400">{duration}</p>
         </div>
       );
     }
