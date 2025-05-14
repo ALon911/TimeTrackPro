@@ -148,42 +148,71 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   // הוספת רפרנס לזיהוי אם הטיימר הוא כבר ספירה לאחור (למניעת התנגשויות)
   const isCountdownRef = useRef<boolean>(false);
   
+  // נקה את כל הטיימרים האחרים מהלוקל סטורג'
+  const cleanupAllOtherTimers = useCallback(() => {
+    try {
+      // לפני הפעלת טיימר חדש, מחק את כל שאר הטיימרים שיכולים לגרום לבלבול
+      localStorage.removeItem('timetracker_timer');
+      localStorage.removeItem('timetracker_countdown');
+      
+      // נקה את הלוגים כדי לוודא שאנחנו רואים רק את המידע הרלוונטי
+      console.clear();
+      console.log("Cleared all existing timers");
+    } catch (error) {
+      console.error("Error cleaning up timers:", error);
+    }
+  }, []);
+  
   // Timer effect - הלוגיקה של הטיימר
   useEffect(() => {
+    // לפני שאנחנו מפעילים טיימר חדש, צריך לנקות את כל השאר
     if (isRunning) {
-      // מזהה את סוג הטיימר שמוגדר ב-state
-      console.log(`Timer running in ${isCountDown ? 'countdown' : 'count-up'} mode`);
+      cleanupAllOtherTimers();
+      
+      // מזהה את סוג הטיימר שמוגדר ב-state ומדפיס לוג ברור
+      const timerMode = isCountDown ? 'COUNTDOWN' : 'REGULAR';
+      console.log(`=== TIMER STARTED: ${timerMode} MODE ===`);
       
       // שומרים את הסטטוס הנוכחי של הטיימר במשתנה הרפרנס
       isCountdownRef.current = isCountDown;
       
+      // רק אינטרוול אחד פעיל בכל רגע נתון
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
       intervalRef.current = setInterval(() => {
         setSeconds(prevSeconds => {
-          // ספירה לאחור - חשוב! אנחנו משתמשים ברפרנס במקום בסטייט למניעת בעיות רנדור
-          if (isCountdownRef.current) {
-            console.log(`Countdown timer: ${prevSeconds} seconds remaining`);
+          // ספירה לאחור - חשוב! משתמשים ברפרנס ולא בסטייט למניעת בעיות
+          if (isCountdownRef.current === true) {
+            console.log(`COUNTDOWN: ${prevSeconds} seconds remaining`);
             
             // אם הגענו לאפס או פחות
             if (prevSeconds <= 1) {
+              // מנקים את האינטרוול
+              clearInterval(intervalRef.current!);
+              
+              // מעדכנים את הסטייט
               setIsRunning(false);
               setIsCompleted(true);
-              clearInterval(intervalRef.current!);
+              
               // השמעת צליל סיום
               audioManager.playTimerComplete();
               
-              // נשמור בלוקל סטורג' שהטיימר הסתיים
+              // מנקים את הלוקל סטורג'
               localStorage.removeItem('timetracker_countdown');
               localStorage.removeItem('timetracker_timer');
               
+              console.log("=== COUNTDOWN COMPLETED ===");
               return 0;
             }
             
-            // המשך ספירה לאחור
+            // המשך הספירה לאחור
             return prevSeconds - 1;
           } 
           // ספירה רגילה כלפי מעלה
           else {
-            console.log(`Regular timer: ${prevSeconds} seconds elapsed`);
+            console.log(`REGULAR TIMER: ${prevSeconds} seconds elapsed`);
             return prevSeconds + 1;
           }
         });
@@ -206,8 +235,14 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
 
   const startWithDuration = useCallback((durationInMinutes: number): void => {
-    // Convert minutes to seconds
+    // ראשית, לנקות את כל הטיימרים הקיימים
+    cleanupAllOtherTimers();
+    
+    // המרת דקות לשניות
     const totalSeconds = durationInMinutes * 60;
+    
+    // יצירת אובייקט לשמירת המידע המקורי
+    const originalDuration = totalSeconds;
     
     // עדכון המשתנים שינהלו את הלוגיקה של הטיימר
     setSeconds(totalSeconds);
@@ -218,44 +253,16 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     // עדכון הרפרנס כדי לוודא שהטיימר יספור לאחור באופן עקבי
     isCountdownRef.current = true;
     
-    // שמירת משך הזמן המקורי של הטיימר
-    originalDurationRef.current = totalSeconds;
-    
     // שמירת מידע מלא על מצב הטיימר כולל העובדה שמדובר בספירה לאחור
     try {
-      // מחיקת כל מצבי הטיימר הישנים מ-localStorage לפני השמירה
-      localStorage.removeItem('timetracker_timer');
-      localStorage.removeItem('timetracker_ui');
-      localStorage.removeItem('timetracker_countdown');
+      console.log(`=== STARTING NEW COUNTDOWN TIMER: ${durationInMinutes} MINUTES ===`);
       
-      // יצירת אובייקט עם נתוני הטיימר
-      const timerState: TimerState = {
-        seconds: totalSeconds,
-        isRunning: true,
-        isPaused: false,
-        isCompleted: false,
-        isCountDown: true,
-        originalDuration: totalSeconds, // שמירת הזמן המקורי חשובה לחישובים
-        startTime: null,
-        totalDuration: 0,
-        selectedTopic: selectedTopic, // שמירת הנושא הנוכחי
-        description: description, // שמירת התיאור הנוכחי
-        lastUpdated: Date.now()
-      };
-      
-      console.log("Starting countdown timer with duration:", durationInMinutes, "minutes");
-      console.log("Saving countdown timer state:", timerState);
-      
-      // שמירה מיידית של המצב ב-localStorage
-      saveTimerState(timerState);
-      
-      // שמירה במפתח חדש וייעודי לטיימרים של ספירה לאחור עם מידע מדויק
+      // שמירה באחסון המקומי - שימוש באובייקט אחד ופשוט
       localStorage.setItem('timetracker_countdown', JSON.stringify({
-        duration: totalSeconds,
+        duration: totalSeconds, 
         originalDuration: totalSeconds,
         startTime: Date.now(),
-        isCountDown: true,
-        selectedTopic: selectedTopic 
+        isCountDown: true
       }));
       
     } catch (error) {
