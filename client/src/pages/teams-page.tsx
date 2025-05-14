@@ -169,7 +169,7 @@ export default function TeamsPage() {
                 variant="default"
               >
                 <div>
-                  <AlertTitle className="mb-2 font-bold">הזמנה חדשה לצוות "{invitation.team?.name || invitation.teamName}"</AlertTitle>
+                  <AlertTitle className="mb-2 font-bold">הזמנה חדשה לצוות "{invitation.team?.name || invitation.teamName || ''}"</AlertTitle>
                   <AlertDescription>
                     <p>הוזמנת להצטרף לצוות זה - אנא אשר או דחה את ההזמנה</p>
                   </AlertDescription>
