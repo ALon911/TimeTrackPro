@@ -8,6 +8,8 @@ import {
 import { setupAuth, isAuthenticated } from "./auth";
 import { teamsRouter } from "./teams-simple";
 import { z } from "zod";
+import path from "path";
+import { directMemberRouter } from "./direct-member-route";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -398,6 +400,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register teams routes
   app.use('', teamsRouter);
+  
+  // Register direct member routes
+  app.use('', directMemberRouter);
+  
+  // Serve HTML add member page directly
+  app.get('/add-member-popup/:teamId', (req, res) => {
+    const filePath = path.join(__dirname, 'add-member-page.html');
+    res.sendFile(filePath);
+  });
   
   // Add delete account endpoint
   app.delete("/api/user/account", isAuthenticated, async (req, res) => {

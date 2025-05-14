@@ -1,29 +1,16 @@
-import { Request, Response, Router } from 'express';
-import { storage } from './storage';
-import { isAuthenticated } from './auth';
-import { z } from 'zod';
+import { Router, Request, Response } from "express";
+import { storage } from "./storage";
+import { isAuthenticated } from "./auth";
 
-// Create router for direct member addition
-const directMemberRouter = Router();
+export const directMemberRouter = Router();
 
-// Add a team member directly with a simplified endpoint - just team ID and email in the URL parameters
-directMemberRouter.get('/direct-add/:teamId/:email', isAuthenticated, async (req: Request, res: Response) => {
+// API route to add a member directly to a team
+directMemberRouter.post('/api/direct-add-team-member', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const teamId = parseInt(req.params.teamId);
-    const email = req.params.email;
-    const userId = req.user?.id;
+    const { teamId, email } = req.body;
     
-    // Input validation
-    if (!userId) {
-      return res.status(401).json({ error: 'Must be authenticated' });
-    }
-
-    // Validate email format
-    const emailSchema = z.string().email();
-    try {
-      emailSchema.parse(email);
-    } catch (error) {
-      return res.status(400).json({ error: 'Invalid email format' });
+    if (!teamId || !email) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
     // Check if team exists
@@ -32,109 +19,202 @@ directMemberRouter.get('/direct-add/:teamId/:email', isAuthenticated, async (req
       return res.status(404).json({ error: 'Team not found' });
     }
     
-    // Check if user is the team owner
-    if (team.ownerId !== userId) {
+    // Check if user is team owner
+    if (team.ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'Only team owners can add members directly' });
     }
     
-    // Check if user exists
-    const existingUser = await storage.getUserByEmail(email);
-    if (!existingUser) {
-      return res.status(404).json({ error: 'User with this email does not exist in the system' });
+    // Find user by email
+    const userToAdd = await storage.getUserByEmail(email);
+    if (!userToAdd) {
+      return res.status(404).json({ error: 'User not found with this email' });
     }
     
-    // If user exists, check if already a member
-    const members = await storage.getTeamMembers(teamId);
-    const isAlreadyMember = members.some(member => member.userId === existingUser.id);
+    // Check if user is already a member
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isAlreadyMember = teamMembers.some(member => member.userId === userToAdd.id);
     
     if (isAlreadyMember) {
       return res.status(400).json({ error: 'User is already a member of this team' });
     }
     
-    // Add user to the team
-    const teamMember = await storage.addTeamMember({
-      teamId: teamId,
-      userId: existingUser.id,
+    // Add user as a member
+    const addedMember = await storage.addTeamMember({
+      teamId,
+      userId: userToAdd.id,
       role: 'member'
     });
     
-    // Send success HTML page
-    const successHtml = `
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Member added successfully',
+      member: addedMember
+    });
+    
+  } catch (error) {
+    console.error('Error adding team member directly:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to open the add member popup in a new window
+directMemberRouter.get('/add-direct-member/:teamId/:email', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { teamId, email } = req.params;
+    
+    if (!teamId) {
+      return res.status(400).send('Missing team ID');
+    }
+    
+    // Check if team exists
+    const team = await storage.getTeam(parseInt(teamId));
+    if (!team) {
+      return res.status(404).send('Team not found');
+    }
+    
+    // Check if user is team owner
+    if (team.ownerId !== req.user?.id) {
+      return res.status(403).send('Only team owners can add members directly');
+    }
+    
+    const html = `
       <!DOCTYPE html>
       <html lang="he" dir="rtl">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>הוספת משתמש בהצלחה</title>
+        <title>הוספת משתמש לצוות ${team.name}</title>
         <style>
           body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f8f9fa;
-            text-align: center;
-          }
-          .success-container {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             max-width: 500px;
-          }
-          .success-icon {
-            color: #10b981;
-            font-size: 4rem;
-            margin-bottom: 1rem;
+            margin: 0 auto;
+            padding: 20px;
+            direction: rtl;
           }
           h1 {
-            color: #10b981;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
           }
-          p {
-            color: #4b5563;
-            margin-bottom: 1.5rem;
+          .form-group {
+            margin-bottom: 15px;
           }
-          .close-button {
-            background-color: #10b981;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
+          label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            cursor: pointer;
           }
-          .close-button:hover {
-            background-color: #059669;
+          input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+          }
+          button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+          }
+          .primary {
+            background-color: #e11d48;
+            color: white;
+          }
+          .secondary {
+            background-color: #f3f4f6;
+            color: #333;
+            border: 1px solid #ddd;
+          }
+          .error {
+            color: red;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fee2e2;
+            border-radius: 4px;
+            display: none;
+          }
+          .success {
+            color: green;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d1fae5;
+            border-radius: 4px;
+            display: none;
           }
         </style>
       </head>
       <body>
-        <div class="success-container">
-          <div class="success-icon">✓</div>
-          <h1>הוספת משתמש בהצלחה!</h1>
-          <p>המשתמש <strong>${email}</strong> נוסף בהצלחה לצוות <strong>${team.name}</strong>.</p>
-          <button class="close-button" onclick="window.close()">סגור</button>
-          <script>
-            // Automatically redirect after 3 seconds
-            setTimeout(() => {
-              window.close();
-            }, 3000);
-          </script>
+        <h1>הוספת משתמש לצוות ${team.name}</h1>
+        <div class="form-group">
+          <label for="email">אימייל:</label>
+          <input type="email" id="email" value="${email || ''}" placeholder="הזן אימייל של משתמש קיים">
         </div>
+        <div class="buttons">
+          <button id="addBtn" class="primary">הוסף משתמש</button>
+          <button id="closeBtn" class="secondary">סגור</button>
+        </div>
+        <div id="errorMsg" class="error"></div>
+        <div id="successMsg" class="success"></div>
+        
+        <script>
+          document.getElementById('addBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+            
+            errorMsg.style.display = 'none';
+            
+            if (!email) {
+              errorMsg.textContent = 'יש להזין אימייל';
+              errorMsg.style.display = 'block';
+              return;
+            }
+            
+            try {
+              const response = await fetch('/api/direct-add-team-member', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  teamId: ${teamId},
+                  email
+                })
+              });
+              
+              const data = await response.json();
+              
+              if (!response.ok) {
+                errorMsg.textContent = data.error || 'שגיאה בהוספת המשתמש';
+                errorMsg.style.display = 'block';
+                return;
+              }
+              
+              successMsg.textContent = 'המשתמש נוסף בהצלחה! החלון ייסגר אוטומטית תוך 3 שניות.';
+              successMsg.style.display = 'block';
+              
+              setTimeout(() => {
+                window.close();
+              }, 3000);
+              
+            } catch (error) {
+              errorMsg.textContent = 'שגיאה בהוספת המשתמש';
+              errorMsg.style.display = 'block';
+            }
+          });
+          
+          document.getElementById('closeBtn').addEventListener('click', () => {
+            window.close();
+          });
+        </script>
       </body>
       </html>
     `;
     
-    res.setHeader('Content-Type', 'text/html');
-    res.send(successHtml);
+    res.send(html);
     
   } catch (error) {
-    console.error('Error adding team member directly:', error);
-    res.status(500).json({ error: 'Server error adding team member' });
+    console.error('Error rendering direct member add page:', error);
+    res.status(500).send('Internal server error');
   }
 });
-
-export { directMemberRouter };
