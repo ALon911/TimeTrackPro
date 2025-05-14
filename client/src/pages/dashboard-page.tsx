@@ -47,7 +47,7 @@ export default function DashboardPage() {
       
       <main className="flex-1 flex flex-col min-h-screen">
         {/* Mobile Header */}
-        <header className="bg-white shadow-sm p-4 flex md:hidden items-center justify-between">
+        <header className="bg-background dark:bg-slate-900 shadow-sm p-4 flex md:hidden items-center justify-between">
           <button className="p-1">
             <span className="material-icons">menu</span>
           </button>

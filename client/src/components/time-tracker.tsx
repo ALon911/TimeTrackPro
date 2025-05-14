@@ -197,16 +197,16 @@ export function TimeTracker() {
   }, [isRunning, stop]);
 
   return (
-    <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+    <div className="bg-neutral-50 dark:bg-slate-800 rounded-lg p-4 border border-neutral-200 dark:border-slate-700 text-neutral-900 dark:text-neutral-100">
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <Label className="block text-sm font-medium text-neutral-700 mb-1">נושא</Label>
+          <Label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">נושא</Label>
           <Select
             value={selectedTopic}
             onValueChange={setSelectedTopic}
             disabled={isRunning || isLoading}
           >
-            <SelectTrigger className="w-full p-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary">
+            <SelectTrigger className="w-full p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary">
               <SelectValue placeholder="בחר נושא" />
             </SelectTrigger>
             <SelectContent>
@@ -225,20 +225,20 @@ export function TimeTracker() {
           </Select>
         </div>
         <div className="flex-1">
-          <Label className="block text-sm font-medium text-neutral-700 mb-1">תיאור</Label>
+          <Label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">תיאור</Label>
           <Input
             placeholder="מה אתה עושה?"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={isRunning}
-            className="w-full p-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+            className="w-full p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
       </div>
       
       {/* Timer Display */}
       <div className="mt-4 text-center">
-        <div className="text-3xl font-bold mb-2">{formatTime()}</div>
+        <div className="text-3xl font-bold mb-2 text-neutral-900 dark:text-white">{formatTime()}</div>
       </div>
       
       {/* Timer Controls */}
@@ -248,7 +248,7 @@ export function TimeTracker() {
             {/* Preset timer buttons */}
             <Button 
               onClick={() => handlePresetSelection(5)} 
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center"
+              className="px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center"
             >
               <TimerIcon className="ml-1 h-4 w-4" />
               <span>5 דקות</span>
@@ -256,7 +256,7 @@ export function TimeTracker() {
             
             <Button 
               onClick={() => handlePresetSelection(20)} 
-              className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 flex items-center"
+              className="px-4 py-2 bg-yellow-500 dark:bg-yellow-600 text-white rounded-md hover:bg-yellow-600 dark:hover:bg-yellow-700 flex items-center"
             >
               <Clock5Icon className="ml-1 h-4 w-4" />
               <span>20 דקות</span>
@@ -264,7 +264,7 @@ export function TimeTracker() {
             
             <Button 
               onClick={() => handlePresetSelection(40)} 
-              className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 flex items-center"
+              className="px-4 py-2 bg-purple-500 dark:bg-purple-600 text-white rounded-md hover:bg-purple-600 dark:hover:bg-purple-700 flex items-center"
             >
               <BellIcon className="ml-1 h-4 w-4" />
               <span>40 דקות</span>
@@ -279,7 +279,7 @@ export function TimeTracker() {
                 value={customMinutes || ""}
                 onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 0)}
                 placeholder="דקות מותאם אישית"
-                className="w-32 p-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                className="w-32 p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               />
               <Button
                 onClick={() => {
@@ -293,7 +293,7 @@ export function TimeTracker() {
                     });
                   }
                 }}
-                className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 flex items-center"
+                className="px-4 py-2 bg-teal-500 dark:bg-teal-600 text-white rounded-md hover:bg-teal-600 dark:hover:bg-teal-700 flex items-center"
               >
                 <TimerIcon className="ml-1 h-4 w-4" />
                 <span>הגדר זמן מותאם</span>
@@ -304,7 +304,7 @@ export function TimeTracker() {
             {seconds > 0 && (
               <Button 
                 onClick={() => handleStartTimer(seconds / 60)} 
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+                className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center"
               >
                 <PlayIcon className="ml-1 h-4 w-4" />
                 <span>התחל</span>
@@ -315,7 +315,7 @@ export function TimeTracker() {
           <>
             <Button 
               onClick={() => pause()} 
-              className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 flex items-center"
+              className="px-4 py-2 bg-amber-500 dark:bg-amber-600 text-white rounded-md hover:bg-amber-600 dark:hover:bg-amber-700 flex items-center"
             >
               <PauseIcon className="ml-1 h-4 w-4" />
               <span>הפסק זמנית</span>
@@ -323,7 +323,7 @@ export function TimeTracker() {
             
             <Button 
               onClick={handleStop} 
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+              className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-md hover:bg-red-600 dark:hover:bg-red-700 flex items-center"
             >
               <PauseIcon className="ml-1 h-4 w-4" />
               <span>ביטול טיימר</span>
@@ -333,7 +333,7 @@ export function TimeTracker() {
           <>
             <Button 
               onClick={() => resume()} 
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center"
+              className="px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center"
             >
               <PlayIcon className="ml-1 h-4 w-4" />
               <span>המשך טיימר</span>
@@ -341,7 +341,7 @@ export function TimeTracker() {
             
             <Button 
               onClick={handleStop} 
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+              className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-md hover:bg-red-600 dark:hover:bg-red-700 flex items-center"
             >
               <PauseIcon className="ml-1 h-4 w-4" />
               <span>ביטול טיימר</span>

@@ -74,7 +74,7 @@ export function InvitationNotification() {
         <div className="flex justify-end gap-2">
           <Button 
             variant="outline" 
-            className="bg-white dark:bg-slate-800 hover:bg-neutral-100 dark:hover:bg-slate-700 text-black dark:text-white"
+            className="bg-transparent hover:bg-neutral-100 dark:hover:bg-slate-700 text-black dark:text-white border-neutral-300 dark:border-slate-600"
             disabled={respondToInvitationMutation.isPending}
             onClick={() => handleAction(invitation.token, 'decline')}
           >
