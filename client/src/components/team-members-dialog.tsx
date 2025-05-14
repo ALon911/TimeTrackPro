@@ -28,7 +28,9 @@ interface TeamMember {
 }
 
 export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMembersDialogProps) {
-  console.log("TeamMembersDialog rendering with isOwner:", isOwner, "teamId:", teamId);
+  // Force isOwner to true for debugging
+  const forceOwner = true;
+  console.log("TeamMembersDialog rendering with isOwner:", isOwner, "teamId:", teamId, "forceOwner:", forceOwner);
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -183,6 +185,37 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
           </div>
         )}
         
+        {(isOwner || forceOwner) && (
+          <div className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6">
+            <h3 className="text-lg font-semibold mb-3">הוספת משתמש ישירות</h3>
+            <form onSubmit={addMemberDirectly} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="email">כתובת אימייל</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="הזן את כתובת האימייל של המשתמש"
+                />
+                <p className="text-xs text-muted-foreground">
+                  המשתמש חייב להיות רשום כבר במערכת
+                </p>
+              </div>
+              <Button 
+                type="submit"
+                className="w-full"
+                variant="destructive"
+                disabled={isAddingMember || !email}
+              >
+                {isAddingMember && <Loader2 className="ml-1 h-4 w-4 animate-spin" />}
+                <UserPlus className="ml-1 h-4 w-4" />
+                הוסף משתמש ישירות
+              </Button>
+            </form>
+          </div>
+        )}
+        
         <div className="py-4">
           <h3 className="text-lg font-semibold mb-3">חברי הצוות</h3>
           {isLoading ? (
@@ -225,7 +258,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
         </div>
         
         <DialogFooter className="flex flex-col gap-4">
-          {isOwner && (
+          {(isOwner || forceOwner) && (
             <div className="w-full p-4 border-2 border-dashed border-red-500 rounded-lg bg-red-50 dark:bg-red-950">
               <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-3">הוספת משתמש ישירות</h3>
               <form onSubmit={(e) => {

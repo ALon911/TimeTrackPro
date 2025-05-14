@@ -167,7 +167,17 @@ export default function TeamsPage() {
                         <div>
                           <button 
                             className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md flex items-center justify-center"
-                            onClick={() => window.open(`/teams/${team.id}/add-member`, '_blank', 'width=500,height=500')} 
+                            onClick={() => {
+                              const width = 500;
+                              const height = 500;
+                              const left = (window.screen.width - width) / 2;
+                              const top = (window.screen.height - height) / 2;
+                              window.open(
+                                `/add-direct-member/${team.id}/`, 
+                                'הוספת משתמש לצוות',
+                                `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+                              );
+                            }} 
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
