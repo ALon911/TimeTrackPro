@@ -22,11 +22,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok" });
   });
   
-  // Handle invitation routes for SPA
+  // Handle invitation routes for SPA with debug information
   app.get('/invitations/:token', (req, res, next) => {
+    console.log('Invitations route hit with token:', req.params.token);
     // Send the index.html to handle on client side with React Router
     const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html file:', err);
+        next(err);
+      } else {
+        console.log('Successfully served index.html for /invitations/:token');
+      }
+    });
   });
   
   // Handle alternative invitation route format 
@@ -34,7 +42,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Accept-invitation route hit with token:', req.params.token);
     // Send the index.html to handle on client side with React Router
     const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html file:', err);
+        next(err);
+      } else {
+        console.log('Successfully served index.html for /accept-invitation/:token');
+      }
+    });
   });
   
   // Topic routes
@@ -548,6 +563,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const secs = seconds % 60;
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
+  
+  // Fallback route for SPA - all routes that are not API routes will serve the index.html
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
+    // Skip assets and files with extensions
+    if (req.path.includes('.')) {
+      return next();
+    }
+    
+    console.log('Fallback route hit for path:', req.path);
+    const indexPath = path.resolve('client/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html file:', err);
+        next(err);
+      } else {
+        console.log('Successfully served index.html for:', req.path);
+      }
+    });
+  });
 
   const httpServer = createServer(app);
   return httpServer;

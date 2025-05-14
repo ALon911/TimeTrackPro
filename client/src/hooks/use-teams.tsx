@@ -171,6 +171,9 @@ export function useTeams() {
     mutationFn: async (data: { token: string; action: 'accept' | 'decline' }) => {
       console.log('Responding to invitation:', data);
       try {
+        // הוספת לוגים מפורטים יותר
+        console.log(`API request to: /api/teams/invitations/${data.token}/${data.action}`);
+        
         // עם גוף ריק לבקשת POST
         const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`, {});
         

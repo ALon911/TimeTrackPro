@@ -57,7 +57,8 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
 });
 
 // Respond to an invitation (accept or decline) using invitation token or ID
-invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthenticated, async (req, res) => {
+// Add support for both URL formats
+invitationsRouter.post(['/api/teams/invitations/:tokenOrId/:action', '/api/accept-invitation/:tokenOrId/:action'], isAuthenticated, async (req, res) => {
   try {
     const tokenOrId = req.params.tokenOrId;
     const action = req.params.action;
