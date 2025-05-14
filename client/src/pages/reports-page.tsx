@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Calendar, Clock, TrendingUp, BarChart, Users, Info, Download, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { format, startOfWeek, endOfWeek } from "date-fns";
+import { formatDurationHumanReadable } from "@/lib/time-utils";
 import { he } from "date-fns/locale";
 import { TimeEntriesTable } from "@/components/time-entries-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -218,6 +219,9 @@ export default function ReportsPage() {
                   icon={<Calendar className="h-4 w-4" />} 
                   trend={dailyStats?.percentChange} 
                   trendLabel={dailyStats?.percentChange > 0 ? 'יותר מאתמול' : 'פחות מאתמול'}
+                  iconBg="bg-primary/10"
+                  iconColor="text-primary"
+                  secondaryValue={formatDurationHumanReadable(dailyStats?.total || 0)}
                 />
               )}
               

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, Clock, Download, LineChart, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { formatTime } from '@/lib/time-utils';
+import { formatTime, formatDurationHumanReadable } from '@/lib/time-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // User Hebrew locale for dates
@@ -112,6 +112,7 @@ export default function TeamStatsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{formatTime(teamStats.totalSeconds)}</div>
+                  <p className="text-muted-foreground mt-1">{formatDurationHumanReadable(teamStats.totalSeconds)}</p>
                   <p className="text-muted-foreground mt-1">בסך הכל עבור כל חברי הצוות</p>
                 </CardContent>
               </Card>
