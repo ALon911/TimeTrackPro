@@ -82,7 +82,11 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already in use" });
       }
 
+      // Generate username from email (e.g., part before @)
+      const username = req.body.email.split('@')[0];
+      
       const user = await storage.createUser({
+        username,
         email: req.body.email,
         password: await hashPassword(req.body.password),
       });

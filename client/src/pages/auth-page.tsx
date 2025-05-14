@@ -17,7 +17,7 @@ const loginSchema = z.object({
   password: z.string().min(6, "סיסמה חייבת להכיל לפחות 6 תווים"),
 });
 
-const registerSchema = insertUserSchema.extend({
+const registerSchema = insertUserSchema.omit({ username: true }).extend({
   password: z.string().min(6, "סיסמה חייבת להכיל לפחות 6 תווים"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -43,7 +43,6 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
       email: "",
       password: "",
       confirmPassword: "",
