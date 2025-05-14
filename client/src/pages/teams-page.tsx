@@ -169,17 +169,12 @@ export default function TeamsPage() {
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />
                     )}
                     
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center"
-                      onClick={() => {
-                        // כאן נפתח חלון של הגדרות צוות
-                      }}
-                    >
-                      <Settings className="ml-1 h-4 w-4" />
-                      הגדרות
-                    </Button>
+                    {team.ownerId === user?.id && (
+                      <TeamSettingsDialog 
+                        teamId={team.id}
+                        teamName={team.name}
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>
