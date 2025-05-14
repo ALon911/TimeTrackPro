@@ -695,12 +695,12 @@ export function TimeTracker() {
               <SelectTrigger id="topic-select" className="text-right">
                 <SelectValue placeholder="בחר נושא" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="text-right">
                 {topics?.map((topic: any) => (
                   <SelectItem key={topic.id} value={topic.id.toString()}>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: topic.color }} />
+                    <div className="flex items-center justify-end w-full">
                       <span>{topic.name}</span>
+                      <div className="w-3 h-3 rounded-full mr-2 ml-2" style={{ backgroundColor: topic.color }} />
                     </div>
                   </SelectItem>
                 ))}
