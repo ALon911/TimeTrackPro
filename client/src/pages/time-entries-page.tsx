@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/sidebar";
-import { MobileNavigation } from "@/components/mobile-navigation";
+import { Layout } from "@/components/layout";
 import { TimeTracker } from "@/components/time-tracker";
 import { TimeEntriesTable } from "@/components/time-entries-table";
 import { useQuery } from "@tanstack/react-query";
@@ -21,95 +20,76 @@ export default function TimeEntriesPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row" dir="rtl">
-      <Sidebar />
+    <Layout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-1">מעקב זמן</h2>
+        <p className="text-neutral-600 dark:text-neutral-400">נהל את רשומות הזמן שלך</p>
+      </div>
       
-      <main className="flex-1 flex flex-col min-h-screen">
-        <header className="bg-white dark:bg-slate-800 shadow-sm p-4 flex md:hidden items-center justify-between">
-          <button className="p-1">
-            <span className="material-icons">menu</span>
-          </button>
-          <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
-          <div className="w-8 h-8 rounded-full bg-primary dark:bg-primary text-white dark:text-slate-800 flex items-center justify-center">
-            <span className="text-sm font-medium">מ</span>
-          </div>
-        </header>
-        
-        <div className="flex-1 p-4 md:p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-1">מעקב זמן</h2>
-            <p className="text-neutral-600 dark:text-neutral-400">נהל את רשומות הזמן שלך</p>
-          </div>
-          
-          {/* Timer Section */}
-          <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">נתחיל לעקוב</h3>
-            </div>
-            <TimeTracker />
-          </section>
-          
-          {/* Filters and Entries */}
-          <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">רשומות זמן</h3>
-            </div>
-            
-            {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <Label htmlFor="search" className="mb-2 block">חיפוש</Label>
-                <Input
-                  id="search"
-                  placeholder="חפש לפי תיאור..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div className="w-full md:w-48">
-                <Label htmlFor="topic-filter" className="mb-2 block">סנן לפי נושא</Label>
-                {isLoadingTopics ? (
-                  <Select disabled>
-                    <SelectTrigger id="topic-filter">
-                      <SelectValue placeholder="טוען נושאים..." />
-                    </SelectTrigger>
-                  </Select>
-                ) : (
-                  <Select
-                    value={selectedTopic}
-                    onValueChange={setSelectedTopic}
-                  >
-                    <SelectTrigger id="topic-filter">
-                      <SelectValue placeholder="בחר נושא" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="all">כל הנושאים</SelectItem>
-                        {topics?.map((topic: any) => (
-                          <SelectItem key={topic.id} value={topic.id.toString()}>
-                            {topic.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            </div>
-            
-            {/* Time Entries Table */}
-            <TimeEntriesTable
-              limit={10}
-              showViewAllLink={false}
-              searchTerm={searchTerm}
-              topicId={selectedTopic !== "all" ? parseInt(selectedTopic) : undefined}
-            />
-          </section>
+      {/* Timer Section */}
+      <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold">נתחיל לעקוב</h3>
         </div>
-      </main>
+        <TimeTracker />
+      </section>
       
-      <MobileNavigation />
-    </div>
+      {/* Time Entries Section */}
+      <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold">רשומות זמן</h3>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <Label htmlFor="search" className="mb-2 block">חיפוש רשומות</Label>
+            <Input
+              id="search"
+              placeholder="חפש לפי תיאור..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="w-full md:w-48">
+            <Label htmlFor="topic-filter" className="mb-2 block">סנן לפי נושא</Label>
+            {isLoadingTopics ? (
+              <Select disabled>
+                <SelectTrigger id="topic-filter">
+                  <SelectValue placeholder="טוען נושאים..." />
+                </SelectTrigger>
+              </Select>
+            ) : (
+              <Select
+                value={selectedTopic}
+                onValueChange={setSelectedTopic}
+              >
+                <SelectTrigger id="topic-filter">
+                  <SelectValue placeholder="בחר נושא" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">כל הנושאים</SelectItem>
+                    {topics?.map((topic: any) => (
+                      <SelectItem key={topic.id} value={topic.id.toString()}>
+                        {topic.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+        
+        {/* Time Entries Table */}
+        <TimeEntriesTable
+          limit={10}
+          showViewAllLink={false}
+          searchTerm={searchTerm}
+          topicId={selectedTopic !== "all" ? parseInt(selectedTopic) : undefined}
+        />
+      </section>
+    </Layout>
   );
 }
