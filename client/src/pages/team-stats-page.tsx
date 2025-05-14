@@ -112,7 +112,11 @@ export default function TeamStatsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{formatTime(teamStats.totalSeconds)}</div>
-                  <p className="text-muted-foreground mt-1">{formatDurationHumanReadable(teamStats.totalSeconds)}</p>
+                  <p className="text-muted-foreground mt-1">
+                    {teamStats.totalSeconds === 0 
+                      ? "אין נתוני זמן לצוות זה עדיין" 
+                      : formatDurationHumanReadable(teamStats.totalSeconds)}
+                  </p>
                   <p className="text-muted-foreground mt-1">בסך הכל עבור כל חברי הצוות</p>
                 </CardContent>
               </Card>

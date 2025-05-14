@@ -221,7 +221,9 @@ export default function ReportsPage() {
                   trendLabel={dailyStats?.percentChange > 0 ? 'יותר מאתמול' : 'פחות מאתמול'}
                   iconBg="bg-primary/10"
                   iconColor="text-primary"
-                  secondaryValue={formatDurationHumanReadable(dailyStats?.total || 0)}
+                  secondaryValue={(dailyStats?.total === 0 || !dailyStats?.total) 
+                    ? "אין נתוני זמן עדיין" 
+                    : formatDurationHumanReadable(dailyStats?.total || 0)}
                 />
               )}
               
@@ -238,7 +240,9 @@ export default function ReportsPage() {
                   trendLabel={weekRange}
                   iconBg="bg-blue-100"
                   iconColor="text-blue-700"
-                  secondaryValue={formatDurationHumanReadable(weeklyStats?.total || 0)}
+                  secondaryValue={(weeklyStats?.total === 0 || !weeklyStats?.total) 
+                    ? "אין נתוני זמן עדיין" 
+                    : formatDurationHumanReadable(weeklyStats?.total || 0)}
                 />
               )}
               
@@ -251,7 +255,9 @@ export default function ReportsPage() {
                   title="נושא מוביל" 
                   value={mostTracked?.topic?.name || 'אין נתונים'} 
                   icon={<TrendingUp className="h-4 w-4" />} 
-                  secondaryValue={`${formatTime(mostTracked?.totalTime || 0)} (${formatDurationHumanReadable(mostTracked?.totalTime || 0)})`}
+                  secondaryValue={(mostTracked?.totalTime === 0 || !mostTracked?.totalTime) 
+                    ? "אין נתוני זמן עדיין" 
+                    : `${formatTime(mostTracked?.totalTime || 0)} (${formatDurationHumanReadable(mostTracked?.totalTime || 0)})`}
                   color={mostTracked?.topic?.color}
                   iconBg="bg-green-100"
                   iconColor="text-green-700"
