@@ -156,78 +156,13 @@ export default function TeamsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
-                    <div className="mb-4 sm:mb-5">
-                      <div className="border border-blue-500 rounded-md p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 mb-3">
-                        <h4 className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 mb-1 sm:mb-2">
-                          שליחת הזמנה למשתמש
-                        </h4>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-3">
-                          לשליחת הזמנה למשתמש, לחץ על הכפתור:
-                        </p>
-                        <div>
-                          <button 
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center"
-                            onClick={() => {
-                              const width = 500;
-                              const height = 500;
-                              const left = (window.screen.width - width) / 2;
-                              const top = (window.screen.height - height) / 2;
-                              window.open(
-                                `/add-direct-member/${team.id}/`, 
-                                'שליחת הזמנה לצוות',
-                                `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
-                              );
-                            }} 
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                              <circle cx="9" cy="7" r="4"></circle>
-                              <line x1="19" y1="8" x2="19" y2="14"></line>
-                              <line x1="22" y1="11" x2="16" y2="11"></line>
-                            </svg>
-                            שלח הזמנה למשתמש
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
                 
                   <div className="text-sm text-muted-foreground mb-2 mt-4">
                     פעולות
                   </div>
                   
-                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
-                    <div className="mb-4">
-                      <Alert className="border-red-500 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950">
-                        <h4 className="text-base font-semibold">הוספת משתמש ישירות לצוות</h4>
-                        <p className="text-sm mt-1 mb-2">להוסיף משתמש למערכת בקליק אחד? הזן אימייל והוא יתווסף לצוות:</p>
-                        
-                        <div className="flex gap-2 mt-3">
-                          <Input
-                            id={`email-${team.id}`}
-                            type="email" 
-                            placeholder="הזן אימייל של משתמש קיים"
-                            className="max-w-[250px] bg-white dark:bg-gray-950"
-                            dir="ltr"
-                          />
-                          <Button 
-                            variant="outline"
-                            className="border-red-500 hover:border-red-700 text-red-700 hover:text-red-800 dark:text-red-400"
-                            onClick={() => {
-                              const emailInput = document.getElementById(`email-${team.id}`) as HTMLInputElement;
-                              if (emailInput && emailInput.value) {
-                                const email = encodeURIComponent(emailInput.value);
-                                window.open(`/direct-add/${team.id}/${email}`, '_blank', 'width=500,height=400');
-                              }
-                            }}
-                          >
-                            הוסף לצוות
-                          </Button>
-                        </div>
-                      </Alert>
-                    </div>
-                  )}
+
                   
                   <div className="flex flex-wrap gap-2">
                     <TeamMembersDialog 
