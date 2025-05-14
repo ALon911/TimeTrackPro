@@ -4,8 +4,8 @@ import { isAuthenticated } from "./auth";
 
 export const directMemberRouter = Router();
 
-// API route to add a member directly to a team
-directMemberRouter.post('/api/direct-add-team-member', isAuthenticated, async (req: Request, res: Response) => {
+// API route to send team invitation
+directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { teamId, email } = req.body;
     

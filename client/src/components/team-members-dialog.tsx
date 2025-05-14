@@ -295,11 +295,11 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
                     className="whitespace-nowrap"
                   >
                     {isAddingMember && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                    הוסף משתמש
+                    שלח הזמנה
                   </Button>
                 </div>
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  שים לב: המשתמש יתווסף ישירות לצוות ללא תהליך אישור
+                <p className="text-sm text-blue-600 dark:text-blue-400">
+                  שים לב: המשתמש יקבל הזמנה ויצטרף לצוות רק לאחר אישור
                 </p>
               </form>
             </div>

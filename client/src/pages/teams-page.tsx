@@ -157,16 +157,16 @@ export default function TeamsPage() {
                 <CardContent>
                   {team.ownerId === user?.id && (
                     <div className="mb-5">
-                      <div className="border border-red-500 rounded-md p-4 bg-red-50 dark:bg-red-950/30 mb-3">
-                        <h4 className="text-base font-medium text-red-700 dark:text-red-400 mb-2">
-                          הוספת משתמש ישירות לצוות
+                      <div className="border border-blue-500 rounded-md p-4 bg-blue-50 dark:bg-blue-950/30 mb-3">
+                        <h4 className="text-base font-medium text-blue-700 dark:text-blue-400 mb-2">
+                          שליחת הזמנה למשתמש
                         </h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          להוספת משתמש ישירות, לחץ על הכפתור:
+                          לשליחת הזמנה למשתמש, לחץ על הכפתור:
                         </p>
                         <div>
                           <button 
-                            className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md flex items-center justify-center"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center"
                             onClick={() => {
                               const width = 500;
                               const height = 500;
@@ -174,7 +174,7 @@ export default function TeamsPage() {
                               const top = (window.screen.height - height) / 2;
                               window.open(
                                 `/add-direct-member/${team.id}/`, 
-                                'הוספת משתמש לצוות',
+                                'שליחת הזמנה לצוות',
                                 `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
                               );
                             }} 
@@ -185,7 +185,7 @@ export default function TeamsPage() {
                               <line x1="19" y1="8" x2="19" y2="14"></line>
                               <line x1="22" y1="11" x2="16" y2="11"></line>
                             </svg>
-                            הוסף משתמש ישירות לצוות
+                            שלח הזמנה למשתמש
                           </button>
                         </div>
                       </div>
