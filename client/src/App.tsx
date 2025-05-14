@@ -31,6 +31,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/teams/:teamId/add-member" component={AddDirectMemberPage} />
       <Route path="/invitations/:token" component={InvitationHandlerPage} />
+      <Route path="/accept-invitation/:token" component={InvitationHandlerPage} />
       <Route component={NotFound} />
     </Switch>
   );

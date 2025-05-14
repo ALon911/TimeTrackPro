@@ -29,6 +29,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(indexPath);
   });
   
+  // Handle alternative invitation route format
+  app.get('/accept-invitation/:token', (req, res, next) => {
+    // Send the index.html to handle on client side with React Router
+    const indexPath = path.resolve('client/index.html');
+    res.sendFile(indexPath);
+  });
+  
   // Topic routes
   app.get("/api/topics", isAuthenticated, async (req, res) => {
     try {
