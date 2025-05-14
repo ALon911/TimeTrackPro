@@ -83,7 +83,7 @@ export function InvitationNotification() {
       </CardHeader>
       <CardContent>
         <div className="mb-3">
-          <p className="font-medium">הוזמנת להצטרף לצוות "{invitation.teamName || invitation.team?.name || 'לא ידוע'}"</p>
+          <p className="font-medium">הוזמנת להצטרף לצוות "{invitation.teamName || invitation.team?.name || ''}"</p>
         </div>
         <div className="flex justify-end gap-2">
           <Button 

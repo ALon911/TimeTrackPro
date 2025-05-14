@@ -83,8 +83,8 @@ export default function TeamsPage() {
           toast({
             title: action === 'accept' ? "הצטרפת לצוות בהצלחה" : "ההזמנה נדחתה",
             description: action === 'accept' 
-              ? `הצטרפת לצוות "${invitation.team?.name}"`
-              : `דחית את ההזמנה לצוות "${invitation.team?.name}"`,
+              ? `הצטרפת לצוות "${invitation.team?.name || invitation.teamName || ''}"`
+              : `דחית את ההזמנה לצוות "${invitation.team?.name || invitation.teamName || ''}"`,
           });
         },
         onError: (error: Error) => {
