@@ -15,6 +15,7 @@ import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const createTeamSchema = z.object({
   name: z.string().min(1, "שם הצוות נדרש").max(100, "שם הצוות ארוך מדי"),
@@ -140,7 +141,7 @@ export default function TeamsPage() {
                 <CardHeader className="p-4 sm:p-6">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg sm:text-xl">{team.name}</CardTitle>
-                    {team.ownerId === user?.id && (
+                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
                       <Button 
                         variant="ghost" 
                         size="icon"
@@ -151,11 +152,11 @@ export default function TeamsPage() {
                     )}
                   </div>
                   <CardDescription>
-                    {team.ownerId === user?.id ? 'מנהל הצוות' : 'חבר צוות'}
+                    {(team.ownerId === user?.id || team.owner_id === user?.id) ? 'מנהל הצוות' : 'חבר צוות'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                  {team.ownerId === user?.id && (
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
                     <div className="mb-4 sm:mb-5">
                       <div className="border border-blue-500 rounded-md p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 mb-3">
                         <h4 className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 mb-1 sm:mb-2">
@@ -196,7 +197,7 @@ export default function TeamsPage() {
                     פעולות
                   </div>
                   
-                  {team.ownerId === user?.id && (
+                  {(team.ownerId === user?.id || team.owner_id === user?.id) && (
                     <div className="mb-4">
                       <Alert className="border-red-500 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950">
                         <h4 className="text-base font-semibold">הוספת משתמש ישירות לצוות</h4>
@@ -232,16 +233,16 @@ export default function TeamsPage() {
                     <TeamMembersDialog 
                       teamId={team.id}
                       teamName={team.name}
-                      isOwner={team.ownerId === user?.id}
+                      isOwner={(team.ownerId === user?.id || team.owner_id === user?.id)}
                     />
                     
 
                     
-                    {team.ownerId === user?.id && (
+                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />
                     )}
                     
-                    {team.ownerId === user?.id && (
+                    {(team.ownerId === user?.id || team.owner_id === user?.id) && (
                       <TeamSettingsDialog 
                         teamId={team.id}
                         teamName={team.name}
