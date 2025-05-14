@@ -60,6 +60,12 @@ export default function TeamsPage() {
           <p className="text-muted-foreground">נהל את הצוותים שלך והזמן חברים חדשים</p>
         </div>
 
+        {/* הזמנות ממתינות - הוזז למעלה */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
+          <TeamInvitationsList />
+        </div>
+
         {/* טופס יצירת צוות */}
         <Dialog open={isCreateTeamOpen} onOpenChange={setIsCreateTeamOpen}>
           <DialogContent>
@@ -107,15 +113,15 @@ export default function TeamsPage() {
               </form>
             </Form>
           </DialogContent>
-
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-xl font-semibold">רשימת הצוותים</h2>
-            <Button onClick={() => setIsCreateTeamOpen(true)} className="w-full sm:w-auto">
-              <Plus className="ml-2 h-4 w-4" />
-              צור צוות חדש
-            </Button>
-          </div>
         </Dialog>
+
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-xl font-semibold">רשימת הצוותים</h2>
+          <Button onClick={() => setIsCreateTeamOpen(true)} className="w-full sm:w-auto">
+            <Plus className="ml-2 h-4 w-4" />
+            צור צוות חדש
+          </Button>
+        </div>
 
         {/* רשימת צוותים */}
         {isLoadingTeams ? (
@@ -189,12 +195,6 @@ export default function TeamsPage() {
             ))}
           </div>
         )}
-
-        {/* הזמנות ממתינות */}
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
-          <TeamInvitationsList />
-        </div>
       </div>
     </div>
   );

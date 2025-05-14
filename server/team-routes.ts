@@ -5,6 +5,7 @@ import { appBaseUrl, invitationExpiryDays } from './config';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { isAuthenticated } from './auth';
+import db from './db';
 
 // Create a router for team-related endpoints
 const teamRouter = Router();
