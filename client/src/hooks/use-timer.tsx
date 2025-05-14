@@ -145,8 +145,14 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     };
   }, []);
 
-  // הוספת רפרנס לזיהוי אם הטיימר הוא כבר ספירה לאחור (למניעת התנגשויות)
-  const isCountdownRef = useRef<boolean>(false);
+  // רפרנס למשך הזמן המקורי שהוגדר לטיימר
+  const originalDurationRef = useRef<number>(0);
+  
+  // רפרנס לזמן ההתחלה של הטיימר
+  const startTimeRef = useRef<number>(0);
+  
+  // רפרנס לשמירת הנושא הנבחר
+  const selectedTopicRef = useRef<string>('');
   
   // נקה את כל הטיימרים האחרים מהלוקל סטורג'
   const cleanupAllOtherTimers = useCallback(() => {
@@ -154,68 +160,68 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
       // לפני הפעלת טיימר חדש, מחק את כל שאר הטיימרים שיכולים לגרום לבלבול
       localStorage.removeItem('timetracker_timer');
       localStorage.removeItem('timetracker_countdown');
+      localStorage.removeItem('timetracker_ui');
       
       // נקה את הלוגים כדי לוודא שאנחנו רואים רק את המידע הרלוונטי
       console.clear();
-      console.log("Cleared all existing timers");
+      console.log(">>> נוקו כל הטיימרים הקיימים");
     } catch (error) {
-      console.error("Error cleaning up timers:", error);
+      console.error("שגיאה בניקוי הטיימרים:", error);
     }
   }, []);
   
-  // Timer effect - הלוגיקה של הטיימר
+  // Timer effect - הלוגיקה של הטיימר קאונטדאון בלבד
   useEffect(() => {
-    // לפני שאנחנו מפעילים טיימר חדש, צריך לנקות את כל השאר
-    if (isRunning) {
+    // רק אם הטיימר פעיל וזה טיימר ספירה לאחור
+    if (isRunning && isCountDown) {
+      // נקה את כל הטיימרים הקודמים
       cleanupAllOtherTimers();
       
-      // מזהה את סוג הטיימר שמוגדר ב-state ומדפיס לוג ברור
-      const timerMode = isCountDown ? 'COUNTDOWN' : 'REGULAR';
-      console.log(`=== TIMER STARTED: ${timerMode} MODE ===`);
+      console.log(`>>> טיימר ספירה לאחור הופעל - ${seconds} שניות`);
       
-      // שומרים את הסטטוס הנוכחי של הטיימר במשתנה הרפרנס
-      isCountdownRef.current = isCountDown;
+      // שמירת זמן ההתחלה של הטיימר
+      if (startTimeRef.current === 0) {
+        startTimeRef.current = Date.now();
+      }
       
       // רק אינטרוול אחד פעיל בכל רגע נתון
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       
+      // הפעלת אינטרוול חדש
       intervalRef.current = setInterval(() => {
-        setSeconds(prevSeconds => {
-          // ספירה לאחור - חשוב! משתמשים ברפרנס ולא בסטייט למניעת בעיות
-          if (isCountdownRef.current === true) {
-            console.log(`COUNTDOWN: ${prevSeconds} seconds remaining`);
-            
-            // אם הגענו לאפס או פחות
-            if (prevSeconds <= 1) {
-              // מנקים את האינטרוול
-              clearInterval(intervalRef.current!);
-              
-              // מעדכנים את הסטייט
-              setIsRunning(false);
-              setIsCompleted(true);
-              
-              // השמעת צליל סיום
-              audioManager.playTimerComplete();
-              
-              // מנקים את הלוקל סטורג'
-              localStorage.removeItem('timetracker_countdown');
-              localStorage.removeItem('timetracker_timer');
-              
-              console.log("=== COUNTDOWN COMPLETED ===");
-              return 0;
-            }
-            
-            // המשך הספירה לאחור
-            return prevSeconds - 1;
-          } 
-          // ספירה רגילה כלפי מעלה
-          else {
-            console.log(`REGULAR TIMER: ${prevSeconds} seconds elapsed`);
-            return prevSeconds + 1;
-          }
-        });
+        // חישוב כמה זמן עבר מאז תחילת הטיימר
+        const elapsedMs = Date.now() - startTimeRef.current;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        
+        // חישוב כמה זמן נשאר בטיימר
+        const remainingSeconds = Math.max(0, originalDurationRef.current - elapsedSeconds);
+        
+        console.log(`>>> נותרו ${remainingSeconds} שניות בטיימר`);
+        
+        // עדכון הסטייט עם הזמן הנותר
+        setSeconds(remainingSeconds);
+        
+        // אם הטיימר הסתיים
+        if (remainingSeconds <= 0) {
+          // ניקוי האינטרוול
+          clearInterval(intervalRef.current!);
+          
+          // עדכון הסטייט
+          setIsRunning(false);
+          setIsCompleted(true);
+          setSeconds(0);
+          
+          // השמעת צליל סיום
+          audioManager.playTimerComplete();
+          
+          // ניקוי הלוקל סטורג'
+          localStorage.removeItem('timetracker_countdown');
+          localStorage.removeItem('timetracker_timer');
+          
+          console.log(">>> הטיימר הסתיים!");
+        }
       }, 1000);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -235,14 +241,29 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
 
   const startWithDuration = useCallback((durationInMinutes: number): void => {
-    // ראשית, לנקות את כל הטיימרים הקיימים
+    // זה המקום הקריטי - כאן אנחנו מגדירים טיימר חדש
+    
+    // ראשית, לנקות את כל הטיימרים הקיימים ולאפס את המצב
     cleanupAllOtherTimers();
     
     // המרת דקות לשניות
     const totalSeconds = durationInMinutes * 60;
     
-    // יצירת אובייקט לשמירת המידע המקורי
-    const originalDuration = totalSeconds;
+    // ניקוי ואיפוס כל הרפרנסים
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    // שמירת המשך המקורי ברפרנס 
+    originalDurationRef.current = totalSeconds;
+    
+    // שמירת זמן ההתחלה
+    startTimeRef.current = Date.now();
+    
+    // שמירת נתוני הטיימר
+    const currentTopic = document.querySelector('select[name="topic"]')?.value || '';
+    selectedTopicRef.current = currentTopic;
     
     // עדכון המשתנים שינהלו את הלוגיקה של הטיימר
     setSeconds(totalSeconds);
@@ -250,24 +271,15 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     setIsCompleted(false);
     setIsRunning(true);
     
-    // עדכון הרפרנס כדי לוודא שהטיימר יספור לאחור באופן עקבי
-    isCountdownRef.current = true;
+    console.log(`>>> מתחיל טיימר ספירה לאחור: ${durationInMinutes} דקות (${totalSeconds} שניות)`);
+    console.log(`>>> זמן התחלה: ${new Date().toLocaleTimeString()}`);
     
-    // שמירת מידע מלא על מצב הטיימר כולל העובדה שמדובר בספירה לאחור
-    try {
-      console.log(`=== STARTING NEW COUNTDOWN TIMER: ${durationInMinutes} MINUTES ===`);
-      
-      // שמירה באחסון המקומי - שימוש באובייקט אחד ופשוט
-      localStorage.setItem('timetracker_countdown', JSON.stringify({
-        duration: totalSeconds, 
-        originalDuration: totalSeconds,
-        startTime: Date.now(),
-        isCountDown: true
-      }));
-      
-    } catch (error) {
-      console.error("Error saving countdown state:", error);
-    }
+    // שמירה במקום אחד - מידע מינימלי
+    localStorage.setItem('timetracker_countdown', JSON.stringify({
+      duration: totalSeconds,
+      startTime: Date.now(),
+      selectedTopic: currentTopic
+    }));
     
     // השמעת צליל התחלה
     audioManager.playTimerStart();
