@@ -73,7 +73,7 @@ export default function DashboardPage() {
               iconColor="text-primary"
               change={dailyStats ? dailyStats.percentChange : 0}
               increase={dailyStats ? dailyStats.increase : false}
-              compareText="משמול"
+              compareText="מאתמול"
             />
           )}
           
