@@ -300,7 +300,7 @@ export function TimeTracker() {
       {/* טיימר */}
       <div className="bg-card dark:bg-slate-900 rounded-xl p-6 mb-6 text-center">
         <div className="text-4xl font-bold mb-4 tracking-wider">
-          {formatTime(seconds)}
+          {formatTime()}
         </div>
         
         {/* כפתורי פעולה */}

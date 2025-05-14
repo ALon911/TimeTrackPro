@@ -217,10 +217,15 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     clearTimerState();
   }, []);
 
-  const formatTime = useCallback((): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+  const formatTime = useCallback((secondsToFormat = seconds): string => {
+    if (secondsToFormat === undefined || isNaN(secondsToFormat)) {
+      console.error("Invalid seconds value:", secondsToFormat);
+      return "00:00:00"; // Return default format for invalid input
+    }
+    
+    const hours = Math.floor(secondsToFormat / 3600);
+    const minutes = Math.floor((secondsToFormat % 3600) / 60);
+    const secs = secondsToFormat % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, [seconds]);
 
