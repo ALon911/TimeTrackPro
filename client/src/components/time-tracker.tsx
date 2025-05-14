@@ -75,7 +75,27 @@ export function TimeTracker() {
     setIsPaused(false);
     
     // שמור את זמן ההתחלה
-    setStartTime(new Date());
+    const startTimeNow = new Date();
+    setStartTime(startTimeNow);
+    
+    // שתף את הטיימר עם הצוות אם שיתוף מופעל
+    if (isSharing && selectedTopic) {
+      const selectedTopicObj = topics?.find(t => t.id.toString() === selectedTopic);
+      if (selectedTopicObj) {
+        const endTimeISO = new Date(endTime).toISOString();
+        shareTimerMutation.mutate({
+          topicId: selectedTopicObj.id,
+          topicName: selectedTopicObj.name,
+          topicColor: selectedTopicObj.color,
+          description: description || '',
+          startTime: startTimeNow.toISOString(),
+          estimatedEndTime: endTimeISO,
+          isPaused: false,
+          pausedAt: null,
+          duration: durationInSeconds,
+        });
+      }
+    }
     
     // התחל את האינטרוול
     timerRef.current = window.setInterval(() => {
@@ -319,9 +339,27 @@ export function TimeTracker() {
         localStorage.setItem('timer_description', description);
       }
       
+      // עדכן גם את הצוות אם הטיימר משותף
+      if (isSharing && selectedTopic && startTime) {
+        const selectedTopicObj = topics?.find(t => t.id.toString() === selectedTopic);
+        if (selectedTopicObj) {
+          const now = new Date();
+          shareTimerMutation.mutate({
+            topicId: selectedTopicObj.id,
+            topicName: selectedTopicObj.name,
+            topicColor: selectedTopicObj.color,
+            description: description || '',
+            startTime: startTime.toISOString(),
+            isPaused: true,
+            pausedAt: now.toISOString(),
+            duration: seconds,
+          });
+        }
+      }
+      
       console.log("הטיימר הושהה ונשמר במצב השהייה עם", seconds, "שניות שנותרו");
     }
-  }, [isRunning, seconds, selectedTopic, description]);
+  }, [isRunning, seconds, selectedTopic, description, isSharing, topics, startTime, shareTimerMutation]);
   
   // פונקציה להמשך טיימר
   const resume = useCallback(() => {
@@ -339,6 +377,25 @@ export function TimeTracker() {
       setIsRunning(true);
       setIsPaused(false);
       
+      // עדכן את הצוות אם הטיימר משותף
+      if (isSharing && selectedTopic && startTime) {
+        const selectedTopicObj = topics?.find(t => t.id.toString() === selectedTopic);
+        if (selectedTopicObj) {
+          const endTimeISO = new Date(newEndTime).toISOString();
+          shareTimerMutation.mutate({
+            topicId: selectedTopicObj.id,
+            topicName: selectedTopicObj.name,
+            topicColor: selectedTopicObj.color,
+            description: description || '',
+            startTime: startTime.toISOString(),
+            estimatedEndTime: endTimeISO,
+            isPaused: false,
+            pausedAt: null,
+            duration: seconds,
+          });
+        }
+      }
+      
       // התחל את האינטרוול מחדש
       timerRef.current = window.setInterval(() => {
         const now = Date.now();
@@ -353,6 +410,12 @@ export function TimeTracker() {
           timerRef.current = null;
           setIsRunning(false);
           setIsCompleted(true);
+          
+          // הפסק לשתף את הטיימר אם רלוונטי
+          if (isSharing) {
+            stopSharingMutation.mutate();
+            setIsSharing(false);
+          }
           
           // נקה את המידע השמור כשהטיימר מסתיים
           localStorage.removeItem('timer_end_time');
@@ -512,6 +575,12 @@ export function TimeTracker() {
       // Save the time entry with the current duration
       const endTime = new Date();
       const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      // If sharing timer with team, stop sharing
+      if (isSharing) {
+        stopSharingMutation.mutate();
+        setIsSharing(false);
+      }
       
       createTimeEntryMutation.mutate({
         topicId: parseInt(selectedTopic),
