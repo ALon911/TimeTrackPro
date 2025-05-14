@@ -1054,7 +1054,7 @@ export class DatabaseStorage implements IStorage {
         userId: member.user_id,
         email: member.email,
         seconds: member.total_seconds || 0,
-        percentage: totalSeconds > 0 ? ((member.total_seconds || 0) / totalSeconds) * 100 : 0
+        percentage: (totalSeconds > 0 && member.total_seconds > 0) ? ((member.total_seconds || 0) / totalSeconds) * 100 : 0
       }))
     };
   }
@@ -1105,13 +1105,13 @@ export class DatabaseStorage implements IStorage {
           userId: 0, // Team topics don't have a specific user
           teamId: teamId
         },
-        percentage: (topic.total_seconds / totalSeconds) * 100,
+        percentage: (totalSeconds > 0 && topic.total_seconds > 0) ? (topic.total_seconds / totalSeconds) * 100 : 0,
         totalSeconds: topic.total_seconds,
         breakdownByUser: userBreakdown.map(user => ({
           userId: user.user_id,
           email: user.email,
           seconds: user.user_seconds,
-          percentage: (user.user_seconds / topic.total_seconds) * 100
+          percentage: (topic.total_seconds > 0 && user.user_seconds > 0) ? (user.user_seconds / topic.total_seconds) * 100 : 0
         }))
       });
     }
