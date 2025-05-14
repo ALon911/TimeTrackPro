@@ -728,6 +728,8 @@ export function TimeTracker() {
           {formatTime()}
         </div>
         
+
+        
         {/* כפתורי פעולה */}
         {!isRunning && !isPaused ? (
           <>
