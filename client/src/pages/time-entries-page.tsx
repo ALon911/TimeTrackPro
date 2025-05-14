@@ -54,7 +54,7 @@ export default function TimeEntriesPage() {
             <Label htmlFor="topic-filter" className="mb-2 block">סנן לפי נושא</Label>
             {isLoadingTopics ? (
               <Select disabled>
-                <SelectTrigger id="topic-filter">
+                <SelectTrigger id="topic-filter" className="text-right">
                   <SelectValue placeholder="טוען נושאים..." />
                 </SelectTrigger>
               </Select>
@@ -63,15 +63,18 @@ export default function TimeEntriesPage() {
                 value={selectedTopic}
                 onValueChange={setSelectedTopic}
               >
-                <SelectTrigger id="topic-filter">
+                <SelectTrigger id="topic-filter" className="text-right">
                   <SelectValue placeholder="בחר נושא" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="text-right">
                   <SelectGroup>
                     <SelectItem value="all">כל הנושאים</SelectItem>
                     {topics?.map((topic: any) => (
                       <SelectItem key={topic.id} value={topic.id.toString()}>
-                        {topic.name}
+                        <div className="flex items-center justify-end w-full">
+                          <span>{topic.name}</span>
+                          <div className="w-3 h-3 rounded-full mr-2 ml-2" style={{ backgroundColor: topic.color }} />
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectGroup>
