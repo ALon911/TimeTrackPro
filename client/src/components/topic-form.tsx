@@ -16,7 +16,10 @@ const formSchema = insertTopicSchema.omit({ userId: true });
 
 type TopicFormProps = {
   topic?: any;
-  onSuccess: () => void;
+  defaultValues?: any;
+  onSubmit: (data: any) => void;
+  isPending?: boolean;
+  onSuccess?: () => void;
 };
 
 // Predefined colors
@@ -31,15 +34,18 @@ const COLORS = [
   "#f97316", // Orange
 ];
 
-export function TopicForm({ topic, onSuccess }: TopicFormProps) {
+export function TopicForm({ topic, defaultValues, onSubmit, isPending = false, onSuccess }: TopicFormProps) {
   const { toast } = useToast();
-  const [selectedColor, setSelectedColor] = useState(topic?.color || COLORS[0]);
+  
+  // Use either topic, defaultValues, or empty defaults
+  const topicData = topic || defaultValues || {};
+  const [selectedColor, setSelectedColor] = useState(topicData.color || COLORS[0]);
   
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: topic?.name || "",
-      color: topic?.color || COLORS[0],
+      name: topicData.name || "",
+      color: topicData.color || COLORS[0],
     }
   });
   
@@ -48,41 +54,20 @@ export function TopicForm({ topic, onSuccess }: TopicFormProps) {
     setValue("color", selectedColor);
   }, [selectedColor, setValue]);
   
-  // Set up mutation for creating or updating a topic
-  const mutation = useMutation({
-    mutationFn: async (data: any) => {
-      if (topic) {
-        // Update existing topic
-        const response = await apiRequest("PUT", `/api/topics/${topic.id}`, data);
-        return response.json();
-      } else {
-        // Create new topic
-        const response = await apiRequest("POST", "/api/topics", data);
-        return response.json();
-      }
-    },
-    onSuccess: () => {
+  const handleFormSubmit = (data: any) => {
+    onSubmit(data);
+    
+    // Show success toast if onSuccess callback not provided
+    if (!onSuccess) {
       toast({
         title: topic ? "נושא עודכן" : "נושא נוצר",
         description: topic ? "הנושא עודכן בהצלחה" : "הנושא נוצר בהצלחה",
       });
-      onSuccess();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "שגיאה",
-        description: `שגיאה: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  const onSubmit = (data: any) => {
-    mutation.mutate(data);
+    }
   };
   
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">שם הנושא</Label>
         <Input
@@ -123,10 +108,10 @@ export function TopicForm({ topic, onSuccess }: TopicFormProps) {
         </DialogClose>
         <Button 
           type="submit" 
-          disabled={mutation.isPending}
+          disabled={isPending}
         >
-          {mutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-          {topic ? "עדכן" : "צור נושא"}
+          {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+          {topic || defaultValues ? "עדכן" : "צור נושא"}
         </Button>
       </div>
     </form>

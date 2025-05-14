@@ -59,51 +59,39 @@ export function TimeTracker() {
   
   // Create time entry mutation
   const createTimeEntryMutation = useMutation({
-    mutationFn: async (timeEntry: any) => {
-      const res = await apiRequest('POST', '/api/time-entries', timeEntry);
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/time-entries", data);
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/time-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/recent-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats/daily'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats/most-tracked'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats/recent-sessions'] });
-      toast({
-        title: 'זמן נשמר',
-        description: 'רשומת הזמן נשמרה בהצלחה',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'שגיאה',
-        description: `שגיאה בשמירת הזמן: ${error.message}`,
-        variant: 'destructive',
-      });
-    },
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/topic-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly-overview'] });
+    }
   });
   
-  // Play sound when timer completes and save the time entry
+  // When timer completes, save the time entry
   useEffect(() => {
-    if (isCompleted && completeAudioRef.current && startTime && selectedTopic) {
+    if (isCompleted && startTime && selectedTopic) {
       // Play completion sound
-      completeAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      if (completeAudioRef.current) {
+        completeAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      }
       
-      // Calculate the exact duration based on the original preset
-      // This ensures we save the full preset time, not the actual elapsed time
+      // Save time entry when timer completes
       const endTime = new Date();
+      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       
-      // For countdown timers, we want to save the full preset duration
-      const calculatedDuration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
-      
-      // Save the time entry
       createTimeEntryMutation.mutate({
         topicId: parseInt(selectedTopic),
         description: description || null,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        duration: calculatedDuration,
-        isManual: false
+        duration: duration,
       });
       
       toast({
@@ -168,35 +156,47 @@ export function TimeTracker() {
     
     toast({
       title: `טיימר התחיל`,
-      description: `הוגדר טיימר ל-${minutes} דקות`,
+      description: `קוצב זמן ל-${minutes} דקות`,
     });
-  }, [validateTopicSelection, startWithDuration, toast]);
-
-  // Handle timer stop (cancellation)
+  }, [validateTopicSelection, startWithDuration, setStartTime, toast]);
+  
+  // Handle manually stopping the timer
   const handleStop = useCallback(() => {
-    // When stopping the timer, we just cancel it without saving any time entry
+    if (startTime && selectedTopic) {
+      // Save the time entry with the current duration
+      const endTime = new Date();
+      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      createTimeEntryMutation.mutate({
+        topicId: parseInt(selectedTopic),
+        description: description || null,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        duration: duration,
+      });
+      
+      toast({
+        title: 'טיימר בוטל',
+        description: 'הזמן שעבר נשמר',
+      });
+    }
+    
+    // Reset timer state
     stop();
     reset();
-    setDescription("");
     setStartTime(null);
-    
-    toast({
-      title: 'טיימר בוטל',
-      description: 'הטיימר בוטל ולא נשמר זמן',
-    });
-    
-  }, [stop, reset, toast]);
-
-  // עדכון פרטי הטיימר ב-localStorage אם הוא פועל
+    // מנקים את הלוקל סטורג' גם
+    localStorage.removeItem('timetracker_timer_state');
+  }, [stop, reset, startTime, selectedTopic, description, createTimeEntryMutation, toast]);
+  
+  // שמירת מצב הטיימר בלוקל סטורג'
   useEffect(() => {
     if (isRunning || isPaused) {
-      // שמירת מידע נוסף על הטיימר (נושא, תיאור, זמן התחלה) לשחזור אם המשתמש מרענן את העמוד
       try {
-        const timerState = localStorage.getItem('timetracker_timer_state');
-        if (timerState) {
-          const parsedState = JSON.parse(timerState);
+        if (selectedTopic) {
           const updatedState = {
-            ...parsedState,
+            isRunning,
+            isPaused,
             selectedTopic: selectedTopic,
             description: description,
             startTime: startTime ? startTime.toISOString() : null,
@@ -231,63 +231,85 @@ export function TimeTracker() {
         if (parsedState.startTime) {
           setStartTime(new Date(parsedState.startTime));
         }
+        
+        // נשחזר את משך הזמן
+        if (parsedState.totalDuration) {
+          setSeconds(parsedState.totalDuration);
+        }
+        
+        // נריץ את הטיימר אם היה פועל
+        if (parsedState.isRunning) {
+          start();
+        } 
+        // או נעצור אותו אם היה בהשהייה
+        else if (parsedState.isPaused) {
+          pause();
+        }
       }
     } catch (error) {
       console.error('Error loading timer state:', error);
     }
   }, []);
-
+  
   return (
-    <div className="bg-neutral-50 dark:bg-slate-800 rounded-lg p-4 border border-neutral-200 dark:border-slate-700 text-neutral-900 dark:text-neutral-100">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <Label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">נושא</Label>
-          <Select
-            value={selectedTopic}
-            onValueChange={setSelectedTopic}
-            disabled={isRunning || isLoading}
-          >
-            <SelectTrigger className="w-full p-2 md:p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary">
-              <SelectValue placeholder="בחר נושא" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoading ? (
-                <SelectItem value="loading">טוען נושאים...</SelectItem>
-              ) : topics && Array.isArray(topics) && topics.length > 0 ? (
-                topics.map((topic: any) => (
+    <div className="space-y-4">
+      <div className="mb-6">
+        {/* בחירת נושא */}
+        <div className="mb-4">
+          <Label htmlFor="topic-select" className="mb-2 block">נושא</Label>
+          {isLoading ? (
+            <Select disabled>
+              <SelectTrigger id="topic-select">
+                <SelectValue placeholder="טוען נושאים..." />
+              </SelectTrigger>
+            </Select>
+          ) : (
+            <Select
+              value={selectedTopic}
+              onValueChange={setSelectedTopic}
+              disabled={isRunning || isPaused}
+            >
+              <SelectTrigger id="topic-select">
+                <SelectValue placeholder="בחר נושא" />
+              </SelectTrigger>
+              <SelectContent>
+                {topics?.map((topic: any) => (
                   <SelectItem key={topic.id} value={topic.id.toString()}>
-                    {topic.name}
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: topic.color }} />
+                      <span>{topic.name}</span>
+                    </div>
                   </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-topics">אין נושאים להצגה</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        <div className="flex-1">
-          <Label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">תיאור</Label>
+        
+        {/* תיאור העבודה */}
+        <div className="mb-4">
+          <Label htmlFor="description-input" className="mb-2 block">תיאור (אופציונלי)</Label>
           <Input
-            placeholder="מה אתה עושה?"
+            id="description-input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            disabled={isRunning}
-            className="w-full p-2 md:p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="תיאור קצר של המשימה"
+            disabled={isRunning || isPaused}
           />
         </div>
       </div>
       
-      {/* Timer Display */}
-      <div className="mt-4 text-center">
-        <div className="text-3xl md:text-4xl font-bold mb-2 text-neutral-900 dark:text-white">{formatTime()}</div>
-      </div>
-      
-      {/* Timer Controls */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+      {/* טיימר */}
+      <div className="bg-card dark:bg-slate-900 rounded-xl p-6 mb-6 text-center">
+        <div className="text-4xl font-bold mb-4 tracking-wider">
+          {formatTime(seconds)}
+        </div>
+        
+        {/* כפתורי פעולה */}
         {!isRunning && !isPaused ? (
           <>
-            {/* Preset timer buttons */}
-            <div className="grid grid-cols-3 gap-2 w-full mb-3">
+            {/* כפתורי ברירת מחדל */}
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
               <Button 
                 onClick={() => handlePresetSelection(5)} 
                 className="px-2 md:px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center"
@@ -318,25 +340,16 @@ export function TimeTracker() {
               <Input
                 type="number"
                 min="1"
-                max="120"
-                value={customMinutes || ""}
+                max="480"
+                className="w-full sm:w-auto"
+                placeholder="הזן מספר דקות"
+                value={customMinutes || ''}
                 onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 0)}
-                placeholder="דקות מותאם אישית"
-                className="w-full sm:w-32 p-2 md:p-3 border border-neutral-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
               />
-              <Button
-                onClick={() => {
-                  if (customMinutes > 0) {
-                    handlePresetSelection(customMinutes);
-                  } else {
-                    toast({
-                      title: "שגיאה",
-                      description: "יש להזין מספר דקות גדול מ-0",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                className="w-full sm:w-auto px-4 py-2 bg-teal-500 dark:bg-teal-600 text-white rounded-md hover:bg-teal-600 dark:hover:bg-teal-700 flex items-center justify-center"
+              <Button 
+                onClick={() => handlePresetSelection(customMinutes)} 
+                className="w-full sm:w-auto px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center justify-center"
+                disabled={customMinutes <= 0}
               >
                 <TimerIcon className="ml-1 h-4 w-4" />
                 <span>הגדר זמן מותאם</span>
@@ -348,6 +361,7 @@ export function TimeTracker() {
               <Button 
                 onClick={() => handleStartTimer(seconds / 60)} 
                 className="w-full px-4 py-3 bg-blue-500 dark:bg-blue-600 text-white rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center justify-center text-lg"
+                disabled={!selectedTopic}
               >
                 <PlayIcon className="ml-2 h-5 w-5" />
                 <span>התחל טיימר</span>
@@ -368,7 +382,7 @@ export function TimeTracker() {
               onClick={handleStop} 
               className="w-full sm:w-1/2 px-4 py-3 bg-red-500 dark:bg-red-600 text-white rounded-md hover:bg-red-600 dark:hover:bg-red-700 flex items-center justify-center"
             >
-              <PauseIcon className="ml-2 h-5 w-5" />
+              <XIcon className="ml-2 h-5 w-5" />
               <span>ביטול טיימר</span>
             </Button>
           </div>
@@ -379,21 +393,38 @@ export function TimeTracker() {
               className="w-full sm:w-1/2 px-4 py-3 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center"
             >
               <PlayIcon className="ml-2 h-5 w-5" />
-              <span>המשך טיימר</span>
+              <span>המשך</span>
             </Button>
             
             <Button 
               onClick={handleStop} 
               className="w-full sm:w-1/2 px-4 py-3 bg-red-500 dark:bg-red-600 text-white rounded-md hover:bg-red-600 dark:hover:bg-red-700 flex items-center justify-center"
             >
-              <PauseIcon className="ml-2 h-5 w-5" />
+              <XIcon className="ml-2 h-5 w-5" />
               <span>ביטול טיימר</span>
             </Button>
           </div>
         ) : null}
       </div>
       
-      {/* Removed manual time entry dialog as requested */}
+      {/* Manual Time Entry */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="w-full flex items-center justify-center gap-2 py-5 text-lg"
+          >
+            <PlusIcon className="ml-2 h-5 w-5" />
+            הוסף רשומת זמן באופן ידני
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הוספת רשומת זמן ידנית</DialogTitle>
+          </DialogHeader>
+          <ManualTimeEntry />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
