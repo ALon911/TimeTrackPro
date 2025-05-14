@@ -1067,6 +1067,7 @@ export class DatabaseStorage implements IStorage {
       JOIN team_members tm ON te.user_id = tm.user_id
       WHERE tm.team_id = ?
       GROUP BY t.id
+      HAVING SUM(te.duration) > 0
       ORDER BY total_seconds DESC
     `);
     
