@@ -64,6 +64,18 @@ export function Sidebar() {
             </Link>
           </li>
           <li className="mb-1">
+            <Link href="/teams">
+              <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
+                location === "/teams" 
+                  ? "text-primary bg-blue-50" 
+                  : "text-neutral-600 hover:bg-neutral-100"
+              }`}>
+                <span className="material-icons ml-3">group</span>
+                <span>צוותים</span>
+              </a>
+            </Link>
+          </li>
+          <li className="mb-1">
             <Link href="/settings">
               <a className={`flex items-center px-4 py-3 font-medium rounded-md mx-2 ${
                 location === "/settings" 
