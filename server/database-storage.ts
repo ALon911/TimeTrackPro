@@ -1018,7 +1018,12 @@ export class DatabaseStorage implements IStorage {
     
     const members = membersStmt.all(teamId) as any[];
     
-    const totalStmt = this.db.prepare('SELECT SUM(duration) as total FROM time_entries WHERE team_id = ?');
+    const totalStmt = this.db.prepare(`
+      SELECT SUM(te.duration) as total 
+      FROM time_entries te
+      JOIN team_members tm ON te.user_id = tm.user_id
+      WHERE tm.team_id = ?
+    `);
     const totalResult = totalStmt.get(teamId) as any;
     const totalSeconds = totalResult?.total || 0;
     
@@ -1066,7 +1071,8 @@ export class DatabaseStorage implements IStorage {
         SELECT u.id as user_id, u.email, SUM(te.duration) as user_seconds
         FROM time_entries te
         JOIN users u ON te.user_id = u.id
-        WHERE te.team_id = ? AND te.topic_id = ?
+        JOIN team_members tm ON te.user_id = tm.user_id
+        WHERE tm.team_id = ? AND te.topic_id = ?
         GROUP BY u.id
         ORDER BY user_seconds DESC
       `);

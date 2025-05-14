@@ -244,19 +244,33 @@ export default function TeamsPage() {
                     לחץ על כפתורי הניהול למטה כדי לראות את חברי הצוות או להוסיף חברים חדשים
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-between gap-2 bg-muted/20 p-3">
-                  <Button 
-                    variant="default" 
-                    size="sm"
-                    onClick={() => setActiveTeamMembers(team.id)}
-                    className="flex-1"
-                  >
-                    <Users className="ml-2 h-4 w-4" />
-                    חברי צוות
-                  </Button>
+                <CardFooter className="flex flex-col gap-2 bg-muted/20 p-3">
+                  <div className="flex justify-between gap-2 w-full">
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => setActiveTeamMembers(team.id)}
+                      className="flex-1"
+                    >
+                      <Users className="ml-2 h-4 w-4" />
+                      חברי צוות
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      asChild
+                      className="flex-1"
+                    >
+                      <a href={`/teams/${team.id}/stats`}>
+                        <BarChart2 className="ml-2 h-4 w-4" />
+                        סטטיסטיקות
+                      </a>
+                    </Button>
+                  </div>
                   
                   {isOwner && (
-                    <div className="flex gap-2 flex-1">
+                    <div className="flex gap-2 w-full">
                       <Button 
                         variant="outline" 
                         size="sm"
