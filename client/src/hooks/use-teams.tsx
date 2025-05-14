@@ -171,7 +171,17 @@ export function useTeams() {
     mutationFn: async (data: { token: string; action: 'accept' | 'decline' }) => {
       console.log('Responding to invitation:', data);
       try {
-        const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`);
+        // עם גוף ריק לבקשת POST
+        const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`, {});
+        
+        // בדיקת מצב התגובה
+        if (!res.ok) {
+          console.error(`Server responded with error ${res.status}: ${res.statusText}`);
+          const errorText = await res.text();
+          console.error('Error details:', errorText);
+          throw new Error(`Server error: ${res.status}`);
+        }
+        
         const result = await res.json();
         console.log('Invitation response result:', result);
         return result;

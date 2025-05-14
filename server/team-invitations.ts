@@ -64,6 +64,15 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
     const userId = req.user?.id;
     console.log('Responding to invitation:', { tokenOrId, action, userId });
     
+    // תיעוד מפורט יותר של הבקשה
+    console.log('Invitation response request details:', {
+      tokenOrId,
+      action,
+      userId,
+      headers: req.headers,
+      cookies: req.cookies
+    });
+    
     if (!userId) {
       return res.status(401).json({ error: 'Must be authenticated to respond to an invitation' });
     }
@@ -85,33 +94,36 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
     });
     
     try {
-      // Get all tokens from the database to debug
-      const allTokensStmt = "SELECT id, token FROM team_invitations";
-      const allTokens = storage.db ? storage.db.prepare(allTokensStmt).all() : [];
-      console.log('All tokens in database:', allTokens);
-      
-      // Check if tokenOrId is a number or a string token
+      // בדוק אם זהו מזהה מספרי או טוקן
       if (/^\d+$/.test(tokenOrId)) {
-        // It's a number, treat as ID
+        // מזהה מספרי
         const invitationId = parseInt(tokenOrId);
         invitation = await storage.getTeamInvitationById(invitationId);
         console.log('Looking up invitation by ID:', invitationId, invitation);
       } else {
-        // Hack: Try looking up by ID first, for testing
-        console.log('Trying to find by numeric ID in tokens table');
-        if (allTokens && allTokens.length > 0) {
-          const foundInvitation = allTokens.find(t => t.token === tokenOrId);
-          if (foundInvitation) {
-            console.log('Found invitation by token in local search:', foundInvitation);
-            invitation = await storage.getTeamInvitationById(foundInvitation.id);
-          }
-        }
+        // טוקן
+        console.log('Looking up invitation directly by token:', tokenOrId);
+        invitation = await storage.getTeamInvitationByToken(tokenOrId);
         
-        // If not found, try by token
+        // אם לא מצאנו, ננסה לחפש בדרכים חלופיות
         if (!invitation) {
-          console.log('Searching for invitation with token:', tokenOrId);
-          invitation = await storage.getTeamInvitationByToken(tokenOrId);
-          console.log('Looking up invitation by token result:', invitation);
+          console.log('Invitation not found by direct token lookup, trying alternative method');
+          
+          // אופציונלי, אם יש גישה למסד הנתונים ישירות - נוסיף לוג חיפוש
+          try {
+            if (typeof storage.getInvitationsByQuery === 'function') {
+              const invitations = await storage.getInvitationsByQuery(
+                'SELECT * FROM team_invitations WHERE token = ?', 
+                [tokenOrId]
+              );
+              if (invitations && invitations.length > 0) {
+                invitation = invitations[0];
+                console.log('Found invitation through query:', invitation);
+              }
+            }
+          } catch (dbErr) {
+            console.error('Error in direct DB query:', dbErr);
+          }
         }
       }
     } catch (err) {
