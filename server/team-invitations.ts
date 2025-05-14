@@ -19,13 +19,18 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
       return res.status(404).json([]);
     }
     
+    console.log('Fetching invitations for email:', user.email);
+    
     const invitations = await storage.getTeamInvitationsByEmail(user.email);
+    console.log('Found invitations:', invitations);
     
     // Filter out pending invitations only
     const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
+    console.log('Pending invitations:', pendingInvitations);
     
     // Don't expose tokens in the response
     const safeInvitations = pendingInvitations.map(({ token, ...rest }) => rest);
+    console.log('Safe invitations to return:', safeInvitations);
     
     res.json(safeInvitations);
   } catch (error) {
