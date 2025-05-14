@@ -9,7 +9,16 @@ import {
   TimeStat,
   TopicDistribution,
   WeeklyData,
-  TimeEntrySummary
+  TimeEntrySummary,
+  Team,
+  InsertTeam,
+  TeamMember,
+  InsertTeamMember,
+  TeamInvitation,
+  InsertTeamInvitation,
+  TeamTimeStat,
+  TeamTopicDistribution,
+  TeamMemberActivity
 } from "@shared/schema";
 import { IStorage, TimeEntryFilters } from './storage';
 import path from 'path';
