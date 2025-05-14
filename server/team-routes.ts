@@ -121,25 +121,24 @@ teamRouter.post('/teams', isAuthenticated, async (req, res) => {
     
     const validatedData = schema.parse(req.body);
     
-    const team = await storage.createTeam({
-      name: validatedData.name,
-      ownerId: userId,
-    });
-    
-    // Automatically add the creator as a member with role 'owner'
-    await storage.addTeamMember({
-      teamId: team.id,
-      userId: userId,
-      role: 'owner',
-    });
-    
-    res.status(201).json(team);
+    try {
+      const team = await storage.createTeam({
+        name: validatedData.name,
+        ownerId: userId,
+      });
+      
+      // No need to add the creator as a member again since createTeam already does this
+      return res.status(201).json(team);
+    } catch (error) {
+      console.error('Error creating team:', error);
+      return res.status(500).json({ error: 'Failed to create team' });
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
     console.error('Error creating team:', error);
-    res.status(500).json({ error: 'Error creating team' });
+    return res.status(500).json({ error: 'Error creating team' });
   }
 });
 

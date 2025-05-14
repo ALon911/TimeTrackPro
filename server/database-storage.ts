@@ -864,16 +864,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addTeamMember(teamMember: InsertTeamMember): Promise<TeamMember> {
-    const stmt = this.db.prepare('INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)');
-    const info = stmt.run(teamMember.teamId, teamMember.userId, teamMember.role);
-    
-    return {
-      id: info.lastInsertRowid as number,
-      teamId: teamMember.teamId,
-      userId: teamMember.userId,
-      role: teamMember.role,
-      joinedAt: new Date().toISOString()
-    };
+    try {
+      // First check if the member already exists
+      const existingMemberStmt = this.db.prepare('SELECT * FROM team_members WHERE team_id = ? AND user_id = ?');
+      const existingMember = existingMemberStmt.get(teamMember.teamId, teamMember.userId) as TeamMember | undefined;
+      
+      if (existingMember) {
+        // If member already exists, return it
+        return existingMember;
+      }
+      
+      // Otherwise add the new member
+      const stmt = this.db.prepare('INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)');
+      const info = stmt.run(teamMember.teamId, teamMember.userId, teamMember.role);
+      
+      return {
+        id: info.lastInsertRowid as number,
+        teamId: teamMember.teamId,
+        userId: teamMember.userId,
+        role: teamMember.role,
+        joinedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error("Error adding team member:", error);
+      
+      // If there was an error but it's a unique constraint failure, we can still get the existing record
+      const memberStmt = this.db.prepare('SELECT * FROM team_members WHERE team_id = ? AND user_id = ?');
+      const member = memberStmt.get(teamMember.teamId, teamMember.userId) as TeamMember | undefined;
+      
+      if (member) {
+        return member;
+      }
+      
+      // If we couldn't recover, rethrow the error
+      throw error;
+    }
   }
 
   async removeTeamMember(teamId: number, userId: number): Promise<boolean> {
