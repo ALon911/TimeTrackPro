@@ -222,7 +222,7 @@ export default function TeamStatsPage() {
                       <CardTitle>{topic.topic.name}</CardTitle>
                     </div>
                     <div className="text-xl font-bold">
-                      {topic.totalSeconds > 0 ? `${topic.percentage.toFixed(1)}%` : '-'}
+                      {topic.totalSeconds > 0 && topic.percentage > 0 ? `${topic.percentage.toFixed(1)}%` : '-'}
                     </div>
                   </div>
                 </CardHeader>
