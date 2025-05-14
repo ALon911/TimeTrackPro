@@ -12,6 +12,7 @@ import TimeEntriesPage from "@/pages/time-entries-page";
 import TopicsPage from "@/pages/topics-page";
 import ReportsPage from "@/pages/reports-page";
 import SettingsPage from "@/pages/settings-page";
+import TeamsPage from "@/pages/teams-page";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/time-entries" component={TimeEntriesPage} />
       <ProtectedRoute path="/topics" component={TopicsPage} />
       <ProtectedRoute path="/reports" component={ReportsPage} />
+      <ProtectedRoute path="/teams" component={TeamsPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
