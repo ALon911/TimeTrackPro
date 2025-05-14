@@ -25,12 +25,12 @@ export default function TimeEntriesPage() {
       <Sidebar />
       
       <main className="flex-1 flex flex-col min-h-screen">
-        <header className="bg-white shadow-sm p-4 flex md:hidden items-center justify-between">
+        <header className="bg-white dark:bg-slate-800 shadow-sm p-4 flex md:hidden items-center justify-between">
           <button className="p-1">
             <span className="material-icons">menu</span>
           </button>
           <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-primary dark:bg-primary text-white dark:text-slate-800 flex items-center justify-center">
             <span className="text-sm font-medium">מ</span>
           </div>
         </header>
@@ -38,19 +38,19 @@ export default function TimeEntriesPage() {
         <div className="flex-1 p-4 md:p-6">
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-1">מעקב זמן</h2>
-            <p className="text-neutral-600">נהל את רשומות הזמן שלך</p>
+            <p className="text-neutral-600 dark:text-neutral-400">נהל את רשומות הזמן שלך</p>
           </div>
           
           {/* Timer Section */}
-          <section className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">מעקב זמן</h3>
+              <h3 className="text-xl font-semibold">נתחיל לעקוב</h3>
             </div>
             <TimeTracker />
           </section>
           
           {/* Filters and Entries */}
-          <section className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <section className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">רשומות זמן</h3>
             </div>

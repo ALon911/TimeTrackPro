@@ -26,7 +26,7 @@ export function MobileHeader() {
       <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
       
       <UserProfileDialog>
-        <Avatar className="h-8 w-8 bg-primary text-primary-foreground cursor-pointer">
+        <Avatar className="h-8 w-8 bg-primary text-white dark:text-slate-800 cursor-pointer">
           <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
         </Avatar>
       </UserProfileDialog>
