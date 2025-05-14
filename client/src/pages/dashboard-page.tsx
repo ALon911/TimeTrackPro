@@ -8,6 +8,7 @@ import { WeeklyChart } from "@/components/charts/weekly-chart";
 import { TopicDistributionChart } from "@/components/charts/topic-distribution-chart";
 import { TimeEntriesTable } from "@/components/time-entries-table";
 import { MobileNavigation } from "@/components/mobile-navigation";
+import { InvitationNotification } from "@/components/invitation-notification";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, CalendarCheck2, Calendar, TrendingUp, ListChecks } from "lucide-react";
 

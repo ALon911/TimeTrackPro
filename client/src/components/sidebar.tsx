@@ -1,10 +1,13 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useTeams } from "@/hooks/use-teams";
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-switcher";
+import { BellIcon } from "lucide-react";
 
 export function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { myInvitations, isLoadingMyInvitations } = useTeams();
   
   return (
     <aside className="hidden md:flex md:w-64 bg-card shadow-md flex-col h-screen sticky top-0">
@@ -74,6 +77,16 @@ export function Sidebar() {
               }`}>
                 <span className="material-icons ml-3">group</span>
                 <span>צוותים</span>
+                {!isLoadingMyInvitations && myInvitations && myInvitations.length > 0 && (
+                  <div className="flex items-center mr-2">
+                    <div className="relative">
+                      <BellIcon className="h-5 w-5 text-amber-500" />
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {myInvitations.length}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </a>
             </Link>
           </li>
