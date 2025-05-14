@@ -66,7 +66,7 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
       email,
       status: 'pending',
       token,
-      inviterId: req.user.id
+      invitedBy: req.user.id
     });
     
     console.log(`Invitation created with ID: ${invitation.id}`);

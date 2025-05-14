@@ -86,6 +86,8 @@ export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).pi
   teamId: true,
   email: true,
   invitedBy: true,
+  status: true,
+  token: true,
 });
 
 // Topics schema
