@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, UserMinus } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { AddTeamMemberDialog } from "@/components/add-team-member-dialog";
 
 interface TeamMembersDialogProps {
   teamId: number;

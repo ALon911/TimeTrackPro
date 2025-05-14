@@ -37,6 +37,13 @@ export interface TeamFormData {
   name: string;
 }
 
+// ממשק להוספת חבר ישירות
+interface AddMemberData {
+  teamId: number;
+  email: string;
+  role?: 'member' | 'admin';
+}
+
 export function useTeams() {
   const { toast } = useToast();
 
@@ -168,6 +175,32 @@ export function useTeams() {
     }
   });
 
+  // הוספת חבר ישירות לצוות ללא תהליך הזמנה
+  const addMemberMutation = useMutation({
+    mutationFn: async (data: AddMemberData) => {
+      const res = await apiRequest('POST', `/api/teams/${data.teamId}/members`, {
+        email: data.email,
+        role: data.role || 'member'
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "חבר צוות נוסף בהצלחה",
+        description: "המשתמש נוסף לצוות בהצלחה",
+      });
+      // רענון רשימת החברים וצוותים
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "שגיאה בהוספת חבר צוות",
+        description: error.message || "אירעה שגיאה בעת הוספת חבר הצוות",
+        variant: "destructive",
+      });
+    }
+  });
+
   return {
     teams,
     isLoadingTeams,
@@ -176,6 +209,7 @@ export function useTeams() {
     createTeamMutation,
     deleteTeamMutation,
     sendInvitationMutation,
-    respondToInvitationMutation
+    respondToInvitationMutation,
+    addMemberMutation
   };
 }

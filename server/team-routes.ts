@@ -225,6 +225,50 @@ teamRouter.delete('/teams/:teamId/members/:userId', isTeamOwner, async (req, res
   }
 });
 
+// Add a team member directly (without invitation)
+teamRouter.post('/teams/:teamId/members', isTeamOwner, async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.teamId);
+    
+    const schema = z.object({
+      email: z.string().email(),
+      role: z.enum(['member', 'admin']).default('member'),
+    });
+    
+    const validatedData = schema.parse(req.body);
+    
+    // Check if user exists
+    const existingUser = await storage.getUserByEmail(validatedData.email);
+    
+    if (!existingUser) {
+      return res.status(404).json({ error: 'User with this email does not exist in the system' });
+    }
+    
+    // If user exists, check if already a member
+    const members = await storage.getTeamMembers(teamId);
+    const isAlreadyMember = members.some(member => member.userId === existingUser.id);
+    
+    if (isAlreadyMember) {
+      return res.status(400).json({ error: 'User is already a member of this team' });
+    }
+    
+    // Add user to the team
+    const teamMember = await storage.addTeamMember({
+      teamId: teamId,
+      userId: existingUser.id,
+      role: validatedData.role
+    });
+    
+    res.status(201).json(teamMember);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error adding team member:', error);
+    res.status(500).json({ error: 'Error adding team member' });
+  }
+});
+
 // Update a team member's role
 teamRouter.patch('/teams/:teamId/members/:userId', isTeamOwner, async (req, res) => {
   try {
