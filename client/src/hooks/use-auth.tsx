@@ -124,7 +124,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // מחיקת חשבון
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", "/api/user");
+      await apiRequest("DELETE", "/api/user/account");
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/user"], null);
+      toast({
+        title: "החשבון נמחק בהצלחה",
+        description: "החשבון שלך נמחק בהצלחה.",
+      });
     },
     onError: (error: Error) => {
       toast({
