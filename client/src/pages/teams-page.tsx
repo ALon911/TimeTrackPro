@@ -154,14 +154,14 @@ export default function TeamsPage() {
                     {team.ownerId === user?.id ? 'מנהל הצוות' : 'חבר צוות'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                   {team.ownerId === user?.id && (
-                    <div className="mb-5">
-                      <div className="border border-blue-500 rounded-md p-4 bg-blue-50 dark:bg-blue-950/30 mb-3">
-                        <h4 className="text-base font-medium text-blue-700 dark:text-blue-400 mb-2">
+                    <div className="mb-4 sm:mb-5">
+                      <div className="border border-blue-500 rounded-md p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 mb-3">
+                        <h4 className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 mb-1 sm:mb-2">
                           שליחת הזמנה למשתמש
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-2 sm:mb-3">
                           לשליחת הזמנה למשתמש, לחץ על הכפתור:
                         </p>
                         <div>

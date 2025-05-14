@@ -148,28 +148,29 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md dark:border-gray-700">
         <DialogHeader>
-          <DialogTitle>חברי צוות: {teamName}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="dark:text-white">חברי צוות: {teamName}</DialogTitle>
+          <DialogDescription className="dark:text-gray-300">
             רשימת החברים בצוות זה
           </DialogDescription>
         </DialogHeader>
         
         {isOwner && (
-          <div className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6">
-            <h3 className="text-lg font-semibold mb-3">הוספת משתמש ישירות</h3>
+          <div className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900/70 mb-6">
+            <h3 className="text-lg font-semibold mb-3 dark:text-white">הוספת משתמש ישירות</h3>
             <form onSubmit={addMemberDirectly} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="email">כתובת אימייל</Label>
+                <Label htmlFor="email" className="dark:text-gray-200">כתובת אימייל</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="הזן את כתובת האימייל של המשתמש"
+                  className="dark:bg-slate-800 dark:text-white dark:border-gray-700"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground dark:text-gray-300">
                   המשתמש חייב להיות רשום כבר במערכת
                 </p>
               </div>
@@ -190,24 +191,24 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
         {/* הסרנו את הבלוק הכפול להוספת משתמשים */}
         
         <div className="py-4">
-          <h3 className="text-lg font-semibold mb-3">חברי הצוות</h3>
+          <h3 className="text-lg font-semibold mb-3 dark:text-white">חברי הצוות</h3>
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : members.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground dark:text-gray-300">
               אין חברים בצוות זה
             </div>
           ) : (
             <div className="space-y-4">
               {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 border rounded-md">
+                <div key={member.id} className="flex items-center justify-between p-3 border rounded-md dark:border-gray-700">
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium dark:text-white">
                       {member.user?.email || 'משתמש לא ידוע'}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground dark:text-gray-300">
                       {member.role === 'owner' ? 'מנהל צוות' : 'חבר צוות'}
                     </div>
                   </div>
@@ -232,8 +233,8 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
         
         <DialogFooter className="flex flex-col gap-4">
           {(isOwner || forceOwner) && (
-            <div className="w-full p-4 border-2 border-dashed border-red-500 rounded-lg bg-red-50 dark:bg-red-950">
-              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-3">שליחת הזמנה למשתמש</h3>
+            <div className="w-full p-4 border-2 border-dashed border-red-500 rounded-lg bg-red-50 dark:bg-red-950/50">
+              <h3 className="text-lg font-bold text-red-600 dark:text-red-300 mb-3">שליחת הזמנה למשתמש</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const emailInput = e.currentTarget.querySelector('input');
@@ -285,7 +286,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
                   <Input
                     type="email"
                     placeholder="הזן אימייל של משתמש קיים"
-                    className="flex-1"
+                    className="flex-1 dark:bg-slate-800 dark:text-white dark:border-gray-700"
                     dir="ltr"
                   />
                   <Button 
@@ -298,7 +299,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
                     שלח הזמנה
                   </Button>
                 </div>
-                <p className="text-sm text-blue-600 dark:text-blue-400">
+                <p className="text-sm text-blue-600 dark:text-blue-300">
                   שים לב: המשתמש יקבל הזמנה ויצטרף לצוות רק לאחר אישור
                 </p>
               </form>
