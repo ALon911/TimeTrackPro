@@ -51,20 +51,21 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen flex flex-col md:flex-row" dir="rtl">
       <Sidebar />
       
-      <div className="flex-1 p-6 lg:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 tracking-tight">הצוותים שלי</h1>
-          <p className="text-muted-foreground">נהל את הצוותים שלך והזמן חברים חדשים</p>
-        </div>
+      <main className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 p-4 md:p-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2 tracking-tight">הצוותים שלי</h1>
+            <p className="text-muted-foreground">נהל את הצוותים שלך והזמן חברים חדשים</p>
+          </div>
 
-        {/* הזמנות ממתינות - הוזז למעלה */}
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
-          <TeamInvitationsList />
-        </div>
+          {/* הזמנות ממתינות - הוזז למעלה */}
+          <div className="mb-10">
+            <h2 className="text-xl font-semibold mb-4">הזמנות ממתינות</h2>
+            <TeamInvitationsList />
+          </div>
 
         {/* טופס יצירת צוות */}
         <Dialog open={isCreateTeamOpen} onOpenChange={setIsCreateTeamOpen}>
