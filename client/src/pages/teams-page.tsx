@@ -153,6 +153,52 @@ export default function TeamsPage() {
         <p className="text-muted-foreground">נהל את הצוותים שלך ועבוד עם אחרים</p>
       </div>
       
+      {/* הזמנות צוות פתוחות */}
+      {myInvitations && myInvitations.length > 0 && (
+        <section className="border-2 border-primary/50 rounded-md p-4 mb-8 bg-primary/5">
+          <h3 className="text-xl font-bold mb-4 text-primary">הזמנות ממתינות</h3>
+          <div className="space-y-4">
+            {isLoadingMyInvitations ? (
+              <div className="flex justify-center items-center h-24">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              myInvitations.map((invitation) => (
+                <Alert 
+                  key={invitation.id} 
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  variant="default"
+                >
+                  <div>
+                    <AlertTitle className="mb-2 font-bold">הזמנה חדשה לצוות "{invitation.team?.name || invitation.teamName}"</AlertTitle>
+                    <AlertDescription>
+                      <p>הוזמנת להצטרף לצוות זה - אנא אשר או דחה את ההזמנה</p>
+                    </AlertDescription>
+                  </div>
+                  <div className="flex gap-2 mt-2 sm:mt-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'decline')}
+                    >
+                      <UserX className="ml-2 h-4 w-4" />
+                      דחה
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'accept')}
+                    >
+                      <UserPlus className="ml-2 h-4 w-4" />
+                      הצטרף
+                    </Button>
+                  </div>
+                </Alert>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+      
       {/* כפתור יצירת צוות */}
       <div className="mb-6">
         <Button onClick={() => setIsCreateTeamOpen(true)}>
@@ -235,51 +281,6 @@ export default function TeamsPage() {
             );
           })}
         </div>
-      )}
-      
-      {/* הזמנות צוות פתוחות */}
-      {myInvitations && myInvitations.length > 0 && (
-        <section className="mt-10">
-          <h3 className="text-xl font-bold mb-4">הזמנות פתוחות</h3>
-          <div className="space-y-4">
-            {isLoadingMyInvitations ? (
-              <div className="flex justify-center items-center h-24">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              myInvitations.map((invitation) => (
-                <Alert 
-                  key={invitation.id} 
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                >
-                  <div>
-                    <AlertTitle className="mb-2">הוזמנת להצטרף לצוות "{invitation.team?.name || invitation.teamName}"</AlertTitle>
-                    <AlertDescription>
-                      <p>הוזמנת להצטרף לצוות זה</p>
-                    </AlertDescription>
-                  </div>
-                  <div className="flex gap-2 mt-2 sm:mt-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'decline')}
-                    >
-                      <UserX className="ml-2 h-4 w-4" />
-                      דחה
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleRespondToInvitation(invitation, invitation.id, 'accept')}
-                    >
-                      <UserPlus className="ml-2 h-4 w-4" />
-                      הצטרף
-                    </Button>
-                  </div>
-                </Alert>
-              ))
-            )}
-          </div>
-        </section>
       )}
       
       {/* דיאלוגים לניהול צוות */}
