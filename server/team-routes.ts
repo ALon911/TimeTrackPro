@@ -312,8 +312,8 @@ teamRouter.post('/teams/:teamId/invitations', isTeamOwner, async (req, res) => {
       teamId,
       email: validatedData.email,
       invitedBy: userId,
-      token,
-      expiresAt: expiresAt.toISOString(),
+      token, 
+      // expiresAt is handled in the schema defaults
     });
     
     // Send invitation email

@@ -839,28 +839,54 @@ export class DatabaseStorage implements IStorage {
 
   // Team members methods
   async getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]> {
-    const stmt = this.db.prepare(`
-      SELECT tm.*, u.id as user_id, u.email, u.created_at
-      FROM team_members tm
-      JOIN users u ON tm.user_id = u.id
-      WHERE tm.team_id = ?
-    `);
-    
-    const members = stmt.all(teamId) as any[];
-    
-    return members.map(member => ({
-      id: member.id,
-      teamId: member.team_id,
-      userId: member.user_id,
-      role: member.role,
-      joinedAt: member.joined_at,
-      user: {
-        id: member.user_id,
-        email: member.email,
-        password: '', // We don't want to expose the password
-        createdAt: member.created_at
+    try {
+      // First check if the team exists
+      const teamCheck = this.db.prepare('SELECT * FROM teams WHERE id = ?');
+      const team = teamCheck.get(teamId);
+      if (!team) {
+        return [];
       }
-    }));
+      
+      // Get the columns from the team_members table
+      const columnsStmt = this.db.prepare("PRAGMA table_info(team_members)");
+      const columns = columnsStmt.all();
+      const teamMemberColumns = columns.map(col => col.name);
+      
+      // Check if the necessary columns exist
+      const hasTeamId = teamMemberColumns.includes('team_id');
+      const hasUserId = teamMemberColumns.includes('user_id');
+      
+      if (!hasTeamId || !hasUserId) {
+        console.error('Missing columns in team_members table:', { hasTeamId, hasUserId });
+        return [];
+      }
+      
+      const stmt = this.db.prepare(`
+        SELECT tm.*, u.id as user_id, u.email, u.username, u.created_at
+        FROM team_members tm
+        JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = ?
+      `);
+      
+      const members = stmt.all(teamId) as any[];
+      
+      return members.map(member => ({
+        id: member.id,
+        teamId: member.team_id,
+        userId: member.user_id,
+        role: member.role || 'member',
+        joinedAt: member.joined_at || new Date().toISOString(),
+        user: {
+          id: member.user_id,
+          email: member.email,
+          password: '', // We don't want to expose the password
+          createdAt: member.created_at
+        }
+      }));
+    } catch (error) {
+      console.error('Error getting team members:', error);
+      return [];
+    }
   }
 
   async addTeamMember(teamMember: InsertTeamMember): Promise<TeamMember> {
