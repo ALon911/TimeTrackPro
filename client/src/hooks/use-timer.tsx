@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { audioManager } from '@/lib/audio-utils';
 
 interface UseTimerOptions {
   initialSeconds?: number;
@@ -48,6 +49,8 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
             if (prevSeconds <= 1) {
               setIsRunning(false);
               setIsCompleted(true);
+              // השמעת צליל סיום
+              audioManager.playTimerComplete();
               return 0;
             }
             return prevSeconds - 1;
@@ -81,6 +84,8 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     setIsCountDown(true);
     setIsCompleted(false);
     setIsRunning(true);
+    // השמעת צליל התחלה
+    audioManager.playTimerStart();
   }, []);
 
   const pause = useCallback((): void => {
