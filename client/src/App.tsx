@@ -30,9 +30,10 @@ function Router() {
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/teams/:teamId/add-member" component={AddDirectMemberPage} />
-      {/* הגדרה מחדש של מסלולי ההזמנות - עם תיקון בסינטקס של wouter */}
+      {/* הגדרת כל נתיבי ההזמנות האפשריים */}
       <Route path="/invitations/:token" component={InvitationHandlerPage} />
       <Route path="/accept-invitation/:token" component={InvitationHandlerPage} />
+      <Route path="/invitation/:token" component={InvitationHandlerPage} />
       {/* נתיב כללי שיתפוס הכל */}
       <Route component={NotFound} />
     </Switch>

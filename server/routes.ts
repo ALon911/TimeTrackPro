@@ -37,6 +37,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // נתיב חלופי נוסף אפשרי עבור הזמנות
+  app.get('/invitation/:token', (req, res, next) => {
+    console.log('Alternative invitation route hit with token:', req.params.token);
+    // Send the index.html to handle on client side with React Router
+    const indexPath = path.resolve('client/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html file:', err);
+        next(err);
+      } else {
+        console.log('Successfully served index.html for /invitation/:token');
+      }
+    });
+  });
+  
   // הפעם נשתמש בנתיב ישיר לAPI במקום לשאת את הלוגיקה בצד הלקוח
   app.get('/accept-invitation/:token', (req, res) => {
     const token = req.params.token;
