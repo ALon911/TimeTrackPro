@@ -1,51 +1,64 @@
 import nodemailer from 'nodemailer';
 import { TeamInvitation, User, Team } from '@shared/schema';
-
-// נקודות חיבור
-interface EmailServiceConfig {
-  host?: string;
-  port?: number;
-  secure?: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
-  from: string;
-}
+import { emailConfig, isEmailConfigured } from './config';
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private fromAddress: string;
   private isConfigured: boolean = false;
 
-  constructor(config?: EmailServiceConfig) {
-    if (config) {
-      this.configure(config);
+  constructor() {
+    this.fromAddress = emailConfig.from;
+    
+    if (isEmailConfigured()) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host: emailConfig.host,
+          port: emailConfig.port,
+          secure: emailConfig.secure,
+          auth: {
+            user: emailConfig.auth.user,
+            pass: emailConfig.auth.pass
+          }
+        });
+        this.isConfigured = true;
+        console.log('Email service configured successfully');
+      } catch (error) {
+        console.error('Error configuring email service:', error);
+        this.isConfigured = false;
+        this.transporter = nodemailer.createTransport({});
+      }
     } else {
+      console.warn('Email service not configured. Set EMAIL_USER, EMAIL_PASS and EMAIL_FROM environment variables.');
       this.isConfigured = false;
-      this.fromAddress = '';
       this.transporter = nodemailer.createTransport({});
     }
   }
 
-  // מתודה לקונפיגורציה של שירות המייל
-  configure(config: EmailServiceConfig): void {
-    try {
-      this.transporter = nodemailer.createTransport({
-        host: config.host || 'smtp.gmail.com',
-        port: config.port || 587,
-        secure: config.secure || false,
-        auth: {
-          user: config.auth.user,
-          pass: config.auth.pass
-        }
-      });
-      this.fromAddress = config.from;
-      this.isConfigured = true;
-    } catch (error) {
-      console.error('Error configuring email service:', error);
-      this.isConfigured = false;
+  // מתודה ליצירת חיבור חדש אם נוספו פרטי הקונפיגורציה
+  refreshConfiguration(): boolean {
+    if (isEmailConfigured()) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host: emailConfig.host,
+          port: emailConfig.port,
+          secure: emailConfig.secure,
+          auth: {
+            user: emailConfig.auth.user,
+            pass: emailConfig.auth.pass
+          }
+        });
+        this.fromAddress = emailConfig.from;
+        this.isConfigured = true;
+        console.log('Email service reconfigured successfully');
+        return true;
+      } catch (error) {
+        console.error('Error reconfiguring email service:', error);
+        this.isConfigured = false;
+        return false;
+      }
     }
+    return false;
   }
 
   // האם השירות מוגדר נכון

@@ -6,6 +6,7 @@ import {
   insertTimeEntrySchema 
 } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./auth";
+import { teamRouter } from "./team-routes";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -363,6 +364,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+
+  // Register team routes
+  app.use('/api', teamRouter);
+  
+  // Add delete account endpoint
+  app.delete("/api/user/account", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Delete the user account
+      const success = await storage.deleteUser(userId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete account" });
+      }
+      
+      // Log the user out after successful deletion
+      req.logout((err) => {
+        if (err) {
+          console.error("Error logging out after account deletion:", err);
+        }
+        res.status(204).end();
+      });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
     }
   });
 
