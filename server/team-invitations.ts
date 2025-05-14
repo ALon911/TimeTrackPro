@@ -44,8 +44,9 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
     });
     console.log('Enhanced invitations:', enhancedInvitations);
     
-    // Don't expose tokens in the response
-    const safeInvitations = enhancedInvitations.map(({ token, ...rest }) => rest);
+    // שים לב: אני לא מסיר את ה-token עכשיו כי צריך אותו בצד הלקוח לתגובה על ההזמנה
+    // const safeInvitations = enhancedInvitations.map(({ token, ...rest }) => rest);
+    const safeInvitations = enhancedInvitations;
     console.log('Safe invitations to return:', safeInvitations);
     
     res.json(safeInvitations);

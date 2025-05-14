@@ -37,7 +37,16 @@ export function InvitationNotification() {
   // Only show the first invitation in this notification
   const invitation = myInvitations[0];
   
-  const handleAction = (token: string, action: 'accept' | 'decline') => {
+  const handleAction = (invitationId: number, action: 'accept' | 'decline') => {
+    const invitation = myInvitations.find(inv => inv.id === invitationId);
+    if (!invitation) {
+      console.error('Invitation not found', invitationId);
+      return;
+    }
+    
+    const token = invitation.token || invitationId.toString();
+    console.log(`Using ${invitation.token ? 'token' : 'ID'} to respond to invitation:`, token);
+    
     respondToInvitationMutation.mutate(
       { token, action },
       {
@@ -76,7 +85,7 @@ export function InvitationNotification() {
             variant="outline" 
             className="bg-transparent hover:bg-neutral-100 dark:hover:bg-slate-700 text-black dark:text-white border-neutral-300 dark:border-slate-600"
             disabled={respondToInvitationMutation.isPending}
-            onClick={() => handleAction(invitation.token, 'decline')}
+            onClick={() => handleAction(invitation.id, 'decline')}
           >
             <XIcon className="h-4 w-4 ml-1" />
             <span>דחה</span>
@@ -84,7 +93,7 @@ export function InvitationNotification() {
           <Button 
             className="bg-primary hover:bg-primary/90 text-white"
             disabled={respondToInvitationMutation.isPending}
-            onClick={() => handleAction(invitation.token, 'accept')}
+            onClick={() => handleAction(invitation.id, 'accept')}
           >
             <CheckIcon className="h-4 w-4 ml-1" />
             <span>הצטרף</span>

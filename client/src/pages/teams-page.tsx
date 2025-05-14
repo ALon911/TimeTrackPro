@@ -205,11 +205,20 @@ function TeamInvitationsList() {
 
   const handleResponse = (invitationId: number, action: 'accept' | 'decline') => {
     const invitation = myInvitations.find(inv => inv.id === invitationId);
-    if (!invitation || !invitation.token) {
-      console.error('Invitation not found or token missing', invitationId);
+    if (!invitation) {
+      console.error('Invitation not found', invitationId);
       return;
     }
-    respondToInvitationMutation.mutate({ token: invitation.token, action });
+    
+    // ניסיון עם ID ואז token אם קיים
+    if (invitation.token) {
+      console.log('Using token to respond to invitation:', invitation.token);
+      respondToInvitationMutation.mutate({ token: invitation.token, action });
+    } else {
+      // אם אין token, ננסה עם המזהה של ההזמנה כמחרוזת
+      console.log('Using ID as token to respond to invitation:', invitationId);
+      respondToInvitationMutation.mutate({ token: invitationId.toString(), action });
+    }
   };
 
   if (isLoadingMyInvitations) {
