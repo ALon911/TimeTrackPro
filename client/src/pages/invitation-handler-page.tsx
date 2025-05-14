@@ -19,38 +19,59 @@ export default function InvitationHandlerPage() {
 
   useEffect(() => {
     console.log('InvitationHandlerPage useEffect triggered');
+    console.log('Current user:', user);
+    console.log('Auth loading:', authLoading);
+    console.log('Token value in useEffect:', token);
+    
+    // Debug location
+    console.log('Current location:', window.location.pathname);
+    
     // אם המשתמש לא מחובר, הפנה אותו לעמוד ההתחברות
     if (!user && !authLoading) {
+      console.log('User not authenticated, redirecting to auth page');
       setStatus("unauthorized");
       return;
     }
 
     // אם המשתמש מחובר ויש טוקן, קבל את ההזמנה
     if (user && token) {
+      console.log('User authenticated and token exists, handling invitation');
       handleAcceptInvitation();
+    } else {
+      console.log('Not handling invitation yet:', { user: !!user, token: !!token });
     }
   }, [user, authLoading, token]);
 
   const handleAcceptInvitation = async () => {
     try {
+      console.log(`Starting handleAcceptInvitation with token: ${token}`);
       setStatus("loading");
+      
+      // הדפס את המידע שנשלח בבקשה
+      console.log('Sending mutation with data:', { token, action: "accept" });
       
       respondToInvitationMutation.mutate(
         { token, action: "accept" },
         {
           onSuccess: (data) => {
+            console.log('Invitation response success:', data);
             setStatus("success");
             setMessage(data.message || "ההזמנה התקבלה בהצלחה");
           },
           onError: (error: any) => {
+            console.error("Detailed error accepting invitation:", {
+              error,
+              message: error.message,
+              statusCode: error.statusCode,
+              response: error.response
+            });
             setStatus("error");
             setMessage(error.message || "אירעה שגיאה בעת קבלת ההזמנה");
-            console.error("Error accepting invitation:", error);
           }
         }
       );
     } catch (error) {
-      console.error("Error in invitation handler:", error);
+      console.error("Uncaught error in invitation handler:", error);
       setStatus("error");
       setMessage("אירעה שגיאה בעת עיבוד ההזמנה");
     }
