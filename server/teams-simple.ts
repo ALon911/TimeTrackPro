@@ -528,7 +528,21 @@ teamsRouter.get('/api/teams/:id/stats/topic-distribution', isAuthenticated, asyn
     });
     
     const topicDistribution = await storage.getTeamTopicDistribution(teamId);
-    res.json(topicDistribution);
+    
+    // Filter out topics with zero seconds (extra safeguard)
+    const filteredTopicDistribution = topicDistribution.filter(topic => topic.totalSeconds > 0);
+    
+    // If we have topics with time, recalculate percentages
+    if (filteredTopicDistribution.length > 0) {
+      const totalTime = filteredTopicDistribution.reduce((sum, topic) => sum + topic.totalSeconds, 0);
+      
+      // Recalculate percentages based on filtered list
+      filteredTopicDistribution.forEach(topic => {
+        topic.percentage = (topic.totalSeconds / totalTime) * 100;
+      });
+    }
+    
+    res.json(filteredTopicDistribution);
   } catch (error) {
     console.error('Error fetching team topic distribution:', error);
     res.status(500).json({ error: 'Failed to fetch team topic distribution' });
