@@ -8,6 +8,7 @@ interface UseTimerOptions {
 
 interface UseTimerReturn {
   seconds: number;
+  setSeconds: React.Dispatch<React.SetStateAction<number>>;
   isRunning: boolean;
   isPaused: boolean;
   start: () => void;
@@ -118,6 +119,7 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
 
   return { 
     seconds, 
+    setSeconds,
     isRunning,
     isPaused,
     start, 

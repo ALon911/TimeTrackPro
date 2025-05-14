@@ -21,26 +21,37 @@ export function TimeTracker() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const { 
     seconds, 
+    setSeconds,
     isRunning,
+    isPaused,
     isCompleted, 
     start, 
     startWithDuration,
     stop, 
+    pause,
+    resume,
     reset, 
     formatTime 
   } = useTimer();
   const { toast } = useToast();
   
-  // Audio notification
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Audio notifications
+  const completeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Create audio element for timer completion notification
-    audioRef.current = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+    // Create audio elements for timer notifications
+    completeAudioRef.current = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+    startAudioRef.current = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
+    
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (completeAudioRef.current) {
+        completeAudioRef.current.pause();
+        completeAudioRef.current = null;
+      }
+      if (startAudioRef.current) {
+        startAudioRef.current.pause();
+        startAudioRef.current = null;
       }
     };
   }, []);
@@ -73,9 +84,9 @@ export function TimeTracker() {
   
   // Play sound when timer completes and save the time entry
   useEffect(() => {
-    if (isCompleted && audioRef.current && startTime && selectedTopic) {
+    if (isCompleted && completeAudioRef.current && startTime && selectedTopic) {
       // Play completion sound
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      completeAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
       
       // Calculate the exact duration based on the original preset
       // This ensures we save the full preset time, not the actual elapsed time
@@ -128,9 +139,28 @@ export function TimeTracker() {
     start();
   }, [validateTopicSelection, start]);
 
+  // Function to set timer duration without starting it
+  const handlePresetSelection = useCallback((minutes: number) => {
+    if (!validateTopicSelection()) return;
+    
+    // Just set the seconds without starting the timer
+    const totalSeconds = minutes * 60;
+    setSeconds(totalSeconds);
+    
+    toast({
+      title: `נבחר טיימר`,
+      description: `הוגדר טיימר ל-${minutes} דקות, לחץ על "התחל" להפעלה`,
+    });
+  }, [validateTopicSelection, setSeconds, toast]);
+  
   // Handle timer with preset duration
   const handleStartTimer = useCallback((minutes: number) => {
     if (!validateTopicSelection()) return;
+    
+    // Play start sound
+    if (startAudioRef.current) {
+      startAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
     
     setStartTime(new Date());
     startWithDuration(minutes);
@@ -181,7 +211,7 @@ export function TimeTracker() {
             <SelectContent>
               {isLoading ? (
                 <SelectItem value="loading">טוען נושאים...</SelectItem>
-              ) : topics && topics.length > 0 ? (
+              ) : topics && Array.isArray(topics) && topics.length > 0 ? (
                 topics.map((topic: any) => (
                   <SelectItem key={topic.id} value={topic.id.toString()}>
                     {topic.name}
@@ -212,11 +242,11 @@ export function TimeTracker() {
       
       {/* Timer Controls */}
       <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-        {!isRunning ? (
+        {!isRunning && !isPaused ? (
           <>
             {/* Preset timer buttons */}
             <Button 
-              onClick={() => handleStartTimer(5)} 
+              onClick={() => handlePresetSelection(5)} 
               className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center"
             >
               <TimerIcon className="ml-1 h-4 w-4" />
@@ -224,7 +254,7 @@ export function TimeTracker() {
             </Button>
             
             <Button 
-              onClick={() => handleStartTimer(20)} 
+              onClick={() => handlePresetSelection(20)} 
               className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 flex items-center"
             >
               <Clock5Icon className="ml-1 h-4 w-4" />
@@ -232,24 +262,63 @@ export function TimeTracker() {
             </Button>
             
             <Button 
-              onClick={() => handleStartTimer(40)} 
+              onClick={() => handlePresetSelection(40)} 
               className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 flex items-center"
             >
               <BellIcon className="ml-1 h-4 w-4" />
               <span>40 דקות</span>
             </Button>
             
+            {/* כפתור התחלה */}
+            {seconds > 0 && (
+              <Button 
+                onClick={() => handleStartTimer(seconds / 60)} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+              >
+                <PlayIcon className="ml-1 h-4 w-4" />
+                <span>התחל</span>
+              </Button>
+            )}
+            
             {/* אין צורך בשעון שסופר מעלה - הסרנו את האפשרות */}
           </>
-        ) : (
-          <Button 
-            onClick={handleStop} 
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
-          >
-            <PauseIcon className="ml-1 h-4 w-4" />
-            <span>ביטול טיימר</span>
-          </Button>
-        )}
+        ) : isRunning ? (
+          <>
+            <Button 
+              onClick={() => pause()} 
+              className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 flex items-center"
+            >
+              <PauseIcon className="ml-1 h-4 w-4" />
+              <span>הפסק זמנית</span>
+            </Button>
+            
+            <Button 
+              onClick={handleStop} 
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+            >
+              <PauseIcon className="ml-1 h-4 w-4" />
+              <span>ביטול טיימר</span>
+            </Button>
+          </>
+        ) : isPaused ? (
+          <>
+            <Button 
+              onClick={() => resume()} 
+              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center"
+            >
+              <PlayIcon className="ml-1 h-4 w-4" />
+              <span>המשך טיימר</span>
+            </Button>
+            
+            <Button 
+              onClick={handleStop} 
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+            >
+              <PauseIcon className="ml-1 h-4 w-4" />
+              <span>ביטול טיימר</span>
+            </Button>
+          </>
+        ) : null}
       </div>
       
       {/* Manual Time Entry */}
