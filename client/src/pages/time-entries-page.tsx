@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout";
 import { TimeTracker } from "@/components/time-tracker";
 import { TimeEntriesTable } from "@/components/time-entries-table";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +19,7 @@ export default function TimeEntriesPage() {
   });
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-1">מעקב זמן</h2>
         <p className="text-neutral-600 dark:text-neutral-400">נהל את רשומות הזמן שלך</p>
@@ -90,6 +89,6 @@ export default function TimeEntriesPage() {
           topicId={selectedTopic !== "all" ? parseInt(selectedTopic) : undefined}
         />
       </section>
-    </Layout>
+    </>
   );
 }

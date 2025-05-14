@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -71,7 +70,7 @@ export default function TopicsPage() {
   };
 
   return (
-    <Layout>
+    <>
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold mb-1">נושאים</h2>
@@ -169,6 +168,6 @@ export default function TopicsPage() {
           </div>
         )}
       </section>
-    </Layout>
+    </>
   );
 }

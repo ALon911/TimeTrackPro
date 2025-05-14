@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -92,16 +91,14 @@ export default function SettingsPage() {
   
   if (!user) {
     return (
-      <Layout>
-        <div className="flex justify-center items-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
+      <div className="flex justify-center items-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-1">הגדרות</h2>
         <p className="text-neutral-600">נהל את פרטי החשבון והעדפות שלך</p>
@@ -230,6 +227,6 @@ export default function SettingsPage() {
           </Card>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
