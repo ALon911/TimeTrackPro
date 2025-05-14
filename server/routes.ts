@@ -25,9 +25,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/topics", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const topics = await storage.getTopics(userId);
+      let topics = await storage.getTopics(userId);
+      
+      // Remove any duplicate topics
+      const uniqueTopics = new Map();
+      topics.forEach(topic => {
+        uniqueTopics.set(topic.id, topic);
+      });
+      
+      // Convert back to array
+      topics = Array.from(uniqueTopics.values());
+      
       res.json(topics);
     } catch (error) {
+      console.error("Error fetching topics:", error);
       res.status(500).json({ message: "Failed to fetch topics" });
     }
   });
