@@ -45,20 +45,6 @@ export default function TimeEntriesPage() {
           <section className="bg-white rounded-xl shadow-md p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">מעקב זמן</h3>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <span className="material-icons ml-2">add</span>
-                    הוסף ידנית
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>הוספת זמן ידנית</DialogTitle>
-                  </DialogHeader>
-                  <ManualTimeEntry />
-                </DialogContent>
-              </Dialog>
             </div>
             <TimeTracker />
           </section>

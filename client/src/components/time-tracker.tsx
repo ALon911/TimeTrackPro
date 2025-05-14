@@ -187,14 +187,55 @@ export function TimeTracker() {
     
   }, [stop, reset, toast]);
 
-  // Reset timer if page is unmounted while running
+  // עדכון פרטי הטיימר ב-localStorage אם הוא פועל
   useEffect(() => {
-    return () => {
-      if (isRunning) {
-        stop();
+    if (isRunning || isPaused) {
+      // שמירת מידע נוסף על הטיימר (נושא, תיאור, זמן התחלה) לשחזור אם המשתמש מרענן את העמוד
+      try {
+        const timerState = localStorage.getItem('timetracker_timer_state');
+        if (timerState) {
+          const parsedState = JSON.parse(timerState);
+          const updatedState = {
+            ...parsedState,
+            selectedTopic: selectedTopic,
+            description: description,
+            startTime: startTime ? startTime.toISOString() : null,
+            totalDuration: seconds
+          };
+          localStorage.setItem('timetracker_timer_state', JSON.stringify(updatedState));
+        }
+      } catch (error) {
+        console.error('Error updating timer state:', error);
       }
-    };
-  }, [isRunning, stop]);
+    }
+  }, [isRunning, isPaused, selectedTopic, description, startTime, seconds]);
+  
+  // טעינת פרטי הטיימר בעת טעינת הקומפוננטה
+  useEffect(() => {
+    try {
+      const timerState = localStorage.getItem('timetracker_timer_state');
+      if (timerState) {
+        const parsedState = JSON.parse(timerState);
+        
+        // אם יש מצב שמור ומידע על הנושא, נשחזר אותו
+        if (parsedState.selectedTopic) {
+          setSelectedTopic(parsedState.selectedTopic);
+        }
+        
+        // נשחזר תיאור אם קיים
+        if (parsedState.description) {
+          setDescription(parsedState.description);
+        }
+        
+        // נשחזר זמן התחלה אם קיים
+        if (parsedState.startTime) {
+          setStartTime(new Date(parsedState.startTime));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading timer state:', error);
+    }
+  }, []);
 
   return (
     <div className="bg-neutral-50 dark:bg-slate-800 rounded-lg p-4 border border-neutral-200 dark:border-slate-700 text-neutral-900 dark:text-neutral-100">
