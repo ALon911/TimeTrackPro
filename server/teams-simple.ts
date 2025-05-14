@@ -423,4 +423,109 @@ function formatTime(seconds: number) {
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+// Get active timers for a team
+teamsRouter.get('/api/teams/:id/active-timers', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Check if user is a member of the team
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isMember = teamMembers.some(member => member.userId === req.user?.id);
+    
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'You do not have permission to view this team\'s timers' });
+    }
+    
+    // Get user IDs of all team members
+    const memberUserIds = teamMembers.map(member => member.userId);
+    
+    // Get active timers for all team members
+    const activeTimers = getTeamActiveTimers(memberUserIds);
+    
+    res.json(activeTimers);
+  } catch (error) {
+    console.error('Error fetching team active timers:', error);
+    res.status(500).json({ error: 'Failed to fetch team active timers' });
+  }
+});
+
+// Update my active timer for team sharing
+teamsRouter.post('/api/teams/share-timer', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    const schema = z.object({
+      topicId: z.number(),
+      topicName: z.string(),
+      topicColor: z.string(),
+      description: z.string().optional().default(''),
+      startTime: z.string(),
+      estimatedEndTime: z.string().nullable().optional(),
+      isPaused: z.boolean().optional().default(false),
+      pausedAt: z.string().nullable().optional(),
+      duration: z.number().nullable().optional(),
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Invalid timer data', details: validationResult.error.errors });
+    }
+    
+    const timerData = validationResult.data;
+    
+    // Create active timer object
+    const activeTimer: ActiveTimer = {
+      userId: req.user.id,
+      username: req.user.username,
+      email: req.user.email,
+      topicId: timerData.topicId,
+      topicName: timerData.topicName,
+      topicColor: timerData.topicColor,
+      description: timerData.description || '',
+      startTime: timerData.startTime,
+      estimatedEndTime: timerData.estimatedEndTime,
+      isPaused: timerData.isPaused || false,
+      pausedAt: timerData.pausedAt,
+      duration: timerData.duration,
+    };
+    
+    // Update the active timer
+    setActiveTimer(req.user.id, activeTimer);
+    
+    res.status(200).json({ message: 'Timer shared successfully' });
+  } catch (error) {
+    console.error('Error sharing timer:', error);
+    res.status(500).json({ error: 'Failed to share timer' });
+  }
+});
+
+// Stop sharing my timer
+teamsRouter.post('/api/teams/stop-share-timer', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    // Remove the active timer
+    removeActiveTimer(req.user.id);
+    
+    res.status(200).json({ message: 'Timer sharing stopped' });
+  } catch (error) {
+    console.error('Error stopping timer sharing:', error);
+    res.status(500).json({ error: 'Failed to stop timer sharing' });
+  }
+});
+
 export { teamsRouter };

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon } from 'lucide-react';
+import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon, Share2Icon } from 'lucide-react';
 import { audioManager } from "@/lib/audio-utils";
+import { useTeamTimers, ShareTimerData } from '@/hooks/use-team-timers';
 
 export function TimeTracker() {
   const { data: topics, isLoading } = useQuery({ 
@@ -18,6 +19,7 @@ export function TimeTracker() {
   const [description, setDescription] = useState<string>("");
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [customMinutes, setCustomMinutes] = useState<number>(0);
+  const [isSharing, setIsSharing] = useState<boolean>(false);
   
   // טיימר מבוסס סטייט פשוט במקום hook מורכב
   const [seconds, setSeconds] = useState<number>(0);
@@ -30,6 +32,9 @@ export function TimeTracker() {
   const endTimeRef = useRef<number | null>(null);
   
   const { toast } = useToast();
+  
+  // Team timer sharing functionality
+  const { shareTimerMutation, stopSharingMutation } = useTeamTimers();
   
   // פונקציה לפרמוט זמן
   const formatTime = useCallback(() => {
