@@ -67,7 +67,7 @@ export default function SettingsPage() {
   
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", "/api/user");
+      await apiRequest("DELETE", "/api/user/account");
     },
     onSuccess: () => {
       logoutMutation.mutate();

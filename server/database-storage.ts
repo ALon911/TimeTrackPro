@@ -1201,9 +1201,49 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
-    const result = stmt.run(id);
-    
-    return result.changes > 0;
+    try {
+      // Start a transaction to ensure data consistency
+      this.db.exec('BEGIN TRANSACTION;');
+      
+      // First, delete all user's time entries 
+      const deleteTimeEntriesStmt = this.db.prepare('DELETE FROM time_entries WHERE user_id = ?');
+      deleteTimeEntriesStmt.run(id);
+      
+      // Delete user's topics
+      const deleteTopicsStmt = this.db.prepare('DELETE FROM topics WHERE user_id = ?');
+      deleteTopicsStmt.run(id);
+      
+      // Remove user from all teams they're a member of
+      const deleteTeamMemberStmt = this.db.prepare('DELETE FROM team_members WHERE user_id = ?');
+      deleteTeamMemberStmt.run(id);
+      
+      // Delete any team invitations for this user
+      const deleteInvitationsStmt = this.db.prepare('DELETE FROM team_invitations WHERE invited_by = ?');
+      deleteInvitationsStmt.run(id);
+      
+      // Find teams owned by this user
+      const findTeamsStmt = this.db.prepare('SELECT id FROM teams WHERE owner_id = ?');
+      const ownedTeams = findTeamsStmt.all(id) as { id: number }[];
+      
+      // Delete those teams (cascade will handle team members)
+      for (const team of ownedTeams) {
+        const deleteTeamStmt = this.db.prepare('DELETE FROM teams WHERE id = ?');
+        deleteTeamStmt.run(team.id);
+      }
+      
+      // Finally, delete the user
+      const deleteUserStmt = this.db.prepare('DELETE FROM users WHERE id = ?');
+      const result = deleteUserStmt.run(id);
+      
+      // Commit transaction
+      this.db.exec('COMMIT;');
+      
+      return result.changes > 0;
+    } catch (error) {
+      // Rollback in case of error
+      this.db.exec('ROLLBACK;');
+      console.error('Error deleting user:', error);
+      return false;
+    }
   }
 }
