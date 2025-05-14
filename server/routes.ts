@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./auth";
 import { teamRouter } from "./team-routes";
+import { directMemberRouter } from "./direct-member-route";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -398,6 +399,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register team routes
   app.use('/api', teamRouter);
+  
+  // Use direct member router
+  app.use('', directMemberRouter);
   
   // Add delete account endpoint
   app.delete("/api/user/account", isAuthenticated, async (req, res) => {

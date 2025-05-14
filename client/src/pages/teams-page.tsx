@@ -13,7 +13,6 @@ import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
-import { StandaloneAddMember } from "@/components/team-standalone-add";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -168,6 +167,39 @@ export default function TeamsPage() {
                   <div className="text-sm text-muted-foreground mb-2 mt-4">
                     פעולות
                   </div>
+                  
+                  {team.ownerId === user?.id && (
+                    <div className="mb-4">
+                      <Alert className="border-red-500 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950">
+                        <h4 className="text-base font-semibold">הוספת משתמש ישירות לצוות</h4>
+                        <p className="text-sm mt-1 mb-2">להוסיף משתמש למערכת בקליק אחד? הזן אימייל והוא יתווסף לצוות:</p>
+                        
+                        <div className="flex gap-2 mt-3">
+                          <Input
+                            id={`email-${team.id}`}
+                            type="email" 
+                            placeholder="הזן אימייל של משתמש קיים"
+                            className="max-w-[250px] bg-white dark:bg-gray-950"
+                            dir="ltr"
+                          />
+                          <Button 
+                            variant="outline"
+                            className="border-red-500 hover:border-red-700 text-red-700 hover:text-red-800 dark:text-red-400"
+                            onClick={() => {
+                              const emailInput = document.getElementById(`email-${team.id}`) as HTMLInputElement;
+                              if (emailInput && emailInput.value) {
+                                const email = encodeURIComponent(emailInput.value);
+                                window.open(`/direct-add/${team.id}/${email}`, '_blank', 'width=500,height=400');
+                              }
+                            }}
+                          >
+                            הוסף לצוות
+                          </Button>
+                        </div>
+                      </Alert>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-wrap gap-2">
                     <TeamMembersDialog 
                       teamId={team.id}
