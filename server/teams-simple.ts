@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { isAuthenticated } from './auth';
 import { storage } from './storage';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 
 const teamsRouter = Router();
 
@@ -302,6 +304,23 @@ teamsRouter.post('/api/direct-add-team-member', async (req: Request, res: Respon
   } catch (error) {
     console.error('Error adding team member directly:', error);
     res.status(500).json({ error: 'Failed to add team member' });
+  }
+});
+
+// Serve the standalone HTML page for adding team members directly
+teamsRouter.get('/teams/:teamId/add-member', async (req: Request, res: Response) => {
+  try {
+    // Read the HTML file
+    const htmlFilePath = path.join(__dirname, 'add-member.html');
+    let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+    
+    // No authentication check needed as authentication happens at the API level
+    // when actually adding a member
+    
+    res.send(htmlContent);
+  } catch (error) {
+    console.error('Error serving add member HTML:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
