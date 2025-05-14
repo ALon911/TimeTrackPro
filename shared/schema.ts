@@ -6,6 +6,7 @@ import { z } from "zod";
 // Users schema
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   createdAt: text("created_at")
@@ -14,6 +15,7 @@ export const users = sqliteTable("users", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
   email: true,
   password: true,
 });

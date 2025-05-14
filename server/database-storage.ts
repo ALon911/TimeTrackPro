@@ -265,10 +265,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const stmt = this.db.prepare('INSERT INTO users (email, password) VALUES (?, ?)');
-    const result = stmt.run(insertUser.email, insertUser.password);
+    const stmt = this.db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
+    const result = stmt.run(insertUser.username, insertUser.email, insertUser.password);
     const id = result.lastInsertRowid as number;
-    return { ...insertUser, id };
+    return { ...insertUser, id, createdAt: new Date().toISOString() };
   }
 
   async updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined> {
