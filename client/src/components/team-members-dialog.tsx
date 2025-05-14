@@ -223,7 +223,68 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
           )}
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex flex-col gap-4">
+          {isOwner && (
+            <div className="w-full p-4 border-2 border-dashed border-red-500 rounded-lg bg-red-50 dark:bg-red-950">
+              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-3">הוספת משתמש ישירות</h3>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const emailInput = e.currentTarget.querySelector('input');
+                if (!emailInput) return;
+                
+                const email = emailInput.value;
+                if (!email) return;
+                
+                setIsAddingMember(true);
+                fetch(`/api/teams/${teamId}/members`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email,
+                    role: "member"
+                  }),
+                })
+                .then(response => {
+                  if (response.ok) {
+                    alert(`המשתמש ${email} נוסף לצוות בהצלחה`);
+                    emailInput.value = '';
+                    loadMembers();
+                  } else {
+                    alert("שגיאה בהוספת משתמש");
+                  }
+                  setIsAddingMember(false);
+                })
+                .catch(err => {
+                  alert("שגיאה בהוספת משתמש: " + err.message);
+                  setIsAddingMember(false);
+                });
+              }}>
+                <div className="flex gap-2 mb-3">
+                  <Input
+                    type="email"
+                    placeholder="הזן אימייל של משתמש קיים"
+                    className="flex-1"
+                    dir="ltr"
+                  />
+                  <Button 
+                    type="submit"
+                    variant="destructive"
+                    disabled={isAddingMember}
+                    className="whitespace-nowrap"
+                  >
+                    {isAddingMember && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    הוסף משתמש
+                  </Button>
+                </div>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  שים לב: המשתמש יתווסף ישירות לצוות ללא תהליך אישור
+                </p>
+              </form>
+            </div>
+          )}
+          
           <Button 
             type="button" 
             onClick={() => setIsOpen(false)}
