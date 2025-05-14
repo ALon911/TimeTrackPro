@@ -100,12 +100,149 @@ export function TimeTracker() {
     }, 1000);
   }, []);
   
-  // נקה את הטיימר כשהקומפוננטה נפרקת
+  // בדיקה האם יש טיימר פעיל בעת העלאת הקומפוננטה
   useEffect(() => {
+    // פונקציה לטעינת מצב הטיימר מהלוקל סטורג'
+    const loadTimerState = () => {
+      console.log('בדיקת מצב טיימר שמור...');
+      
+      // בדוק אם יש מצב טיימר שמור
+      const savedEndTime = localStorage.getItem('timer_end_time');
+      const savedDuration = localStorage.getItem('timer_duration');
+      const savedIsPaused = localStorage.getItem('timer_is_paused');
+      const savedTopicId = localStorage.getItem('timer_topic_id');
+      const savedDescription = localStorage.getItem('timer_description');
+      
+      if (savedEndTime && savedDuration) {
+        console.log('נמצא מידע שמור:', { 
+          savedEndTime, 
+          savedDuration, 
+          savedIsPaused,
+          savedTopicId,
+          savedDescription
+        });
+        
+        const endTime = parseInt(savedEndTime);
+        const duration = parseInt(savedDuration);
+        const isPausedValue = savedIsPaused === 'true';
+        
+        // שחזור נתוני השדות
+        if (savedTopicId) {
+          setSelectedTopic(savedTopicId);
+        }
+        
+        if (savedDescription) {
+          setDescription(savedDescription);
+        }
+        
+        // אם הטיימר באמצע עצירה זמנית
+        if (isPausedValue) {
+          console.log('טוען טיימר במצב עצירה זמנית');
+          
+          // נקה קודם כל אינטרוול קיים אם יש
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          
+          // שחזר את הזמן שנותר
+          const remainingTime = Math.floor(duration);
+          endTimeRef.current = Date.now() + (remainingTime * 1000);
+          
+          setSeconds(remainingTime);
+          setIsPaused(true);
+          setIsRunning(false);
+          
+          // שחזר את זמן ההתחלה לפי המשך המקורי והזמן שנותר
+          const startTimeValue = new Date(Date.now() - ((duration - remainingTime) * 1000));
+          setStartTime(startTimeValue);
+        } 
+        // אם הטיימר רץ
+        else {
+          console.log('טוען טיימר פעיל');
+          
+          // נקה קודם כל אינטרוול קיים אם יש
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          
+          const now = Date.now();
+          const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+          
+          // רק אם נשאר זמן בטיימר
+          if (timeLeft > 0) {
+            console.log(`נשארו ${timeLeft} שניות בטיימר`);
+            
+            endTimeRef.current = endTime;
+            setSeconds(timeLeft);
+            setIsRunning(true);
+            setIsPaused(false);
+            
+            // שחזר את זמן ההתחלה
+            const originalDuration = parseInt(savedDuration);
+            const elapsedTime = originalDuration - timeLeft;
+            const startTimeValue = new Date(now - (elapsedTime * 1000));
+            setStartTime(startTimeValue);
+            
+            // התחל את האינטרוול מחדש
+            timerRef.current = window.setInterval(() => {
+              const currentTime = Date.now();
+              const currentTimeLeft = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+              
+              setSeconds(currentTimeLeft);
+              
+              if (currentTimeLeft <= 0) {
+                clearInterval(timerRef.current!);
+                timerRef.current = null;
+                setIsRunning(false);
+                setIsCompleted(true);
+                
+                // נקה את המידע השמור
+                localStorage.removeItem('timer_end_time');
+                localStorage.removeItem('timer_duration');
+                localStorage.removeItem('timer_is_paused');
+                localStorage.removeItem('timer_topic_id');
+                localStorage.removeItem('timer_description');
+                
+                audioManager.playTimerComplete();
+              }
+            }, 1000);
+          } else {
+            // נקה את המידע השמור אם הטיימר כבר הסתיים
+            console.log('הטיימר השמור כבר הסתיים - מנקה מידע');
+            localStorage.removeItem('timer_end_time');
+            localStorage.removeItem('timer_duration');
+            localStorage.removeItem('timer_is_paused');
+            localStorage.removeItem('timer_topic_id');
+            localStorage.removeItem('timer_description');
+          }
+        }
+      } else {
+        console.log('לא נמצא מידע שמור לטיימר');
+      }
+    };
+    
+    // טען את המצב מיד עם העלאת הקומפוננטה
+    loadTimerState();
+    
+    // הוסף האזנה לשינוי נראות הדף
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('המשתמש חזר לדף - בודק מצב טיימר מחדש');
+        loadTimerState();
+      }
+    };
+    
+    // הוסף האזנה לאירוע שינוי הנראות
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // ניקוי בעת פירוק הקומפוננטה
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
   
@@ -341,21 +478,18 @@ export function TimeTracker() {
       startAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
     }
     
-    // שמירת זמן התחלה ותיאור בלוקל סטורג' באופן נפרד ואמין
+    // נקיון כל מידע קודם לפני התחלת טיימר חדש
+    localStorage.removeItem('timer_end_time');
+    localStorage.removeItem('timer_duration');
+    localStorage.removeItem('timer_is_paused');
+    localStorage.removeItem('timer_topic_id');
+    localStorage.removeItem('timer_description');
+    
+    // שמירת זמן התחלה 
     const startTimeNow = new Date();
-    const directTimerData = {
-      startTime: startTimeNow.getTime(),
-      selectedTopic: selectedTopic,
-      description: description,
-      duration: minutes * 60, // בשניות
-      isRunning: true,
-      lastUpdated: Date.now()
-    };
-    
-    // שומרים מידע באופן ישיר בלוקל סטורג'
-    localStorage.setItem('timetracker_direct_timer', JSON.stringify(directTimerData));
-    
     setStartTime(startTimeNow);
+    
+    // הפעלת הטיימר עם משך הזמן הנדרש
     startWithDuration(minutes);
     
     toast({
