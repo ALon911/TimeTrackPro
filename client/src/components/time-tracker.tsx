@@ -19,6 +19,7 @@ export function TimeTracker() {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [customMinutes, setCustomMinutes] = useState<number>(0);
   const { 
     seconds, 
     setSeconds,
@@ -269,6 +270,36 @@ export function TimeTracker() {
               <span>40 דקות</span>
             </Button>
             
+            {/* Custom Timer Input */}
+            <div className="flex items-center gap-2 mt-2 mb-2">
+              <Input
+                type="number"
+                min="1"
+                max="120"
+                value={customMinutes || ""}
+                onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 0)}
+                placeholder="דקות מותאם אישית"
+                className="w-32 p-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+              />
+              <Button
+                onClick={() => {
+                  if (customMinutes > 0) {
+                    handlePresetSelection(customMinutes);
+                  } else {
+                    toast({
+                      title: "שגיאה",
+                      description: "יש להזין מספר דקות גדול מ-0",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 flex items-center"
+              >
+                <TimerIcon className="ml-1 h-4 w-4" />
+                <span>הגדר זמן מותאם</span>
+              </Button>
+            </div>
+            
             {/* כפתור התחלה */}
             {seconds > 0 && (
               <Button 
@@ -279,8 +310,6 @@ export function TimeTracker() {
                 <span>התחל</span>
               </Button>
             )}
-            
-            {/* אין צורך בשעון שסופר מעלה - הסרנו את האפשרות */}
           </>
         ) : isRunning ? (
           <>
@@ -321,27 +350,7 @@ export function TimeTracker() {
         ) : null}
       </div>
       
-      {/* Manual Time Entry */}
-      <div className="flex justify-center mt-4">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="px-4 py-2 bg-neutral-100 text-neutral-700 border-neutral-300 rounded-md hover:bg-neutral-200 flex items-center"
-              disabled={isRunning}
-            >
-              <PlusIcon className="ml-1 h-4 w-4" />
-              <span>הוסף רשומה ידנית</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>הוספת זמן ידנית</DialogTitle>
-            </DialogHeader>
-            <ManualTimeEntry />
-          </DialogContent>
-        </Dialog>
-      </div>
+      {/* Removed manual time entry dialog as requested */}
     </div>
   );
 }

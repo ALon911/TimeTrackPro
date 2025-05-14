@@ -82,12 +82,12 @@ export default function DashboardPage() {
               ) : (
                 <StatCard
                   title="סהכ היום"
-                  value={formatDuration(dailyStats?.total || 0)}
+                  value={dailyStats ? formatDuration(dailyStats.total) : "אין נתונים"}
                   icon={<CalendarCheck2 className="h-5 w-5" />}
                   iconBg="bg-blue-100"
                   iconColor="text-primary"
-                  change={dailyStats?.percentChange || 0}
-                  increase={dailyStats?.increase || false}
+                  change={dailyStats ? dailyStats.percentChange : 0}
+                  increase={dailyStats ? dailyStats.increase : false}
                   compareText="משמול"
                 />
               )}
