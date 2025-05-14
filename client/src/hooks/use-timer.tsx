@@ -73,47 +73,64 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   // נטען את מצב הטיימר מה-localStorage אם הוא קיים
   const savedState = useRef<TimerState | null>(loadTimerState());
   
+  console.log("Loading timer state:", savedState.current);
+  
+  // וידוא שאנחנו שומרים על סוג הטיימר (ספירה לאחור או רגיל)
+  const initialCountDown = savedState.current?.isCountDown !== undefined 
+    ? savedState.current.isCountDown 
+    : countDown;
+  
   // מנתחים את זמן הטיימר אם הוא היה פועל כאשר המשתמש עזב את האפליקציה
   const getInitialSeconds = useCallback(() => {
-    if (savedState.current && savedState.current.isRunning) {
+    if (!savedState.current) return initialSeconds;
+    
+    if (savedState.current.isRunning) {
       if (savedState.current.isCountDown) {
         // לטיימר ספירה לאחור, מחשבים כמה זמן נשאר
         const elapsedTime = (Date.now() - savedState.current.lastUpdated) / 1000;
         const remainingSeconds = Math.max(0, savedState.current.seconds - Math.floor(elapsedTime));
+        console.log("Countdown timer - remaining seconds:", remainingSeconds);
         return remainingSeconds;
       } else {
         // לטיימר רגיל, מוסיפים את הזמן שעבר
         const elapsedTime = (Date.now() - savedState.current.lastUpdated) / 1000;
-        return savedState.current.seconds + Math.floor(elapsedTime);
+        const newSeconds = savedState.current.seconds + Math.floor(elapsedTime);
+        console.log("Regular timer - new seconds:", newSeconds);
+        return newSeconds;
       }
     }
-    return savedState.current?.seconds || initialSeconds;
+    
+    return savedState.current.seconds || initialSeconds;
   }, [initialSeconds]);
 
   const [seconds, setSeconds] = useState<number>(getInitialSeconds());
   const [isRunning, setIsRunning] = useState<boolean>(savedState.current?.isRunning || autoStart);
   const [isCompleted, setIsCompleted] = useState<boolean>(savedState.current?.isCompleted || false);
-  const [isCountDown, setIsCountDown] = useState<boolean>(savedState.current?.isCountDown || countDown);
+  const [isCountDown, setIsCountDown] = useState<boolean>(initialCountDown);
   const [isPaused, setIsPaused] = useState<boolean>(savedState.current?.isPaused || false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // עדכון localStorage כאשר מצב הטיימר משתנה
   useEffect(() => {
     if (isRunning || isPaused) {
+      // שמירת נתוני הטיימר - מצב הטיימר ולוגיקת הספירה שלו
       const state: TimerState = {
         seconds,
         isRunning,
         isPaused,
         isCompleted,
         isCountDown,
-        startTime: null, // יעודכן על ידי קומפוננטת TimeTracker
-        totalDuration: 0,  // יעודכן על ידי קומפוננטת TimeTracker
-        selectedTopic: '', // יעודכן על ידי קומפוננטת TimeTracker
-        description: '',   // יעודכן על ידי קומפוננטת TimeTracker
-        lastUpdated: Date.now()
+        startTime: null,
+        totalDuration: 0,
+        selectedTopic: '',
+        description: '',
+        lastUpdated: Date.now() // זמן העדכון האחרון - חשוב לחישוב הזמן שעבר
       };
+      
+      console.log("Saving timer state:", state);
       saveTimerState(state);
     } else if (!isRunning && !isPaused) {
+      console.log("Clearing timer state");
       clearTimerState();
     }
   }, [seconds, isRunning, isPaused, isCompleted, isCountDown]);
@@ -169,9 +186,25 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     // Convert minutes to seconds
     const totalSeconds = durationInMinutes * 60;
     setSeconds(totalSeconds);
-    setIsCountDown(true);
+    setIsCountDown(true); // חשוב לסמן שזה טיימר ספירה לאחור
     setIsCompleted(false);
     setIsRunning(true);
+    
+    // נשמור ב-localStorage שזה טיימר ספירה לאחור (יימנע בעיות סנכרון)
+    try {
+      const timerState = {
+        seconds: totalSeconds,
+        isRunning: true,
+        isPaused: false,
+        isCompleted: false,
+        isCountDown: true,
+        lastUpdated: Date.now()
+      };
+      saveTimerState(timerState);
+    } catch (error) {
+      console.error("Error saving countdown state:", error);
+    }
+    
     // השמעת צליל התחלה
     audioManager.playTimerStart();
   }, []);

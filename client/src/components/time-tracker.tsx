@@ -187,67 +187,60 @@ export function TimeTracker() {
     localStorage.removeItem('timetracker_timer_state');
   }, [stop, reset, startTime, selectedTopic, description, createTimeEntryMutation, toast]);
   
-  // שמירת מצב הטיימר בלוקל סטורג'
-  useEffect(() => {
-    if (isRunning || isPaused) {
-      try {
-        if (selectedTopic) {
-          const updatedState = {
-            isRunning,
-            isPaused,
-            selectedTopic: selectedTopic,
-            description: description,
-            startTime: startTime ? startTime.toISOString() : null,
-            totalDuration: seconds
-          };
-          localStorage.setItem('timetracker_timer_state', JSON.stringify(updatedState));
-        }
-      } catch (error) {
-        console.error('Error updating timer state:', error);
-      }
-    }
-  }, [isRunning, isPaused, selectedTopic, description, startTime, seconds]);
+  // יצירת מזהה ייחודי לשמירת מצב הטיימר
+  const TIMER_DATA_KEY = 'timetracker_ui_data';
   
-  // טעינת פרטי הטיימר בעת טעינת הקומפוננטה
+  // שמירת מידע נוסף (נושא, תיאור וזמן התחלה) בנפרד מהטיימר עצמו
   useEffect(() => {
     try {
-      const timerState = localStorage.getItem('timetracker_timer_state');
-      if (timerState) {
-        const parsedState = JSON.parse(timerState);
+      // שומרים רק אם יש מידע משמעותי
+      if (selectedTopic || description || startTime) {
+        const uiState = {
+          selectedTopic,
+          description,
+          startTime: startTime ? startTime.toISOString() : null
+        };
         
-        // אם יש מצב שמור ומידע על הנושא, נשחזר אותו
-        if (parsedState.selectedTopic) {
-          setSelectedTopic(parsedState.selectedTopic);
+        localStorage.setItem(TIMER_DATA_KEY, JSON.stringify(uiState));
+        console.log("Saved UI state:", uiState);
+      }
+    } catch (error) {
+      console.error("Error saving UI state:", error);
+    }
+  }, [selectedTopic, description, startTime]);
+  
+  // טעינת נתוני ממשק המשתמש (נושא, תיאור וזמן התחלה) בעת טעינת הקומפוננטה
+  useEffect(() => {
+    try {
+      const savedUIData = localStorage.getItem(TIMER_DATA_KEY);
+      
+      if (savedUIData) {
+        const parsedData = JSON.parse(savedUIData);
+        console.log("Loading UI data:", parsedData);
+        
+        if (parsedData.selectedTopic) {
+          setSelectedTopic(parsedData.selectedTopic);
         }
         
-        // נשחזר תיאור אם קיים
-        if (parsedState.description) {
-          setDescription(parsedState.description);
+        if (parsedData.description) {
+          setDescription(parsedData.description);
         }
         
-        // נשחזר זמן התחלה אם קיים
-        if (parsedState.startTime) {
-          setStartTime(new Date(parsedState.startTime));
-        }
-        
-        // נשחזר את משך הזמן
-        if (parsedState.totalDuration) {
-          setSeconds(parsedState.totalDuration);
-        }
-        
-        // נריץ את הטיימר אם היה פועל
-        if (parsedState.isRunning) {
-          start();
-        } 
-        // או נעצור אותו אם היה בהשהייה
-        else if (parsedState.isPaused) {
-          pause();
+        if (parsedData.startTime) {
+          setStartTime(new Date(parsedData.startTime));
         }
       }
     } catch (error) {
-      console.error('Error loading timer state:', error);
+      console.error("Error loading UI state:", error);
     }
   }, []);
+  
+  // מחיקת כל הנתונים כאשר הטיימר מופסק
+  useEffect(() => {
+    if (!isRunning && !isPaused) {
+      localStorage.removeItem(TIMER_DATA_KEY);
+    }
+  }, [isRunning, isPaused]);
   
   return (
     <div className="space-y-4">
