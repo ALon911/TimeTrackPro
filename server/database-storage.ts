@@ -785,4 +785,325 @@ export class DatabaseStorage implements IStorage {
     
     return result;
   }
+
+  // Team methods
+  async getTeams(userId: number): Promise<Team[]> {
+    const stmt = this.db.prepare(`
+      SELECT t.*
+      FROM teams t
+      JOIN team_members tm ON t.id = tm.team_id
+      WHERE tm.user_id = ?
+    `);
+    
+    return stmt.all(userId) as Team[];
+  }
+
+  async getTeam(id: number): Promise<Team | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM teams WHERE id = ?');
+    return stmt.get(id) as Team | undefined;
+  }
+
+  async createTeam(team: InsertTeam): Promise<Team> {
+    const stmt = this.db.prepare('INSERT INTO teams (name, owner_id) VALUES (?, ?)');
+    const info = stmt.run(team.name, team.ownerId);
+    
+    // Also add the owner as a member with 'owner' role
+    await this.addTeamMember({
+      teamId: info.lastInsertRowid as number,
+      userId: team.ownerId,
+      role: 'owner'
+    });
+    
+    // Get the newly created team after adding the member
+    const newTeam = await this.getTeam(info.lastInsertRowid as number);
+    if (!newTeam) {
+      throw new Error('Failed to create team');
+    }
+    
+    return newTeam;
+  }
+
+  async updateTeam(id: number, teamData: Partial<{ name: string }>): Promise<Team | undefined> {
+    const stmt = this.db.prepare('UPDATE teams SET name = ? WHERE id = ?');
+    stmt.run(teamData.name, id);
+    
+    return this.getTeam(id);
+  }
+
+  async deleteTeam(id: number): Promise<boolean> {
+    const stmt = this.db.prepare('DELETE FROM teams WHERE id = ?');
+    const result = stmt.run(id);
+    
+    return result.changes > 0;
+  }
+
+  // Team members methods
+  async getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]> {
+    const stmt = this.db.prepare(`
+      SELECT tm.*, u.id as user_id, u.email, u.created_at
+      FROM team_members tm
+      JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = ?
+    `);
+    
+    const members = stmt.all(teamId) as any[];
+    
+    return members.map(member => ({
+      id: member.id,
+      teamId: member.team_id,
+      userId: member.user_id,
+      role: member.role,
+      joinedAt: member.joined_at,
+      user: {
+        id: member.user_id,
+        email: member.email,
+        password: '', // We don't want to expose the password
+        createdAt: member.created_at
+      }
+    }));
+  }
+
+  async addTeamMember(teamMember: InsertTeamMember): Promise<TeamMember> {
+    const stmt = this.db.prepare('INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)');
+    const info = stmt.run(teamMember.teamId, teamMember.userId, teamMember.role);
+    
+    return {
+      id: info.lastInsertRowid as number,
+      teamId: teamMember.teamId,
+      userId: teamMember.userId,
+      role: teamMember.role,
+      joinedAt: new Date().toISOString()
+    };
+  }
+
+  async removeTeamMember(teamId: number, userId: number): Promise<boolean> {
+    const stmt = this.db.prepare('DELETE FROM team_members WHERE team_id = ? AND user_id = ?');
+    const result = stmt.run(teamId, userId);
+    
+    return result.changes > 0;
+  }
+
+  async updateTeamMemberRole(teamId: number, userId: number, role: string): Promise<TeamMember | undefined> {
+    const stmt = this.db.prepare('UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?');
+    stmt.run(role, teamId, userId);
+    
+    const memberStmt = this.db.prepare('SELECT * FROM team_members WHERE team_id = ? AND user_id = ?');
+    return memberStmt.get(teamId, userId) as TeamMember | undefined;
+  }
+
+  // Team invitations methods
+  async createTeamInvitation(invitation: InsertTeamInvitation & { token: string }): Promise<TeamInvitation> {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7); // 7 days expiry
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO team_invitations 
+      (team_id, email, token, invited_by, expires_at) 
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    const info = stmt.run(
+      invitation.teamId, 
+      invitation.email, 
+      invitation.token, 
+      invitation.invitedBy, 
+      expiryDate.toISOString()
+    );
+    
+    const invitationStmt = this.db.prepare('SELECT * FROM team_invitations WHERE id = ?');
+    return invitationStmt.get(info.lastInsertRowid) as TeamInvitation;
+  }
+
+  async getTeamInvitationByToken(token: string): Promise<TeamInvitation | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE token = ?');
+    return stmt.get(token) as TeamInvitation | undefined;
+  }
+
+  async getTeamInvitationsByEmail(email: string): Promise<TeamInvitation[]> {
+    const stmt = this.db.prepare(`
+      SELECT ti.*, t.name as team_name, u.email as inviter_email
+      FROM team_invitations ti
+      JOIN teams t ON ti.team_id = t.id
+      JOIN users u ON ti.invited_by = u.id
+      WHERE ti.email = ? AND ti.status = 'pending'
+      AND ti.expires_at > CURRENT_TIMESTAMP
+    `);
+    
+    return stmt.all(email) as TeamInvitation[];
+  }
+
+  async getTeamInvitationsByTeam(teamId: number): Promise<TeamInvitation[]> {
+    const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE team_id = ?');
+    return stmt.all(teamId) as TeamInvitation[];
+  }
+
+  async updateTeamInvitationStatus(id: number, status: string): Promise<TeamInvitation | undefined> {
+    const stmt = this.db.prepare('UPDATE team_invitations SET status = ? WHERE id = ?');
+    stmt.run(status, id);
+    
+    const invitationStmt = this.db.prepare('SELECT * FROM team_invitations WHERE id = ?');
+    return invitationStmt.get(id) as TeamInvitation | undefined;
+  }
+
+  // Team statistics methods
+  async getTeamStats(teamId: number): Promise<TeamTimeStat> {
+    const teamStmt = this.db.prepare('SELECT * FROM teams WHERE id = ?');
+    const team = teamStmt.get(teamId) as Team;
+    
+    const membersStmt = this.db.prepare(`
+      SELECT tm.user_id, u.email, SUM(te.duration) as total_seconds
+      FROM team_members tm
+      JOIN users u ON tm.user_id = u.id
+      LEFT JOIN time_entries te ON u.id = te.user_id AND te.team_id = tm.team_id
+      WHERE tm.team_id = ?
+      GROUP BY tm.user_id
+      ORDER BY total_seconds DESC
+    `);
+    
+    const members = membersStmt.all(teamId) as any[];
+    
+    const totalStmt = this.db.prepare('SELECT SUM(duration) as total FROM time_entries WHERE team_id = ?');
+    const totalResult = totalStmt.get(teamId) as any;
+    const totalSeconds = totalResult?.total || 0;
+    
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      membersCount: members.length,
+      totalSeconds,
+      breakdownByUser: members.map(member => ({
+        userId: member.user_id,
+        email: member.email,
+        seconds: member.total_seconds || 0,
+        percentage: totalSeconds > 0 ? ((member.total_seconds || 0) / totalSeconds) * 100 : 0
+      }))
+    };
+  }
+
+  async getTeamTopicDistribution(teamId: number): Promise<TeamTopicDistribution[]> {
+    const topicsStmt = this.db.prepare(`
+      SELECT t.id, t.name, t.color, SUM(te.duration) as total_seconds
+      FROM topics t
+      JOIN time_entries te ON t.id = te.topic_id
+      WHERE te.team_id = ?
+      GROUP BY t.id
+      ORDER BY total_seconds DESC
+    `);
+    
+    const topics = topicsStmt.all(teamId) as any[];
+    
+    const totalStmt = this.db.prepare('SELECT SUM(duration) as total FROM time_entries WHERE team_id = ?');
+    const totalResult = totalStmt.get(teamId) as any;
+    const totalSeconds = totalResult?.total || 0;
+    
+    const results: TeamTopicDistribution[] = [];
+    
+    for (const topic of topics) {
+      const userBreakdownStmt = this.db.prepare(`
+        SELECT u.id as user_id, u.email, SUM(te.duration) as user_seconds
+        FROM time_entries te
+        JOIN users u ON te.user_id = u.id
+        WHERE te.team_id = ? AND te.topic_id = ?
+        GROUP BY u.id
+        ORDER BY user_seconds DESC
+      `);
+      
+      const userBreakdown = userBreakdownStmt.all(teamId, topic.id) as any[];
+      
+      results.push({
+        topic: {
+          id: topic.id,
+          name: topic.name,
+          color: topic.color,
+          userId: 0, // Team topics don't have a specific user
+          teamId: teamId
+        },
+        percentage: (topic.total_seconds / totalSeconds) * 100,
+        totalSeconds: topic.total_seconds,
+        breakdownByUser: userBreakdown.map(user => ({
+          userId: user.user_id,
+          email: user.email,
+          seconds: user.user_seconds,
+          percentage: (user.user_seconds / topic.total_seconds) * 100
+        }))
+      });
+    }
+    
+    return results;
+  }
+
+  async getTeamMemberActivity(teamId: number): Promise<TeamMemberActivity[]> {
+    const membersStmt = this.db.prepare(`
+      SELECT tm.user_id, u.email
+      FROM team_members tm
+      JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = ?
+    `);
+    
+    const members = membersStmt.all(teamId) as any[];
+    
+    const results: TeamMemberActivity[] = [];
+    
+    for (const member of members) {
+      // Get total time tracked
+      const totalStmt = this.db.prepare(`
+        SELECT SUM(duration) as total
+        FROM time_entries
+        WHERE user_id = ? AND team_id = ?
+      `);
+      
+      const totalResult = totalStmt.get(member.user_id, teamId) as any;
+      
+      // Get most active hour
+      const hourStmt = this.db.prepare(`
+        SELECT strftime('%H', start_time) as hour, SUM(duration) as total
+        FROM time_entries
+        WHERE user_id = ? AND team_id = ?
+        GROUP BY hour
+        ORDER BY total DESC
+        LIMIT 1
+      `);
+      
+      const hourResult = hourStmt.get(member.user_id, teamId) as any;
+      
+      // Get last active day
+      const lastActiveStmt = this.db.prepare(`
+        SELECT date(start_time) as last_day
+        FROM time_entries
+        WHERE user_id = ? AND team_id = ?
+        ORDER BY start_time DESC
+        LIMIT 1
+      `);
+      
+      const lastActiveResult = lastActiveStmt.get(member.user_id, teamId) as any;
+      
+      results.push({
+        userId: member.user_id,
+        email: member.email,
+        totalSeconds: totalResult?.total || 0,
+        mostActiveHour: hourResult?.hour ? parseInt(hourResult.hour) : 9, // Default to 9am if no data
+        lastActiveDay: lastActiveResult?.last_day || new Date().toISOString().split('T')[0]
+      });
+    }
+    
+    return results;
+  }
+
+  async getTeamTopics(teamId: number): Promise<Topic[]> {
+    const stmt = this.db.prepare(`
+      SELECT t.*
+      FROM topics t
+      WHERE t.team_id = ?
+      ORDER BY t.name
+    `);
+    
+    return stmt.all(teamId) as Topic[];
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
+    const result = stmt.run(id);
+    
+    return result.changes > 0;
+  }
 }
