@@ -171,17 +171,57 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
   
   // Timer effect - הלוגיקה של הטיימר קאונטדאון בלבד
+  // בדיקה אם יש טיימר ספירה לאחור פעיל בלוקל סטורג'
+  useEffect(() => {
+    try {
+      // בדיקה אם יש טיימר פעיל בלוקל סטורג'
+      const savedCountdown = localStorage.getItem('timetracker_countdown');
+      
+      if (savedCountdown) {
+        // פענוח הנתונים
+        const data = JSON.parse(savedCountdown);
+        console.log(">>> נמצא טיימר שמור:", data);
+        
+        // שחזור מצב הטיימר
+        originalDurationRef.current = data.duration;
+        startTimeRef.current = data.startTime;
+        
+        // חישוב כמה זמן נשאר
+        const elapsedMs = Date.now() - data.startTime;
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        const remainingSeconds = Math.max(0, data.duration - elapsedSeconds);
+        
+        console.log(`>>> טיימר שמור - חלפו ${elapsedSeconds} שניות, נותרו ${remainingSeconds} שניות`);
+        
+        if (remainingSeconds > 0) {
+          // עדכון המצב של הטיימר
+          setSeconds(remainingSeconds);
+          setIsRunning(true);
+          setIsPaused(false);
+          setIsCompleted(false);
+          setIsCountDown(true);
+          
+          console.log(">>> הטיימר שוחזר בהצלחה");
+        } else {
+          // הטיימר כבר הסתיים
+          console.log(">>> הטיימר שהיה שמור כבר הסתיים");
+          localStorage.removeItem('timetracker_countdown');
+        }
+      }
+    } catch (error) {
+      console.error(">>> שגיאה בטעינת טיימר שמור:", error);
+    }
+  }, []);
+  
   useEffect(() => {
     // רק אם הטיימר פעיל וזה טיימר ספירה לאחור
     if (isRunning && isCountDown) {
-      // נקה את כל הטיימרים הקודמים
-      cleanupAllOtherTimers();
+      console.log(`>>> טיימר ספירה לאחור פעיל - ${seconds} שניות`);
       
-      console.log(`>>> טיימר ספירה לאחור הופעל - ${seconds} שניות`);
-      
-      // שמירת זמן ההתחלה של הטיימר
+      // וידוא שיש זמן התחלה תקף
       if (startTimeRef.current === 0) {
         startTimeRef.current = Date.now();
+        console.log(`>>> נקבע זמן התחלה חדש: ${new Date(startTimeRef.current).toLocaleTimeString()}`);
       }
       
       // רק אינטרוול אחד פעיל בכל רגע נתון
@@ -262,7 +302,17 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     startTimeRef.current = Date.now();
     
     // שמירת נתוני הטיימר
-    const currentTopic = document.querySelector('select[name="topic"]')?.value || '';
+    // אם אנחנו בסביבת דפדפן בלבד, מתאים לניהול הנושא מה-DOM
+    let currentTopic = '';
+    try {
+      const topicSelect = document.querySelector('select[name="topic"]') as HTMLSelectElement;
+      if (topicSelect) {
+        currentTopic = topicSelect.value;
+      }
+    } catch (e) {
+      console.error(">>> שגיאה בקריאת ערך הנושא:", e);
+    }
+    
     selectedTopicRef.current = currentTopic;
     
     // עדכון המשתנים שינהלו את הלוגיקה של הטיימר
@@ -275,11 +325,17 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     console.log(`>>> זמן התחלה: ${new Date().toLocaleTimeString()}`);
     
     // שמירה במקום אחד - מידע מינימלי
-    localStorage.setItem('timetracker_countdown', JSON.stringify({
-      duration: totalSeconds,
-      startTime: Date.now(),
-      selectedTopic: currentTopic
-    }));
+    // הנתונים החשובים ביותר לשמירת הטיימר בין ניווטים בדפים
+    const persistentTimerData = {
+      duration: totalSeconds,    // אורך הטיימר בשניות
+      startTime: Date.now(),     // זמן ההתחלה המקורי - קריטי לחישוב מדויק
+      selectedTopic: currentTopic, // שמירת הנושא
+      originalTime: totalSeconds  // שמירת הזמן המקורי
+    };
+    
+    // שמירה בלוקל סטורג' - זה המפתח העיקרי שנשמר בין דפים
+    localStorage.setItem('timetracker_countdown', JSON.stringify(persistentTimerData));
+    console.log(">>> נשמרו נתוני טיימר למעבר בין דפים:", persistentTimerData);
     
     // השמעת צליל התחלה
     audioManager.playTimerStart();
