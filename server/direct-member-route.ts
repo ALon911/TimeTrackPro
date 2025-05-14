@@ -7,9 +7,10 @@ export const directMemberRouter = Router();
 // API route to send team invitation
 directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const { teamId, email } = req.body;
+    const teamId = parseInt(req.params.teamId);
+    const { email } = req.body;
     
-    if (!teamId || !email) {
+    if (isNaN(teamId) || !email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     

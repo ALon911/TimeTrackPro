@@ -136,7 +136,7 @@ export function useTeams() {
   // שליחת הזמנה לצוות
   const sendInvitationMutation = useMutation({
     mutationFn: async (data: { teamId: number; email: string }) => {
-      const res = await apiRequest('POST', '/api/teams/invitations', data);
+      const res = await apiRequest('POST', `/api/teams/${data.teamId}/invitations`, { email: data.email });
       return await res.json();
     },
     onSuccess: () => {
