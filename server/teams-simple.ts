@@ -4,6 +4,7 @@ import { storage } from './storage';
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
+import * as XLSX from 'xlsx';
 
 const teamsRouter = Router();
 
@@ -333,5 +334,91 @@ teamsRouter.get('/teams/:teamId/add-member', async (req: Request, res: Response)
     res.status(500).send('Internal Server Error');
   }
 });
+
+// Export time entries to Excel for a specific team
+teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Check if user is a member of the team
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isMember = teamMembers.some(member => member.userId === req.user?.id);
+    
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'You do not have permission to export this team\'s data' });
+    }
+    
+    // Get team member activity and topic distribution
+    const members = await storage.getTeamMemberActivity(teamId);
+    const topics = await storage.getTeamTopicDistribution(teamId);
+    const teamStats = await storage.getTeamStats(teamId);
+    
+    // Create workbook with multiple sheets
+    const wb = XLSX.utils.book_new();
+    
+    // Team Overview Sheet
+    const overviewData = [
+      ['צוות', team.name],
+      ['זמן כולל', formatTime(teamStats.totalTime)],
+      ['מספר חברי צוות', teamStats.memberCount.toString()],
+      ['מספר נושאים', teamStats.topicCount.toString()]
+    ];
+    const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
+    XLSX.utils.book_append_sheet(wb, overviewWs, 'סקירה כללית');
+    
+    // Team Members Sheet
+    const membersHeader = ['שם משתמש', 'אימייל', 'זמן כולל', 'מספר משימות'];
+    const membersData = members.map(member => [
+      member.username,
+      member.email,
+      formatTime(member.totalTime),
+      member.taskCount.toString()
+    ]);
+    
+    const membersWs = XLSX.utils.aoa_to_sheet([membersHeader, ...membersData]);
+    XLSX.utils.book_append_sheet(wb, membersWs, 'חברי צוות');
+    
+    // Topics Sheet
+    const topicsHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
+    const topicsData = topics.map(topic => [
+      topic.topic.name,
+      formatTime(topic.totalTime),
+      `${topic.percentage.toFixed(1)}%`
+    ]);
+    
+    const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsData]);
+    XLSX.utils.book_append_sheet(wb, topicsWs, 'נושאים');
+    
+    // Write to buffer and send
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Disposition', `attachment; filename="team-${team.name}-report.xlsx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+    
+  } catch (error) {
+    console.error('Error exporting team data to Excel:', error);
+    res.status(500).json({ error: 'Failed to export team data' });
+  }
+});
+
+// Helper function to format time
+function formatTime(seconds: number) {
+  if (!seconds) return '0:00:00';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
 
 export { teamsRouter };

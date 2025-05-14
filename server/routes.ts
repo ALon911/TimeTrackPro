@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -11,6 +11,7 @@ import { z } from "zod";
 import path from "path";
 import { directMemberRouter } from "./direct-member-route";
 import { invitationsRouter } from "./team-invitations";
+import * as XLSX from 'xlsx';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -431,6 +432,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete account" });
     }
   });
+  
+  // Export personal time entries and statistics to Excel
+  app.get("/api/export", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get user data
+      const topics = await storage.getTopics(userId);
+      const timeEntries = await storage.getTimeEntries(userId);
+      const dailyStats = await storage.getDailyStats(userId);
+      const weeklyStats = await storage.getWeeklyStats(userId);
+      const topicDistribution = await storage.getTopicDistribution(userId);
+      const mostTracked = await storage.getMostTrackedTopic(userId);
+      const weeklyOverview = await storage.getWeeklyOverview(userId);
+      
+      // Create a new workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Personal Overview Sheet
+      const overviewData = [
+        ['שם משתמש', req.user!.username],
+        ['אימייל', req.user!.email],
+        ['זמן כולל היום', formatTime(dailyStats.total)],
+        ['זמן כולל השבוע', formatTime(weeklyStats.total)],
+        ['הנושא הנמדד ביותר', mostTracked ? mostTracked.topic.name : 'אין'],
+        ['זמן בנושא הנמדד ביותר', mostTracked ? formatTime(mostTracked.totalTime) : '0:00:00']
+      ];
+      const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
+      XLSX.utils.book_append_sheet(wb, overviewWs, 'סקירה כללית');
+      
+      // Topics Sheet
+      const topicsHeader = ['מזהה', 'שם נושא', 'צבע'];
+      const topicsData = topics.map(topic => [
+        topic.id.toString(),
+        topic.name,
+        topic.color
+      ]);
+      
+      const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsData]);
+      XLSX.utils.book_append_sheet(wb, topicsWs, 'נושאים');
+      
+      // Time Entries Sheet
+      const timeEntriesHeader = ['מזהה', 'נושא', 'תיאור', 'זמן התחלה', 'זמן סיום', 'משך (שניות)'];
+      const timeEntriesData = timeEntries.map(entry => {
+        const topicName = topics.find(t => t.id === entry.topicId)?.name || 'לא ידוע';
+        return [
+          entry.id.toString(),
+          topicName,
+          entry.description || 'אין תיאור',
+          new Date(entry.startTime).toLocaleString('he-IL'),
+          new Date(entry.endTime).toLocaleString('he-IL'),
+          entry.duration.toString()
+        ];
+      });
+      
+      const timeEntriesWs = XLSX.utils.aoa_to_sheet([timeEntriesHeader, ...timeEntriesData]);
+      XLSX.utils.book_append_sheet(wb, timeEntriesWs, 'רשומות זמן');
+      
+      // Topic Distribution Sheet
+      const distributionHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
+      const distributionData = topicDistribution.map(item => [
+        item.topic.name,
+        formatTime(item.totalTime),
+        `${item.percentage.toFixed(1)}%`
+      ]);
+      
+      const distributionWs = XLSX.utils.aoa_to_sheet([distributionHeader, ...distributionData]);
+      XLSX.utils.book_append_sheet(wb, distributionWs, 'התפלגות נושאים');
+      
+      // Weekly Overview Sheet
+      const weeklyHeader = ['יום', 'יום בשבוע', 'זמן כולל'];
+      const weeklyData = weeklyOverview.map(day => [
+        day.day,
+        day.dayOfWeek,
+        formatTime(day.totalTime)
+      ]);
+      
+      const weeklyWs = XLSX.utils.aoa_to_sheet([weeklyHeader, ...weeklyData]);
+      XLSX.utils.book_append_sheet(wb, weeklyWs, 'סקירה שבועית');
+      
+      // Write to buffer and send
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${req.user!.username}-time-report.xlsx"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buf);
+      
+    } catch (error) {
+      console.error('Error exporting personal data to Excel:', error);
+      res.status(500).json({ error: 'Failed to export personal data' });
+    }
+  });
+  
+  // Helper function to format time
+  function formatTime(seconds: number) {
+    if (!seconds) return '0:00:00';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
 
   const httpServer = createServer(app);
   return httpServer;

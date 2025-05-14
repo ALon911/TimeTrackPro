@@ -3,7 +3,7 @@ import { WeeklyChart } from "@/components/charts/weekly-chart";
 import { TopicDistributionChart } from "@/components/charts/topic-distribution-chart";
 import { StatCard } from "@/components/stat-card";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Calendar, Clock, TrendingUp, BarChart, Users, Info } from "lucide-react";
+import { Loader2, Calendar, Clock, TrendingUp, BarChart, Users, Info, Download, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { he } from "date-fns/locale";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTeams } from "@/hooks/use-teams";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamMemberActivity {
   userId: number;
@@ -37,6 +38,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<string>("personal");
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   const { teams, isLoadingTeams } = useTeams();
+  const { toast } = useToast();
 
   // Personal stats queries
   const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
@@ -64,8 +66,13 @@ export default function ReportsPage() {
     queryKey: ["/api/teams/stats/member-activity", selectedTeam],
     queryFn: async () => {
       if (!selectedTeam) return [];
-      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/member-activity`);
-      return await res.json();
+      try {
+        const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/member-activity`);
+        return await res.json();
+      } catch (error) {
+        console.error("Error loading team members:", error);
+        return [];
+      }
     },
     enabled: !!selectedTeam,
   });
@@ -74,8 +81,13 @@ export default function ReportsPage() {
     queryKey: ["/api/teams/stats/topic-distribution", selectedTeam],
     queryFn: async () => {
       if (!selectedTeam) return [];
-      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/topic-distribution`);
-      return await res.json();
+      try {
+        const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats/topic-distribution`);
+        return await res.json();
+      } catch (error) {
+        console.error("Error loading team topic distribution:", error);
+        return [];
+      }
     },
     enabled: !!selectedTeam,
   });
@@ -84,8 +96,13 @@ export default function ReportsPage() {
     queryKey: ["/api/teams/stats", selectedTeam],
     queryFn: async () => {
       if (!selectedTeam) return { totalTime: 0, memberCount: 0, topicCount: 0 };
-      const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats`);
-      return await res.json();
+      try {
+        const res = await apiRequest('GET', `/api/teams/${selectedTeam}/stats`);
+        return await res.json();
+      } catch (error) {
+        console.error("Error loading team stats:", error);
+        return { totalTime: 0, memberCount: 0, topicCount: 0 };
+      }
     },
     enabled: !!selectedTeam,
   });
