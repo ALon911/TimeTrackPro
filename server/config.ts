@@ -37,6 +37,11 @@ function readEnvFile(): Record<string, string> {
         }
         
         envVars[key] = value;
+        
+        // Log email-related values for debugging
+        if (key.startsWith('EMAIL_') || key === 'APP_URL') {
+          console.log(`Read from .env: ${key}=${key === 'EMAIL_PASS' ? '********' : value}`);
+        }
       }
     });
     

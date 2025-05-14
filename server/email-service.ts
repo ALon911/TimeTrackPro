@@ -22,6 +22,10 @@ export class EmailService {
     console.log('From Address:', emailConfig.from);
     console.log('Is Email Configured:', isEmailConfigured());
     
+    // Log exact values for further debugging (hide password)
+    console.log('EMAIL_USER exact value:', emailConfig.auth.user);
+    console.log('EMAIL_FROM exact value:', emailConfig.from);
+    
     if (isEmailConfigured()) {
       try {
         const transportConfig = {
