@@ -3,6 +3,22 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Type for active timers sharing with team
+export interface ActiveTimer {
+  userId: number;
+  username: string;
+  email: string;
+  topicId: number;
+  topicName: string;
+  topicColor: string;
+  description: string;
+  startTime: string;
+  estimatedEndTime: string | null;
+  isPaused: boolean;
+  pausedAt: string | null;
+  duration: number | null;
+}
+
 // Users schema
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
