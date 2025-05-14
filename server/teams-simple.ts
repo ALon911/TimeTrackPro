@@ -362,29 +362,33 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     
     // Get team member activity and topic distribution
     const members = await storage.getTeamMemberActivity(teamId);
-    const topics = await storage.getTeamTopicDistribution(teamId);
+    const topicDistributions = await storage.getTeamTopicDistribution(teamId);
     const teamStats = await storage.getTeamStats(teamId);
     
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
     
+    // Calculate number of unique topics
+    const topics = await storage.getTeamTopics(teamId);
+    const topicsCount = topics.length;
+    
     // Team Overview Sheet
     const overviewData = [
       ['צוות', team.name],
-      ['זמן כולל', formatTime(teamStats.totalTime)],
-      ['מספר חברי צוות', teamStats.memberCount.toString()],
-      ['מספר נושאים', teamStats.topicCount.toString()]
+      ['זמן כולל', formatTime(teamStats.totalSeconds)],
+      ['מספר חברי צוות', teamStats.membersCount.toString()],
+      ['מספר נושאים', topicsCount.toString()]
     ];
     const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
     XLSX.utils.book_append_sheet(wb, overviewWs, 'סקירה כללית');
     
     // Team Members Sheet
-    const membersHeader = ['שם משתמש', 'אימייל', 'זמן כולל', 'מספר משימות'];
+    const membersHeader = ['אימייל', 'זמן כולל', 'שעת פעילות מרכזית', 'יום פעילות אחרון'];
     const membersData = members.map(member => [
-      member.username,
       member.email,
-      formatTime(member.totalTime),
-      member.taskCount.toString()
+      formatTime(member.totalSeconds),
+      `${member.mostActiveHour}:00`,
+      member.lastActiveDay
     ]);
     
     const membersWs = XLSX.utils.aoa_to_sheet([membersHeader, ...membersData]);
@@ -392,9 +396,9 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     
     // Topics Sheet
     const topicsHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
-    const topicsData = topics.map(topic => [
+    const topicsData = topicDistributions.map(topic => [
       topic.topic.name,
-      formatTime(topic.totalTime),
+      formatTime(topic.totalSeconds),
       `${topic.percentage.toFixed(1)}%`
     ]);
     
@@ -422,6 +426,99 @@ function formatTime(seconds: number) {
   const secs = seconds % 60;
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
+
+// Get team statistics
+teamsRouter.get('/api/teams/:id/stats', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Check if user is a member of the team
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isMember = teamMembers.some(member => member.userId === req.user?.id);
+    
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'You do not have permission to view this team\'s statistics' });
+    }
+    
+    const teamStats = await storage.getTeamStats(teamId);
+    res.json(teamStats);
+  } catch (error) {
+    console.error('Error fetching team statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch team statistics' });
+  }
+});
+
+// Get team member activity
+teamsRouter.get('/api/teams/:id/stats/member-activity', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Check if user is a member of the team
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isMember = teamMembers.some(member => member.userId === req.user?.id);
+    
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'You do not have permission to view this team\'s member activity' });
+    }
+    
+    const memberActivity = await storage.getTeamMemberActivity(teamId);
+    res.json(memberActivity);
+  } catch (error) {
+    console.error('Error fetching team member activity:', error);
+    res.status(500).json({ error: 'Failed to fetch team member activity' });
+  }
+});
+
+// Get team topic distribution
+teamsRouter.get('/api/teams/:id/stats/topic-distribution', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Check if user is a member of the team
+    const teamMembers = await storage.getTeamMembers(teamId);
+    const isMember = teamMembers.some(member => member.userId === req.user?.id);
+    
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (!isMember && ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'You do not have permission to view this team\'s topic distribution' });
+    }
+    
+    const topicDistribution = await storage.getTeamTopicDistribution(teamId);
+    res.json(topicDistribution);
+  } catch (error) {
+    console.error('Error fetching team topic distribution:', error);
+    res.status(500).json({ error: 'Failed to fetch team topic distribution' });
+  }
+});
 
 // Get active timers for a team
 teamsRouter.get('/api/teams/:id/active-timers', isAuthenticated, async (req: Request, res: Response) => {
