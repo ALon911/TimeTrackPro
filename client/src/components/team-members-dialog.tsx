@@ -27,7 +27,8 @@ interface TeamMember {
   };
 }
 
-export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDialogProps) {
+export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMembersDialogProps) {
+  console.log("TeamMembersDialog rendering with isOwner:", isOwner, "teamId:", teamId);
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
