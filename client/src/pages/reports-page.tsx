@@ -432,13 +432,13 @@ export default function ReportsPage() {
                             <div className="mt-3">
                               <div className="flex justify-between items-center text-sm mb-1">
                                 <span>זמן כולל:</span>
-                                <span className="font-medium">{formatTime(member.totalTime)}</span>
+                                <span className="font-medium">{formatTime(member.totalSeconds || member.totalTime || 0)}</span>
                               </div>
                               <div className="w-full bg-muted rounded-full h-2.5">
                                 <div 
                                   className="bg-primary h-2.5 rounded-full" 
                                   style={{ 
-                                    width: `${Math.min(100, (member.totalTime / (teamStats?.totalTime || 1)) * 100)}%` 
+                                    width: `${Math.min(100, ((member.totalSeconds || member.totalTime || 0) / (teamStats?.totalSeconds || 1)) * 100)}%` 
                                   }}
                                 ></div>
                               </div>
@@ -481,7 +481,7 @@ export default function ReportsPage() {
                                 <span className="font-medium">{item.topic.name}</span>
                               </div>
                               <span className="text-sm">
-                                {formatTime(item.totalTime)} ({Math.round(item.percentage)}%)
+                                {formatTime(item.totalSeconds || item.totalTime || 0)} ({Math.round(item.percentage)}%)
                               </span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2">
