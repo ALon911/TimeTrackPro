@@ -4,13 +4,13 @@ import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-switcher";
 import { BellIcon } from "lucide-react";
 
-export function Sidebar() {
+export function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { myInvitations, isLoadingMyInvitations } = useTeams();
   
   return (
-    <aside className="hidden md:flex md:w-64 bg-card shadow-md flex-col h-screen sticky top-0">
+    <aside className={`${isMobile ? 'flex w-full' : 'hidden md:flex md:w-64'} bg-card shadow-md flex-col h-screen sticky top-0`}>
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">TimeTracker</h1>
