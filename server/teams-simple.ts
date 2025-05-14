@@ -83,7 +83,9 @@ teamsRouter.put('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
       return res.status(404).json({ error: 'Team not found' });
     }
     
-    if (team.ownerId !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'You do not have permission to update this team' });
     }
     
@@ -118,7 +120,9 @@ teamsRouter.delete('/api/teams/:id', isAuthenticated, async (req: Request, res: 
       return res.status(404).json({ error: 'Team not found' });
     }
     
-    if (team.ownerId !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'You do not have permission to delete this team' });
     }
     

@@ -21,7 +21,9 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
     }
     
     // Check if user is team owner
-    if (team.owner_id !== req.user?.id) {
+    // Handle both formats of the owner id field (ownerId or owner_id)
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
       return res.status(403).json({ error: 'Only team owners can add members directly' });
     }
     
