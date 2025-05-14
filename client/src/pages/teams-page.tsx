@@ -13,6 +13,7 @@ import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
+import { AddTeamMemberDialog } from "@/components/add-team-member-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -164,6 +165,14 @@ export default function TeamsPage() {
                       teamName={team.name}
                       isOwner={team.ownerId === user?.id}
                     />
+                    
+                    {team.ownerId === user?.id && (
+                      <AddTeamMemberDialog 
+                        teamId={team.id}
+                        teamName={team.name}
+                        isOwner={true}
+                      />
+                    )}
                     
                     {team.ownerId === user?.id && (
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />

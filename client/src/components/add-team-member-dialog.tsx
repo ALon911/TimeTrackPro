@@ -65,7 +65,7 @@ export function AddTeamMemberDialog({ teamId, teamName, isOwner }: AddTeamMember
           className="mr-2 flex items-center"
         >
           <UserPlus className="ml-1 h-4 w-4" />
-          הוסף חבר
+          הוסף משתמש
         </Button>
       </DialogTrigger>
       
