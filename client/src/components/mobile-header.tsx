@@ -10,14 +10,14 @@ export function MobileHeader() {
   const [open, setOpen] = useState(false);
   
   return (
-    <header className="bg-background dark:bg-slate-800 shadow-sm p-4 flex md:hidden items-center justify-between" dir="rtl">
+    <header className="bg-background dark:bg-slate-800 shadow-sm p-4 flex md:hidden items-center justify-between sticky top-0 z-10">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <button className="p-1 text-foreground">
             <Menu className="h-6 w-6" />
           </button>
         </SheetTrigger>
-        <SheetContent side="right" className="p-0" dir="rtl">
+        <SheetContent side="right" className="p-0">
           <MobileSidebar onClose={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

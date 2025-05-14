@@ -4,13 +4,13 @@ import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-switcher";
 import { BellIcon } from "lucide-react";
 
-export function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
+export function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
   const { myInvitations, isLoadingMyInvitations } = useTeams();
   
   return (
-    <aside className={`${isMobile ? 'flex w-full' : 'hidden md:flex md:w-64'} bg-card shadow-md flex-col h-screen sticky top-0`}>
+    <aside className="hidden md:flex md:w-64 bg-card shadow-md flex-col h-screen sticky top-0">
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">TimeTracker</h1>
@@ -121,10 +121,10 @@ export function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-              <span className="text-lg font-medium">{user?.username?.charAt(0) || 'מ'}</span>
+              <span className="text-lg font-medium">{user?.email?.charAt(0) || 'מ'}</span>
             </div>
             <div className="mr-3">
-              <div className="font-medium">{user?.username || 'משתמש'}</div>
+              <div className="font-medium">{'משתמש'}</div>
               <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
             </div>
           </div>

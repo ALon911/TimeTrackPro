@@ -13,7 +13,7 @@ export function MobileNavigation() {
   ];
   
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card dark:bg-slate-800 border-t border-border z-10" dir="rtl">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card dark:bg-slate-800 border-t border-border z-10">
       <div className="flex justify-around">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
