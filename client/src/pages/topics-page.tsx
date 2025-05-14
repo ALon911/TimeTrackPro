@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { TopicForm } from "@/components/topic-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -13,10 +13,29 @@ export default function TopicsPage() {
   const { toast } = useToast();
   const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<any>(null);
+  const [dedupedTopics, setDedupedTopics] = useState<any[]>([]);
 
   const { data: topics = [], isLoading: isLoadingTopics } = useQuery({
     queryKey: ['/api/topics'],
   });
+
+  // עיבוד הנושאים להסרת כפילויות
+  useEffect(() => {
+    if (topics && Array.isArray(topics)) {
+      // יצירת מערך חדש ללא כפילויות על פי מזהה
+      const uniqueTopicsMap = new Map();
+      
+      topics.forEach((topic: any) => {
+        if (topic && topic.id) {
+          uniqueTopicsMap.set(topic.id, topic);
+        }
+      });
+
+      // המרת ה-Map חזרה למערך
+      const uniqueTopicsArray = Array.from(uniqueTopicsMap.values());
+      setDedupedTopics(uniqueTopicsArray);
+    }
+  }, [topics]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -87,6 +106,9 @@ export default function TopicsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>הוסף נושא חדש</DialogTitle>
+              <DialogDescription>
+                צור נושא חדש לשימוש בטיימרים שלך
+              </DialogDescription>
             </DialogHeader>
             <TopicForm 
               onSubmit={(data) => createMutation.mutate(data)}
@@ -102,6 +124,9 @@ export default function TopicsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>ערוך נושא</DialogTitle>
+              <DialogDescription>
+                שנה את פרטי הנושא שבחרת
+              </DialogDescription>
             </DialogHeader>
             <TopicForm 
               defaultValues={editingTopic}
@@ -118,14 +143,14 @@ export default function TopicsPage() {
           <div className="flex justify-center p-10">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
-        ) : topics.length === 0 ? (
+        ) : dedupedTopics.length === 0 ? (
           <div className="text-center p-10 border rounded-md">
             <p className="text-muted-foreground mb-4">עדיין אין לך נושאים</p>
             <Button onClick={() => setIsAddTopicOpen(true)}>הוסף את הנושא הראשון שלך</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {topics.map((topic: any) => (
+            {dedupedTopics.map((topic: any) => (
               <Card key={topic.id} className="overflow-hidden">
                 <CardContent className="p-5">
                   <div className="flex justify-between items-start mb-2">
