@@ -61,6 +61,8 @@ export function TimeTracker() {
     localStorage.setItem('timer_end_time', endTime.toString());
     localStorage.setItem('timer_duration', durationInSeconds.toString());
     localStorage.setItem('timer_is_paused', 'false');
+    localStorage.setItem('timer_topic_id', selectedTopic);
+    localStorage.setItem('timer_description', description || '');
     
     // עדכן את הסטייט
     setSeconds(durationInSeconds);
@@ -89,6 +91,8 @@ export function TimeTracker() {
         localStorage.removeItem('timer_end_time');
         localStorage.removeItem('timer_duration');
         localStorage.removeItem('timer_is_paused');
+        localStorage.removeItem('timer_topic_id');
+        localStorage.removeItem('timer_description');
         
         // השמע צליל סיום
         audioManager.playTimerComplete();
@@ -125,6 +129,8 @@ export function TimeTracker() {
     localStorage.removeItem('timer_end_time');
     localStorage.removeItem('timer_duration');
     localStorage.removeItem('timer_is_paused');
+    localStorage.removeItem('timer_topic_id');
+    localStorage.removeItem('timer_description');
     localStorage.removeItem('timetracker_direct_timer');
     localStorage.removeItem('timetracker_timer_state');
     localStorage.removeItem('timetracker_countdown');
@@ -210,6 +216,8 @@ export function TimeTracker() {
     localStorage.removeItem('timer_end_time');
     localStorage.removeItem('timer_duration');
     localStorage.removeItem('timer_is_paused');
+    localStorage.removeItem('timer_topic_id');
+    localStorage.removeItem('timer_description');
     localStorage.removeItem('timetracker_direct_timer');
     localStorage.removeItem('timetracker_timer_state');
     localStorage.removeItem('timetracker_countdown');
