@@ -23,7 +23,7 @@ interface TeamInvitationDialogProps {
 
 export function TeamInvitationDialog({ teamId, teamName }: TeamInvitationDialogProps) {
   const [open, setOpen] = useState(false);
-  const { sendTeamInvitationMutation } = useTeams();
+  const { sendInvitationMutation } = useTeams();
   const { toast } = useToast();
   
   const form = useForm<InviteFormValues>({
@@ -34,7 +34,7 @@ export function TeamInvitationDialog({ teamId, teamName }: TeamInvitationDialogP
   });
   
   async function onSubmit(values: InviteFormValues) {
-    sendTeamInvitationMutation.mutate({
+    sendInvitationMutation.mutate({
       teamId: teamId,
       email: values.email
     }, {
@@ -98,9 +98,9 @@ export function TeamInvitationDialog({ teamId, teamName }: TeamInvitationDialogP
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={sendTeamInvitationMutation.isPending}
+                  disabled={sendInvitationMutation.isPending}
                 >
-                  {sendTeamInvitationMutation.isPending && (
+                  {sendInvitationMutation.isPending && (
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   )}
                   שלח הזמנה

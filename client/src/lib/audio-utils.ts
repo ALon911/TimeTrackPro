@@ -2,6 +2,7 @@
  * Audio utilities for timer sounds
  */
 
+// Import the custom notification sound
 import notificationSound from "../assets/sounds/notification-alert-positive-bell-jam-fx-low-2-00-01.mp3";
 
 /**
