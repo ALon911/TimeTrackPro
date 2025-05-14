@@ -78,7 +78,7 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
     
     // Generate the invitation link with the app's base URL
     const appUrl = appBaseUrl || 'http://localhost:5000'; // Default if no URL specified
-    const inviteLink = `${appUrl}/accept-invitation/${token}`;
+    const inviteLink = `${appUrl}/invitations/${token}`;
     console.log(`Generated invitation link: ${inviteLink}`);
     
     if (emailService.isReady()) {
