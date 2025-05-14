@@ -380,19 +380,19 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <StatCard 
                     title="זמן כולל של הצוות" 
-                    value={formatTime(teamStats?.totalTime || 0)} 
+                    value={formatTime(teamStats?.totalSeconds || 0)} 
                     icon={<Clock className="h-4 w-4" />}
                   />
                   
                   <StatCard 
                     title="חברי צוות" 
-                    value={teamStats?.memberCount || '0'} 
+                    value={teamStats?.membersCount || '0'} 
                     icon={<Users className="h-4 w-4" />}
                   />
                   
                   <StatCard 
                     title="נושאים בצוות" 
-                    value={teamStats?.topicCount || '0'} 
+                    value={teamTopicDistribution?.length || '0'} 
                     icon={<BarChart className="h-4 w-4" />}
                   />
                 </div>
