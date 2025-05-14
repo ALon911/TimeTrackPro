@@ -144,13 +144,18 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     };
   }, []);
 
-  // Timer effect
+  // Timer effect - הלוגיקה של הטיימר
   useEffect(() => {
     if (isRunning) {
+      // מזהה את סוג הטיימר שמוגדר ב-state
+      console.log(`Timer running in ${isCountDown ? 'countdown' : 'count-up'} mode`);
+      
       intervalRef.current = setInterval(() => {
         setSeconds(prevSeconds => {
+          // ספירה לאחור
           if (isCountDown) {
-            // If countdown and reached zero
+            console.log(`Countdown timer: ${prevSeconds} seconds remaining`);
+            // אם הגענו לאפס או פחות
             if (prevSeconds <= 1) {
               setIsRunning(false);
               setIsCompleted(true);
@@ -158,9 +163,12 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
               audioManager.playTimerComplete();
               return 0;
             }
+            // המשך ספירה לאחור
             return prevSeconds - 1;
-          } else {
-            // Regular timer counting up
+          } 
+          // ספירה רגילה כלפי מעלה
+          else {
+            console.log(`Regular timer: ${prevSeconds} seconds elapsed`);
             return prevSeconds + 1;
           }
         });
@@ -190,17 +198,37 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
     setIsCompleted(false);
     setIsRunning(true);
     
-    // נשמור ב-localStorage שזה טיימר ספירה לאחור (יימנע בעיות סנכרון)
+    // שמירת מידע מלא על מצב הטיימר כולל העובדה שמדובר בספירה לאחור
     try {
-      const timerState = {
+      const timerState: TimerState = {
         seconds: totalSeconds,
         isRunning: true,
         isPaused: false,
         isCompleted: false,
         isCountDown: true,
+        startTime: null,
+        totalDuration: 0,
+        selectedTopic: '',
+        description: '',
         lastUpdated: Date.now()
       };
+      
+      console.log("Starting countdown timer with duration:", durationInMinutes, "minutes");
+      console.log("Saving countdown timer state:", timerState);
+      
+      // שמירה מיידית של המצב ב-localStorage
       saveTimerState(timerState);
+      
+      // מחיקת כל מצבי הטיימר הישנים מ-localStorage
+      localStorage.removeItem('timetracker_timer');
+      localStorage.removeItem('timetracker_ui');
+      
+      // שמירה במפתח חדש וייעודי לטיימרים של ספירה לאחור
+      localStorage.setItem('timetracker_countdown', JSON.stringify({
+        duration: totalSeconds,
+        startTime: Date.now()
+      }));
+      
     } catch (error) {
       console.error("Error saving countdown state:", error);
     }
