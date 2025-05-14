@@ -26,12 +26,12 @@ export function StatCard({
   infoText,
 }: StatCardProps) {
   return (
-    <Card className="bg-white rounded-xl shadow-sm p-5 border border-neutral-100">
+    <Card className="bg-card rounded-xl shadow-sm p-5 border border-border">
       <CardContent className="p-0">
         <div className="flex justify-between items-start">
           <div>
-            <h4 className="text-sm font-medium text-neutral-500 mb-1">{title}</h4>
-            <p className="text-2xl font-bold">{value}</p>
+            <h4 className="text-sm font-medium text-muted-foreground mb-1">{title}</h4>
+            <p className="text-2xl font-bold text-foreground">{value}</p>
           </div>
           <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center ${iconColor}`}>
             {icon}
@@ -48,12 +48,12 @@ export function StatCard({
               )}
               {change}%
             </span>
-            <span className="text-neutral-500 mr-2">{compareText}</span>
+            <span className="text-muted-foreground mr-2">{compareText}</span>
           </div>
         )}
         
         {infoText && (
-          <div className="mt-4 text-neutral-500 text-sm">
+          <div className="mt-4 text-muted-foreground text-sm">
             {infoText}
           </div>
         )}

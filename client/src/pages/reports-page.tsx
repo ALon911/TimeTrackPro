@@ -46,7 +46,7 @@ export default function ReportsPage() {
       <Sidebar />
       
       <main className="flex-1 flex flex-col min-h-screen">
-        <header className="bg-white shadow-sm p-4 flex md:hidden items-center justify-between">
+        <header className="bg-card shadow-sm p-4 flex md:hidden items-center justify-between">
           <button className="p-1">
             <span className="material-icons">menu</span>
           </button>
@@ -59,14 +59,14 @@ export default function ReportsPage() {
         <div className="flex-1 p-4 md:p-6">
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-1">דוחות</h2>
-            <p className="text-neutral-600">סקירת הנתונים וסטטיסטיקות</p>
+            <p className="text-muted-foreground">סקירת הנתונים וסטטיסטיקות</p>
           </div>
           
           {/* Stats Cards */}
           <section className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {isLoadingDaily ? (
-                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
@@ -78,12 +78,12 @@ export default function ReportsPage() {
                   iconColor="text-primary"
                   change={dailyStats?.percentChange || 0}
                   increase={dailyStats?.increase || false}
-                  compareText="משמול"
+                  compareText="מאתמול"
                 />
               )}
               
               {isLoadingWeekly ? (
-                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
@@ -100,7 +100,7 @@ export default function ReportsPage() {
               )}
               
               {isLoadingMostTracked ? (
-                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : mostTracked ? (
@@ -124,7 +124,7 @@ export default function ReportsPage() {
               )}
               
               {isLoadingDistribution ? (
-                <div className="h-32 bg-white rounded-xl flex items-center justify-center">
+                <div className="h-32 bg-card rounded-xl flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
