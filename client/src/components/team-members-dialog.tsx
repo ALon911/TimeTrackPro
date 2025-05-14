@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, UserMinus } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { AddTeamMemberDialog } from "@/components/add-team-member-dialog";
 
 interface TeamMembersDialogProps {
   teamId: number;
@@ -112,8 +111,43 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
         </DialogHeader>
         
         {isOwner && (
-          <div className="flex justify-end mt-2 mb-4">
-            <AddTeamMemberDialog teamId={teamId} teamName={teamName} isOwner={isOwner} />
+          <div className="mt-2 mb-6">
+            <Button 
+              className="w-full mb-2"
+              variant="destructive"
+              size="lg"
+              onClick={async () => {
+                const email = prompt("הזן את כתובת האימייל של המשתמש שברצונך להוסיף:");
+                if (!email) return;
+                
+                try {
+                  await apiRequest('POST', `/api/teams/${teamId}/members`, {
+                    email,
+                    role: "member"
+                  });
+                  
+                  toast({
+                    title: "חבר צוות נוסף בהצלחה",
+                    description: "המשתמש נוסף לצוות בהצלחה",
+                  });
+                  
+                  // רענון הרשימה
+                  loadMembers();
+                  // רענון המטמון
+                  queryClient.invalidateQueries({ queryKey: [`/api/teams/${teamId}/members`] });
+                  queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+                } catch (err: any) {
+                  toast({
+                    title: "שגיאה בהוספת חבר צוות",
+                    description: err.message || "אירעה שגיאה בעת הוספת חבר הצוות",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              <Users className="ml-2 h-5 w-5" />
+              הוסף משתמש ישירות לצוות
+            </Button>
           </div>
         )}
         
