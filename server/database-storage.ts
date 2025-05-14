@@ -677,8 +677,20 @@ export class DatabaseStorage implements IStorage {
       }));
     }
     
-    // Calculate percentages and create distribution data
-    return topics
+    // Filter out topics with no time tracked
+    const trackedTopics = topics.filter(topic => topicTimes[topic.id] > 0);
+    
+    // If no topics have any tracked time after filtering, return the original empty data
+    if (trackedTopics.length === 0) {
+      return topics.map(topic => ({
+        topic,
+        percentage: 0,
+        totalTime: 0
+      }));
+    }
+    
+    // Calculate percentages and create distribution data for topics with tracked time
+    return trackedTopics
       .map(topic => {
         const topicTime = topicTimes[topic.id] || 0;
         const percentage = Math.round((topicTime / totalTime) * 100);

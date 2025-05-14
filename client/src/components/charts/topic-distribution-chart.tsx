@@ -12,7 +12,10 @@ export function TopicDistributionChart() {
     return <Skeleton className="h-64 w-full" />;
   }
 
-  if (isError || !data || data.length === 0) {
+  // Check if there's no data or all topics have zero time
+  const hasValidData = data && data.length > 0 && data.some((item: any) => item.totalTime > 0);
+  
+  if (isError || !hasValidData) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
         <p className="text-neutral-500">אין נתונים להצגה</p>
@@ -20,13 +23,15 @@ export function TopicDistributionChart() {
     );
   }
 
-  // Format the data for the chart
-  const chartData = data.map((item: any) => ({
-    name: item.topic.name,
-    value: item.percentage,
-    color: item.topic.color,
-    totalTime: item.totalTime,
-  }));
+  // Format the data for the chart and filter out entries with zero seconds
+  const chartData = data
+    .filter((item: any) => item.totalTime > 0)
+    .map((item: any) => ({
+      name: item.topic.name,
+      value: item.percentage,
+      color: item.topic.color,
+      totalTime: item.totalTime,
+    }));
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload }: any) => {
