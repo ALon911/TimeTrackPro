@@ -111,6 +111,12 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
           </DialogDescription>
         </DialogHeader>
         
+        {isOwner && (
+          <div className="flex justify-end mt-2 mb-4">
+            <AddTeamMemberDialog teamId={teamId} teamName={teamName} isOwner={isOwner} />
+          </div>
+        )}
+        
         <div className="py-4">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
