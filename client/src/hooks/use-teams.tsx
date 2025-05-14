@@ -74,13 +74,20 @@ export function useTeams() {
     queryKey: ['/api/teams/invitations/my'],
     queryFn: async () => {
       try {
-        const res = await apiRequest('GET', '/api/teams/invitations/my');
-        return await res.json();
+        const res = await fetch('/api/teams/invitations/my');
+        
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        return data;
       } catch (error) {
         console.error('Error fetching my invitations:', error);
         return [];
       }
-    }
+    },
+    retry: false
   });
 
   // יצירת צוות חדש
