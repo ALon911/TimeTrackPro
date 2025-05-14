@@ -171,11 +171,21 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
       // Update invitation status
       await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
       
-      res.json({ success: true, message: 'Invitation accepted. You are now a member of the team.' });
+      // Get team information for better response
+      const team = await storage.getTeam(teamId);
+      
+      res.json({ 
+        success: true, 
+        message: `הזמנה התקבלה בהצלחה. הצטרפת לצוות "${team?.name || ''}".`,
+        team: team ? {
+          id: team.id,
+          name: team.name
+        } : null
+      });
     } else {
       // Update invitation status to declined
       await storage.updateTeamInvitationStatus(invitation.id, 'declined');
-      res.json({ success: true, message: 'Invitation declined.' });
+      res.json({ success: true, message: 'ההזמנה נדחתה בהצלחה.' });
     }
   } catch (error) {
     console.error('Error processing invitation:', error);

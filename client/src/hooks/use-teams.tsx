@@ -180,13 +180,13 @@ export function useTeams() {
         throw error;
       }
     },
-    onSuccess: (_, variables) => {
-      const action = variables.action === 'accept' ? 'התקבלה' : 'נדחתה';
+    onSuccess: (data, variables) => {
+      console.log('Invitation response success:', data);
       toast({
-        title: `הזמנה ${action} בהצלחה`,
-        description: variables.action === 'accept' 
-          ? "הצטרפת לצוות בהצלחה" 
-          : "ההזמנה נדחתה",
+        title: data.message || `ההזמנה ${variables.action === 'accept' ? 'התקבלה' : 'נדחתה'} בהצלחה`,
+        description: data.team 
+          ? `הצטרפת לצוות "${data.team.name}" בהצלחה` 
+          : undefined,
       });
       refetchMyInvitations();
       if (variables.action === 'accept') {
