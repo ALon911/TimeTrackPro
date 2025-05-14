@@ -15,9 +15,15 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  updateProfileMutation: UseMutationResult<SelectUser, Error, ProfileUpdateData>;
+  deleteAccountMutation: UseMutationResult<void, Error, void>;
 };
 
 type LoginData = Pick<InsertUser, "email" | "password">;
+type ProfileUpdateData = {
+  email: string;
+  username: string;
+};
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -93,6 +99,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // עדכון פרטי משתמש
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileUpdateData) => {
+      const res = await apiRequest("PUT", "/api/user/profile", data);
+      return await res.json();
+    },
+    onSuccess: (updatedUser: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], updatedUser);
+      toast({
+        title: "הפרופיל עודכן בהצלחה",
+        description: "פרטי המשתמש שלך עודכנו בהצלחה.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "העדכון נכשל",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // מחיקת חשבון
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", "/api/user");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "מחיקת החשבון נכשלה",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -102,6 +144,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        updateProfileMutation,
+        deleteAccountMutation
       }}
     >
       {children}
