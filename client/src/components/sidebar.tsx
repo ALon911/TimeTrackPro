@@ -3,6 +3,8 @@ import { useTeams } from "@/hooks/use-teams";
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-switcher";
 import { BellIcon } from "lucide-react";
+import { UserProfileDialog } from "./user-profile-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -119,15 +121,18 @@ export function Sidebar() {
       
       <div className="p-4 border-t border-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-              <span className="text-lg font-medium">{user?.email?.charAt(0) || 'מ'}</span>
+          <UserProfileDialog>
+            <div className="flex items-center cursor-pointer">
+              <Avatar className="w-10 h-10 bg-primary text-primary-foreground">
+                <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
+              </Avatar>
+              <div className="mr-3">
+                <div className="font-medium">{user?.username || 'משתמש'}</div>
+                <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
+              </div>
             </div>
-            <div className="mr-3">
-              <div className="font-medium">{'משתמש'}</div>
-              <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
-            </div>
-          </div>
+          </UserProfileDialog>
+          
           <Link href="/settings">
             <div className="p-1 rounded-full hover:bg-muted cursor-pointer">
               <span className="material-icons">settings</span>

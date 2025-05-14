@@ -4,6 +4,7 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { MobileSidebar } from "./mobile-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserProfileDialog } from "./user-profile-dialog";
 
 export function MobileHeader() {
   const { user } = useAuth();
@@ -24,9 +25,11 @@ export function MobileHeader() {
       
       <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
       
-      <Avatar className="h-8 w-8 bg-primary text-primary-foreground">
-        <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
-      </Avatar>
+      <UserProfileDialog>
+        <Avatar className="h-8 w-8 bg-primary text-primary-foreground cursor-pointer">
+          <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
+        </Avatar>
+      </UserProfileDialog>
     </header>
   );
 }
