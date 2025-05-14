@@ -6,8 +6,7 @@ import {
   insertTimeEntrySchema 
 } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./auth";
-import { teamRouter } from "./team-routes";
-import { directMemberRouter } from "./direct-member-route";
+import { teamsRouter } from "./teams-simple";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -397,11 +396,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Register team routes
-  app.use('/api', teamRouter);
-  
-  // Use direct member router
-  app.use('', directMemberRouter);
+  // Register teams routes
+  app.use('', teamsRouter);
   
   // Add delete account endpoint
   app.delete("/api/user/account", isAuthenticated, async (req, res) => {
