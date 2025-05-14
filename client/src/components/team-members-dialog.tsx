@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users, UserMinus } from "lucide-react";
+import { Loader2, Users, UserPlus, UserMinus } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -30,6 +32,8 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isAddingMember, setIsAddingMember] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -89,6 +93,43 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
     }
   };
 
+  // פונקציה להוספת חבר צוות ישירות
+  const addMemberDirectly = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    
+    setIsAddingMember(true);
+    try {
+      await apiRequest('POST', `/api/teams/${teamId}/members`, {
+        email,
+        role: "member"
+      });
+      
+      toast({
+        title: "חבר צוות נוסף בהצלחה",
+        description: `המשתמש ${email} נוסף לצוות בהצלחה`,
+      });
+      
+      // ניקוי השדה
+      setEmail("");
+      
+      // רענון הרשימה
+      loadMembers();
+      
+      // רענון המטמון
+      queryClient.invalidateQueries({ queryKey: [`/api/teams/${teamId}/members`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+    } catch (err: any) {
+      toast({
+        title: "שגיאה בהוספת חבר צוות",
+        description: err.message || "אירעה שגיאה בעת הוספת חבר הצוות",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -111,47 +152,38 @@ export function TeamMembersDialog({ teamId, teamName, isOwner }: TeamMembersDial
         </DialogHeader>
         
         {isOwner && (
-          <div className="mt-2 mb-6">
-            <Button 
-              className="w-full mb-2"
-              variant="destructive"
-              size="lg"
-              onClick={async () => {
-                const email = prompt("הזן את כתובת האימייל של המשתמש שברצונך להוסיף:");
-                if (!email) return;
-                
-                try {
-                  await apiRequest('POST', `/api/teams/${teamId}/members`, {
-                    email,
-                    role: "member"
-                  });
-                  
-                  toast({
-                    title: "חבר צוות נוסף בהצלחה",
-                    description: "המשתמש נוסף לצוות בהצלחה",
-                  });
-                  
-                  // רענון הרשימה
-                  loadMembers();
-                  // רענון המטמון
-                  queryClient.invalidateQueries({ queryKey: [`/api/teams/${teamId}/members`] });
-                  queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
-                } catch (err: any) {
-                  toast({
-                    title: "שגיאה בהוספת חבר צוות",
-                    description: err.message || "אירעה שגיאה בעת הוספת חבר הצוות",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              <Users className="ml-2 h-5 w-5" />
-              הוסף משתמש ישירות לצוות
-            </Button>
+          <div className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6">
+            <h3 className="text-lg font-semibold mb-3">הוספת משתמש ישירות</h3>
+            <form onSubmit={addMemberDirectly} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="email">כתובת אימייל</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="הזן את כתובת האימייל של המשתמש"
+                />
+                <p className="text-xs text-muted-foreground">
+                  המשתמש חייב להיות רשום כבר במערכת
+                </p>
+              </div>
+              <Button 
+                type="submit"
+                className="w-full"
+                variant="destructive"
+                disabled={isAddingMember || !email}
+              >
+                {isAddingMember && <Loader2 className="ml-1 h-4 w-4 animate-spin" />}
+                <UserPlus className="ml-1 h-4 w-4" />
+                הוסף משתמש ישירות
+              </Button>
+            </form>
           </div>
         )}
         
         <div className="py-4">
+          <h3 className="text-lg font-semibold mb-3">חברי הצוות</h3>
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
