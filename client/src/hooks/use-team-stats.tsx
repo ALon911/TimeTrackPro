@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { TeamTimeStat, TeamMemberActivity, TeamTopicDistribution } from "@shared/schema";
+import { getQueryFn } from "@/lib/queryClient";
 
 export function useTeamStats(teamId: number | undefined) {
   // Get team general statistics
@@ -8,7 +9,8 @@ export function useTeamStats(teamId: number | undefined) {
     isLoading: isLoadingStats,
     error: statsError 
   } = useQuery<TeamTimeStat>({
-    queryKey: ['/api/teams', teamId, 'stats'],
+    queryKey: [`/api/teams/${teamId}/stats`],
+    queryFn: getQueryFn(),
     enabled: !!teamId,
   });
 
@@ -18,7 +20,8 @@ export function useTeamStats(teamId: number | undefined) {
     isLoading: isLoadingMemberActivity,
     error: memberActivityError 
   } = useQuery<TeamMemberActivity[]>({
-    queryKey: ['/api/teams', teamId, 'stats/member-activity'],
+    queryKey: [`/api/teams/${teamId}/stats/member-activity`],
+    queryFn: getQueryFn(),
     enabled: !!teamId,
   });
 
@@ -28,7 +31,8 @@ export function useTeamStats(teamId: number | undefined) {
     isLoading: isLoadingTopicDistribution,
     error: topicDistributionError 
   } = useQuery<TeamTopicDistribution[]>({
-    queryKey: ['/api/teams', teamId, 'stats/topic-distribution'],
+    queryKey: [`/api/teams/${teamId}/stats/topic-distribution`],
+    queryFn: getQueryFn(),
     enabled: !!teamId,
   });
 
@@ -38,7 +42,8 @@ export function useTeamStats(teamId: number | undefined) {
     isLoading: isLoadingTeamMembers,
     error: teamMembersError 
   } = useQuery({
-    queryKey: ['/api/teams', teamId, 'members'],
+    queryKey: [`/api/teams/${teamId}/members`],
+    queryFn: getQueryFn(),
     enabled: !!teamId,
   });
 
