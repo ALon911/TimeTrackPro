@@ -236,6 +236,9 @@ export default function ReportsPage() {
                   icon={<Clock className="h-4 w-4" />} 
                   trend={weeklyStats?.percentChange} 
                   trendLabel={weekRange}
+                  iconBg="bg-blue-100"
+                  iconColor="text-blue-700"
+                  secondaryValue={formatDurationHumanReadable(weeklyStats?.total || 0)}
                 />
               )}
               
@@ -248,15 +251,19 @@ export default function ReportsPage() {
                   title="נושא מוביל" 
                   value={mostTracked?.topic?.name || 'אין נתונים'} 
                   icon={<TrendingUp className="h-4 w-4" />} 
-                  secondaryValue={formatTime(mostTracked?.totalTime || 0)}
+                  secondaryValue={`${formatTime(mostTracked?.totalTime || 0)} (${formatDurationHumanReadable(mostTracked?.totalTime || 0)})`}
                   color={mostTracked?.topic?.color}
+                  iconBg="bg-green-100"
+                  iconColor="text-green-700"
                 />
               )}
               
               <StatCard 
                 title="סה״כ נושאים" 
                 value={topicDistribution?.length || '0'} 
-                icon={<BarChart className="h-4 w-4" />} 
+                icon={<BarChart className="h-4 w-4" />}
+                iconBg="bg-purple-100"
+                iconColor="text-purple-700"
               />
             </div>
           </section>
