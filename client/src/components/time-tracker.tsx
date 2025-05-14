@@ -113,7 +113,7 @@ export function TimeTracker() {
       const savedTopicId = localStorage.getItem('timer_topic_id');
       const savedDescription = localStorage.getItem('timer_description');
       
-      if (savedEndTime && savedDuration) {
+      if (savedDuration) { // כאן השינוי - מספיק שיש נתון על המשך
         console.log('נמצא מידע שמור:', { 
           savedEndTime, 
           savedDuration, 
@@ -145,20 +145,19 @@ export function TimeTracker() {
             timerRef.current = null;
           }
           
-          // שחזר את הזמן שנותר
-          const remainingTime = Math.floor(duration);
-          endTimeRef.current = Date.now() + (remainingTime * 1000);
+          // שחזר את הזמן שנותר ישירות מלוקל סטורג'
+          const remainingTime = parseInt(savedDuration);
+          console.log('משחזר טיימר מושהה עם', remainingTime, 'שניות שנותרו');
           
           setSeconds(remainingTime);
           setIsPaused(true);
           setIsRunning(false);
           
-          // שחזר את זמן ההתחלה לפי המשך המקורי והזמן שנותר
-          const startTimeValue = new Date(Date.now() - ((duration - remainingTime) * 1000));
-          setStartTime(startTimeValue);
+          // שחזר את זמן ההתחלה מחושב (אפס כי אנחנו במצב פאוז)
+          setStartTime(new Date());
         } 
         // אם הטיימר רץ
-        else {
+        else if (savedEndTime) {
           console.log('טוען טיימר פעיל');
           
           // נקה קודם כל אינטרוול קיים אם יש
@@ -168,6 +167,7 @@ export function TimeTracker() {
           }
           
           const now = Date.now();
+          const endTime = parseInt(savedEndTime);
           const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
           
           // רק אם נשאר זמן בטיימר
@@ -217,6 +217,21 @@ export function TimeTracker() {
             localStorage.removeItem('timer_topic_id');
             localStorage.removeItem('timer_description');
           }
+        } 
+        // רק משך ללא זמן סיום (מצב פאוז מלא)
+        else {
+          console.log('טוען מצב פאוז ללא זמן סיום');
+          
+          // שחזר את הזמן שנשאר
+          const remainingTime = parseInt(savedDuration);
+          console.log('משחזר טיימר מושהה ללא זמן סיום עם', remainingTime, 'שניות שנותרו');
+          
+          setSeconds(remainingTime);
+          setIsPaused(true);
+          setIsRunning(false);
+          
+          // שחזר את זמן ההתחלה (כי אנחנו במצב פאוז)
+          setStartTime(new Date());
         }
       } else {
         console.log('לא נמצא מידע שמור לטיימר');
@@ -287,11 +302,21 @@ export function TimeTracker() {
       // עדכן את מצב העצירה הזמנית בלוקל סטורג'
       localStorage.setItem('timer_is_paused', 'true');
       
-      // שמור את הזמן שנותר בסטייט הנוכחי
-      // אין צורך לחשב מחדש, הוא כבר מעודכן
-      console.log("הטיימר הושהה ונשמר במצב השהייה");
+      // שמור את הזמן הנוכחי שנותר בלוקל סטורג'
+      localStorage.setItem('timer_duration', seconds.toString());
+      
+      // שמור גם את הנושא והתיאור אם יש
+      if (selectedTopic) {
+        localStorage.setItem('timer_topic_id', selectedTopic);
+      }
+      
+      if (description) {
+        localStorage.setItem('timer_description', description);
+      }
+      
+      console.log("הטיימר הושהה ונשמר במצב השהייה עם", seconds, "שניות שנותרו");
     }
-  }, [isRunning]);
+  }, [isRunning, seconds, selectedTopic, description]);
   
   // פונקציה להמשך טיימר
   const resume = useCallback(() => {
