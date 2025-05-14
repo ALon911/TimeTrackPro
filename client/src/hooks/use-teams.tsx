@@ -171,18 +171,32 @@ export function useTeams() {
     mutationFn: async (data: { token: string; action: 'accept' | 'decline' }) => {
       console.log('Responding to invitation:', data);
       try {
-        // הוספת לוגים מפורטים יותר
-        console.log(`API request to: /api/teams/invitations/${data.token}/${data.action}`);
+        // שינוי נתיב שרת לפורמט הנכון
+        const url = `/api/teams/invitations/${data.token}/${data.action}`;
+        console.log(`API request to: ${url}`);
+        
+        // הדפסת לוגים נוספים לצורך דיבאג
+        console.log('Responding to invitation details:', JSON.stringify({
+          token: data.token,
+          action: data.action,
+          url: url
+        }));
         
         // עם גוף ריק לבקשת POST
-        const res = await apiRequest('POST', `/api/teams/invitations/${data.token}/${data.action}`, {});
+        const res = await apiRequest('POST', url, {});
         
         // בדיקת מצב התגובה
         if (!res.ok) {
           console.error(`Server responded with error ${res.status}: ${res.statusText}`);
-          const errorText = await res.text();
-          console.error('Error details:', errorText);
-          throw new Error(`Server error: ${res.status}`);
+          let errorDetails;
+          try {
+            errorDetails = await res.json();
+          } catch (e) {
+            const errorText = await res.text();
+            errorDetails = errorText;
+          }
+          console.error('Error details:', errorDetails);
+          throw new Error(`Server error: ${res.status} - ${errorDetails.error || 'Unknown error'}`);
         }
         
         const result = await res.json();

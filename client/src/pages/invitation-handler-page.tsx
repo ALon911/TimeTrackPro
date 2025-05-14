@@ -9,19 +9,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function InvitationHandlerPage() {
   console.log('InvitationHandlerPage component loading');
+  
+  // הוספת לוגים נוספים לבעיות נפוצות
+  console.log('Current URL path:', window.location.pathname);
+  console.log('Current search params:', window.location.search);
+  
   const [, setLocation] = useLocation();
   const { token } = useParams<{ token: string }>();
+  
   console.log('Token from params:', token);
+  console.log('Token type:', typeof token, 'Token length:', token?.length);
+  
+  // במקרה של בעיות עם token, ננסה לחלץ אותו ישירות מה-URL
+  const pathParts = window.location.pathname.split('/');
+  const fallbackToken = pathParts[pathParts.length - 1];
+  console.log('Fallback token extraction:', fallbackToken);
+  
+  // שימוש בטוקן מהפרמטרים או במקרה חירום מהנתיב
+  const effectiveToken = token || fallbackToken;
+  console.log('Effective token to use:', effectiveToken);
+  
   const { respondToInvitationMutation } = useTeams();
   const { user, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<"loading" | "error" | "success" | "unauthorized">("loading");
   const [message, setMessage] = useState<string>("");
+
+  // מגדיר פונקציה לקבלת ההזמנה
+  const processInvitation = () => {
+    if (effectiveToken) {
+      handleAcceptInvitation(effectiveToken);
+    } else {
+      console.error('No effective token found to process invitation');
+      setStatus("error");
+      setMessage("מזהה ההזמנה חסר או לא תקין");
+    }
+  };
 
   useEffect(() => {
     console.log('InvitationHandlerPage useEffect triggered');
     console.log('Current user:', user);
     console.log('Auth loading:', authLoading);
     console.log('Token value in useEffect:', token);
+    console.log('Effective token in useEffect:', effectiveToken);
     
     // Debug location
     console.log('Current location:', window.location.pathname);
@@ -33,30 +62,47 @@ export default function InvitationHandlerPage() {
       return;
     }
 
-    // אם המשתמש מחובר ויש טוקן, קבל את ההזמנה
-    if (user && token) {
+    // אם המשתמש מחובר ויש טוקן (רגיל או חלופי), קבל את ההזמנה
+    if (user && effectiveToken) {
       console.log('User authenticated and token exists, handling invitation');
-      handleAcceptInvitation();
+      processInvitation();
     } else {
-      console.log('Not handling invitation yet:', { user: !!user, token: !!token });
+      console.log('Not handling invitation yet:', { 
+        user: !!user, 
+        token: !!token,
+        effectiveToken: !!effectiveToken
+      });
     }
-  }, [user, authLoading, token]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading, token, effectiveToken]);
 
-  const handleAcceptInvitation = async () => {
+  const handleAcceptInvitation = async (tokenToUse: string) => {
     try {
-      console.log(`Starting handleAcceptInvitation with token: ${token}`);
+      console.log(`Starting handleAcceptInvitation with token: ${tokenToUse}`);
       setStatus("loading");
       
+      if (!tokenToUse) {
+        console.error('No token provided to handleAcceptInvitation');
+        setStatus("error");
+        setMessage("מזהה ההזמנה חסר");
+        return;
+      }
+      
       // הדפס את המידע שנשלח בבקשה
-      console.log('Sending mutation with data:', { token, action: "accept" });
+      console.log('Sending mutation with data:', { token: tokenToUse, action: "accept" });
       
       respondToInvitationMutation.mutate(
-        { token, action: "accept" },
+        { token: tokenToUse, action: "accept" },
         {
           onSuccess: (data) => {
             console.log('Invitation response success:', data);
             setStatus("success");
             setMessage(data.message || "ההזמנה התקבלה בהצלחה");
+            
+            // הפנה לעמוד הצוותים אחרי הצלחה
+            setTimeout(() => {
+              setLocation('/teams');
+            }, 2000);
           },
           onError: (error: any) => {
             console.error("Detailed error accepting invitation:", {
