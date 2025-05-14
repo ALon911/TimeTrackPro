@@ -13,7 +13,7 @@ import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
-import { StandaloneAddMember } from "@/components/standalone-add-member";
+import { DirectAddButton } from "@/components/direct-add-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -156,7 +156,14 @@ export default function TeamsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm text-muted-foreground mb-2">
+                  {team.ownerId === user?.id && (
+                    <DirectAddButton
+                      teamId={team.id}
+                      teamName={team.name}
+                    />
+                  )}
+                
+                  <div className="text-sm text-muted-foreground mb-2 mt-4">
                     פעולות
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -165,13 +172,6 @@ export default function TeamsPage() {
                       teamName={team.name}
                       isOwner={team.ownerId === user?.id}
                     />
-                    
-                    {team.ownerId === user?.id && (
-                      <StandaloneAddMember 
-                        teamId={team.id}
-                        teamName={team.name}
-                      />
-                    )}
                     
                     {team.ownerId === user?.id && (
                       <TeamInvitationDialog teamId={team.id} teamName={team.name} />
