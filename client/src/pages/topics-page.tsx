@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/sidebar";
-import { MobileNavigation } from "@/components/mobile-navigation";
+import { Layout } from "@/components/layout";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -13,10 +12,41 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TopicsPage() {
   const { toast } = useToast();
+  const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<any>(null);
-  
-  const { data: topics, isLoading } = useQuery({
-    queryKey: ["/api/topics"],
+
+  const { data: topics = [], isLoading: isLoadingTopics } = useQuery({
+    queryKey: ['/api/topics'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/topics", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      setIsAddTopicOpen(false);
+      toast({
+        title: "נושא חדש נוצר בהצלחה",
+        variant: "default",
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PATCH", `/api/topics/${data.id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      setEditingTopic(null);
+      toast({
+        title: "הנושא עודכן בהצלחה",
+        variant: "default",
+      });
+    }
   });
   
   const deleteMutation = useMutation({
@@ -24,19 +54,12 @@ export default function TopicsPage() {
       await apiRequest("DELETE", `/api/topics/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
       toast({
-        title: "נושא נמחק",
-        description: "הנושא נמחק בהצלחה",
+        title: "הנושא נמחק בהצלחה",
+        variant: "default",
       });
-    },
-    onError: (error) => {
-      toast({
-        title: "שגיאה",
-        description: `שגיאה במחיקת הנושא: ${error.message}`,
-        variant: "destructive",
-      });
-    },
+    }
   });
   
   const handleEdit = (topic: any) => {
@@ -48,123 +71,104 @@ export default function TopicsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row" dir="rtl">
-      <Sidebar />
-      
-      <main className="flex-1 flex flex-col min-h-screen">
-        <header className="bg-white shadow-sm p-4 flex md:hidden items-center justify-between">
-          <button className="p-1">
-            <span className="material-icons">menu</span>
-          </button>
-          <h1 className="text-xl font-bold text-primary">TimeTracker</h1>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-            <span className="text-sm font-medium">מ</span>
-          </div>
-        </header>
-        
-        <div className="flex-1 p-4 md:p-6">
-          <div className="mb-6 flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold mb-1">נושאים</h2>
-              <p className="text-neutral-600">נהל את הנושאים שלך למעקב הזמן</p>
-            </div>
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <span className="material-icons ml-2">add</span>
-                  נושא חדש
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>הוספת נושא חדש</DialogTitle>
-                </DialogHeader>
-                <TopicForm onSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/topics"] })} />
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          {/* Topics List */}
-          <section className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h3 className="text-xl font-semibold mb-6">רשימת נושאים</h3>
-            
-            {isLoading ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
-            ) : topics?.length === 0 ? (
-              <div className="text-center p-10 text-neutral-500">
-                <p>אין נושאים להצגה. הוסף נושא חדש כדי להתחיל.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {topics?.map((topic: any) => (
-                  <Card key={topic.id} className="border border-neutral-200">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div 
-                            className="w-4 h-4 rounded-sm ml-2"
-                            style={{ backgroundColor: topic.color }}
-                          />
-                          <span className="font-medium">{topic.name}</span>
-                        </div>
-                        <div className="flex space-x-2 space-x-reverse">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(topic)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>עריכת נושא</DialogTitle>
-                              </DialogHeader>
-                              <TopicForm 
-                                topic={editingTopic} 
-                                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/topics"] })} 
-                              />
-                            </DialogContent>
-                          </Dialog>
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>מחיקת נושא</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  האם אתה בטוח שברצונך למחוק את הנושא "{topic.name}"?
-                                  כל רשומות הזמן המשויכות לנושא זה יימחקו גם כן.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>ביטול</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(topic.id)}
-                                  className="bg-red-500 hover:bg-red-700"
-                                >
-                                  מחק
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
+    <Layout>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">נושאים</h2>
+          <p className="text-neutral-600">נהל את הנושאים שלך למעקב הזמן</p>
         </div>
-      </main>
+        
+        <Dialog open={isAddTopicOpen} onOpenChange={setIsAddTopicOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <span className="material-icons ml-2">add</span>
+              נושא חדש
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>הוסף נושא חדש</DialogTitle>
+            </DialogHeader>
+            <TopicForm 
+              onSubmit={(data) => createMutation.mutate(data)}
+              isPending={createMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
       
-      <MobileNavigation />
-    </div>
+      {editingTopic && (
+        <Dialog open={!!editingTopic} onOpenChange={() => setEditingTopic(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>ערוך נושא</DialogTitle>
+            </DialogHeader>
+            <TopicForm 
+              defaultValues={editingTopic}
+              onSubmit={(data) => updateMutation.mutate({ ...data, id: editingTopic.id })}
+              isPending={updateMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      <section className="mt-8">
+        {isLoadingTopics ? (
+          <div className="flex justify-center p-10">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : topics.length === 0 ? (
+          <div className="text-center p-10 border rounded-md">
+            <p className="text-muted-foreground mb-4">עדיין אין לך נושאים</p>
+            <Button onClick={() => setIsAddTopicOpen(true)}>הוסף את הנושא הראשון שלך</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {topics.map((topic: any) => (
+              <Card key={topic.id} className="overflow-hidden">
+                <CardContent className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-4 h-4 rounded-full mr-2" 
+                        style={{ backgroundColor: topic.color }}
+                      />
+                      <h3 className="text-lg font-medium">{topic.name}</h3>
+                    </div>
+                    <div className="flex gap-1 -mr-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(topic)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              פעולה זו לא ניתנת לביטול. זה ימחק לצמיתות את הנושא ואת כל הרשומות המשויכות אליו.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>ביטול</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(topic.id)} className="bg-destructive text-destructive-foreground">
+                              כן, מחק
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-4"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+    </Layout>
   );
 }
