@@ -37,19 +37,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Handle alternative invitation route format 
-  app.get('/accept-invitation/:token', (req, res, next) => {
-    console.log('Accept-invitation route hit with token:', req.params.token);
-    // Send the index.html to handle on client side with React Router
-    const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error sending index.html file:', err);
-        next(err);
-      } else {
-        console.log('Successfully served index.html for /accept-invitation/:token');
-      }
-    });
+  // סימפול יותר - במקום לנסות לטעון את אפליקציית הריאקט, נחזיר דף HTML פשוט עם הפניה והנחיות
+  app.get('/accept-invitation/:token', (req, res) => {
+    const token = req.params.token;
+    console.log('Accept-invitation route hit with token:', token);
+    
+    // עמוד HTML פשוט עם הוראות
+    const htmlPage = `
+    <!DOCTYPE html>
+    <html lang="he" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>הפניה להזמנה</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 20px;
+          background-color: #f5f7fb;
+          color: #333;
+          max-width: 800px;
+          margin: 40px auto;
+          text-align: center;
+        }
+        .container {
+          background-color: white;
+          border-radius: 8px;
+          padding: 30px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+          color: #4361ee;
+          margin-bottom: 20px;
+        }
+        .button {
+          display: inline-block;
+          background-color: #4361ee;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 4px;
+          text-decoration: none;
+          font-weight: bold;
+          margin-top: 20px;
+          transition: background-color 0.3s;
+        }
+        .button:hover {
+          background-color: #3a56d4;
+        }
+        .note {
+          margin-top: 20px;
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 4px;
+          font-size: 0.9em;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>הזמנה לצוות</h1>
+        <p>התקבלה הזמנה להצטרף לצוות במערכת מעקב הזמן.</p>
+        <p>כדי לקבל את ההזמנה, יש להיכנס למערכת ואז ללחוץ על הקישור הבא:</p>
+        
+        <a href="/invitations/${token}" class="button">אישור הזמנה</a>
+        
+        <div class="note">
+          <p>אם אתה עדיין לא מחובר למערכת, תועבר תחילה לדף ההתחברות.</p>
+          <p>לאחר ההתחברות, תוכל לראות את פרטי ההזמנה ולקבל אותה.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+    
+    res.send(htmlPage);
   });
   
   // Topic routes
