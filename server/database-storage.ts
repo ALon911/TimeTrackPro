@@ -862,7 +862,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       const stmt = this.db.prepare(`
-        SELECT tm.*, u.id as user_id, u.email, u.username, u.created_at
+        SELECT tm.*, u.id as user_id, u.email
         FROM team_members tm
         JOIN users u ON tm.user_id = u.id
         WHERE tm.team_id = ?
@@ -880,7 +880,7 @@ export class DatabaseStorage implements IStorage {
           id: member.user_id,
           email: member.email,
           password: '', // We don't want to expose the password
-          createdAt: member.created_at
+          createdAt: new Date().toISOString() // Default value
         }
       }));
     } catch (error) {
