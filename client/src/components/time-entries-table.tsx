@@ -148,10 +148,10 @@ export function TimeEntriesTable({
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold">פעילות אחרונה</h3>
+        <h3 className="text-xl font-semibold dark:text-white">פעילות אחרונה</h3>
         {showViewAllLink && (
           <Link href="/time-entries">
-            <a className="text-primary text-sm hover:underline">הצג הכל</a>
+            <span className="text-primary text-sm hover:underline cursor-pointer">הצג הכל</span>
           </Link>
         )}
       </div>
