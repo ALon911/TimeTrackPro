@@ -158,8 +158,8 @@ export type TimeEntrySummary = {
   topic: Topic;
   date: string;
   timeRange: string;
-  duration: string;
-  durationSeconds: number;
+  duration?: string;
+  durationSeconds?: number;
 };
 
 // Team statistics types
