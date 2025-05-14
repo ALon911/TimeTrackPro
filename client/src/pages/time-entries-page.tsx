@@ -66,14 +66,18 @@ export default function TimeEntriesPage() {
                 <SelectTrigger id="topic-filter" className="text-right">
                   <SelectValue placeholder="בחר נושא" />
                 </SelectTrigger>
-                <SelectContent className="text-right">
+                <SelectContent className="select-content">
                   <SelectGroup>
-                    <SelectItem value="all">כל הנושאים</SelectItem>
+                    <SelectItem value="all" className="select-item">
+                        <div className="select-item-content">
+                          <span>כל הנושאים</span>
+                        </div>
+                    </SelectItem>
                     {topics?.map((topic: any) => (
-                      <SelectItem key={topic.id} value={topic.id.toString()}>
-                        <div className="flex items-center justify-end w-full">
+                      <SelectItem key={topic.id} value={topic.id.toString()} className="select-item">
+                        <div className="select-item-content">
                           <span>{topic.name}</span>
-                          <div className="w-3 h-3 rounded-full mr-2 ml-2" style={{ backgroundColor: topic.color }} />
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: topic.color }} />
                         </div>
                       </SelectItem>
                     ))}

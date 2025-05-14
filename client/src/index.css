@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* כללי סגנון מותאמים לתמיכה ב-RTL */
+.select-content {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.select-item {
+  justify-content: flex-start !important; /* הפוך את הכיוון כי אנחנו בדירקשן RTL */
+  padding-right: 8px !important;
+  padding-left: 8px !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.select-item-content {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important; /* גם פה משתמשים בפלקס-סטארט ב-RTL */
+  gap: 8px !important;
+}
+
+/* לוודא מיקום טקסט בצד ימין בכל רכיבי בחירה */
+.select-trigger {
+  text-align: right !important;
+  direction: rtl !important;
+  padding-right: 8px !important;
+}
+
+.select-value {
+  text-align: right !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  direction: rtl !important;
+}
+
+/* החלפת כיוון האייקון בסלקט */
+.select-trigger .icon {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* וידוא שהפקדים בטופס מאופסים לימין */
+input, select, textarea {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
 html {
   font-family: 'Heebo', sans-serif;
 }
