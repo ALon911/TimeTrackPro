@@ -157,10 +157,24 @@ export default function TeamsPage() {
                 <CardContent>
                   {team.ownerId === user?.id && (
                     <div className="mb-5">
-                      <StandaloneAddMember
-                        teamId={team.id}
-                        teamName={team.name}
-                      />
+                      <div className="border border-red-500 rounded-md p-4 bg-red-50 dark:bg-red-950/30 mb-3">
+                        <h4 className="text-base font-medium text-red-700 dark:text-red-400 mb-2">
+                          הוספת משתמש ישירות לצוות
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          להוספת משתמש ישירות, לחץ על הקישור הבא והכנס את האימייל של המשתמש:
+                        </p>
+                        <div>
+                          <Button 
+                            variant="destructive"
+                            onClick={() => window.open(`/direct-add/${team.id}`, '_blank', 'width=500,height=500')} 
+                            className="w-full"
+                          >
+                            <UserPlus className="w-4 h-4 ml-2" />
+                            הוסף משתמש ישירות לצוות
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 

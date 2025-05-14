@@ -13,6 +13,7 @@ import TopicsPage from "@/pages/topics-page";
 import ReportsPage from "@/pages/reports-page";
 import SettingsPage from "@/pages/settings-page";
 import TeamsPage from "@/pages/teams-page";
+import AddDirectMemberPage from "@/pages/add-direct-member";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <ProtectedRoute path="/teams" component={TeamsPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/direct-add/:teamId" component={AddDirectMemberPage} />
       <Route component={NotFound} />
     </Switch>
   );
