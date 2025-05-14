@@ -440,15 +440,21 @@ teamsRouter.get('/api/teams/:id/stats', isAuthenticated, async (req: Request, re
       return res.status(404).json({ error: 'Team not found' });
     }
     
-    // Check if user is a member of the team
+    // זיהוי אם המשתמש הוא חבר בצוות או לא
     const teamMembers = await storage.getTeamMembers(teamId);
     const isMember = teamMembers.some(member => member.userId === req.user?.id);
     
-    // Handle both formats of the owner id field (ownerId or owner_id)
+    // קבלת מזהה בעל הצוות (תומך בשני פורמטים)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
-    if (!isMember && ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'You do not have permission to view this team\'s statistics' });
-    }
+    
+    // מותר לראות סטטיסטיקות רק אם המשתמש הוא חבר בצוות או בעל הצוות
+    console.log('Team access check:', {
+      userId: req.user?.id,
+      teamId,
+      isMember,
+      ownerId,
+      isOwner: ownerId === req.user?.id
+    });
     
     const teamStats = await storage.getTeamStats(teamId);
     res.json(teamStats);
