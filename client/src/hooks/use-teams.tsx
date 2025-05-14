@@ -84,7 +84,16 @@ export function useTeams() {
         }
         
         const data = await res.json();
-        return data;
+        console.log('Received team invitations from API:', data);
+        
+        // Add teamName from team_name if needed
+        return data.map((invitation: any) => ({
+          ...invitation,
+          teamId: invitation.teamId || invitation.team_id,
+          teamName: invitation.teamName || invitation.team_name,
+          invitedBy: invitation.invitedBy || invitation.invited_by,
+          expiresAt: invitation.expiresAt || invitation.expires_at,
+        }));
       } catch (error) {
         console.error('Error fetching my invitations:', error);
         return [];

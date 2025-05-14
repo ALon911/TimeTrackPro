@@ -203,8 +203,13 @@ export default function TeamsPage() {
 function TeamInvitationsList() {
   const { myInvitations, isLoadingMyInvitations, respondToInvitationMutation } = useTeams();
 
-  const handleResponse = (token: string, action: 'accept' | 'decline') => {
-    respondToInvitationMutation.mutate({ token, action });
+  const handleResponse = (invitationId: number, action: 'accept' | 'decline') => {
+    const invitation = myInvitations.find(inv => inv.id === invitationId);
+    if (!invitation || !invitation.token) {
+      console.error('Invitation not found or token missing', invitationId);
+      return;
+    }
+    respondToInvitationMutation.mutate({ token: invitation.token, action });
   };
 
   if (isLoadingMyInvitations) {
@@ -238,14 +243,14 @@ function TeamInvitationsList() {
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  onClick={() => handleResponse(invitation.id.toString(), 'decline')}
+                  onClick={() => handleResponse(invitation.id, 'decline')}
                   disabled={respondToInvitationMutation.isPending}
                 >
                   <UserX className="ml-2 h-4 w-4" />
                   דחה
                 </Button>
                 <Button 
-                  onClick={() => handleResponse(invitation.id.toString(), 'accept')}
+                  onClick={() => handleResponse(invitation.id, 'accept')}
                   disabled={respondToInvitationMutation.isPending}
                 >
                   <UserPlus className="ml-2 h-4 w-4" />
