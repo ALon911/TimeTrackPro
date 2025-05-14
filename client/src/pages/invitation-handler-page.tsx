@@ -8,14 +8,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function InvitationHandlerPage() {
+  console.log('InvitationHandlerPage component loading');
   const [, setLocation] = useLocation();
   const { token } = useParams<{ token: string }>();
+  console.log('Token from params:', token);
   const { respondToInvitationMutation } = useTeams();
   const { user, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<"loading" | "error" | "success" | "unauthorized">("loading");
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
+    console.log('InvitationHandlerPage useEffect triggered');
     // אם המשתמש לא מחובר, הפנה אותו לעמוד ההתחברות
     if (!user && !authLoading) {
       setStatus("unauthorized");
