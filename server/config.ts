@@ -73,7 +73,7 @@ export const isEmailConfigured = (): boolean => {
 };
 
 // Application URL for links in emails
-export const appBaseUrl = process.env.APP_URL || '';
+export const appBaseUrl = envVars.APP_URL || process.env.APP_URL || '';
 
 // Session secret for Express sessions
 export const sessionSecret = process.env.SESSION_SECRET || 'timetracker-secret';
