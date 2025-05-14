@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
+import { emailService } from "./email-service";
+import { appBaseUrl } from "./config";
+import crypto from 'crypto';
 
 export const directMemberRouter = Router();
 
@@ -14,9 +17,13 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
+    console.log(`===== Processing invitation request =====`);
+    console.log(`Team ID: ${teamId}, Email: ${email}`);
+    
     // Check if team exists
     const team = await storage.getTeam(teamId);
     if (!team) {
+      console.log(`Team not found with ID: ${teamId}`);
       return res.status(404).json({ error: 'Team not found' });
     }
     
@@ -24,38 +31,90 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
+      console.log(`User ${req.user?.id} is not the owner of team ${teamId}`);
       return res.status(403).json({ error: 'Only team owners can add members directly' });
+    }
+    
+    // Get current user (inviter) details
+    const inviter = await storage.getUser(req.user.id);
+    if (!inviter) {
+      console.log(`Inviter not found with ID: ${req.user.id}`);
+      return res.status(500).json({ error: 'Inviter user not found' });
     }
     
     // Find user by email
     const userToAdd = await storage.getUserByEmail(email);
-    if (!userToAdd) {
-      return res.status(404).json({ error: 'User not found with this email' });
+    
+    // Check if user is already a member if they exist
+    if (userToAdd) {
+      const teamMembers = await storage.getTeamMembers(teamId);
+      const isAlreadyMember = teamMembers.some(member => member.userId === userToAdd.id);
+      
+      if (isAlreadyMember) {
+        console.log(`User ${userToAdd.id} is already a member of team ${teamId}`);
+        return res.status(400).json({ error: 'User is already a member of this team' });
+      }
     }
     
-    // Check if user is already a member
-    const teamMembers = await storage.getTeamMembers(teamId);
-    const isAlreadyMember = teamMembers.some(member => member.userId === userToAdd.id);
+    // Generate a unique token for this invitation
+    const token = crypto.randomBytes(32).toString('hex');
+    console.log(`Generated invitation token: ${token.substring(0, 8)}...`);
     
-    if (isAlreadyMember) {
-      return res.status(400).json({ error: 'User is already a member of this team' });
-    }
-    
-    // Add user as a member
-    const addedMember = await storage.addTeamMember({
+    // Create an invitation
+    const invitation = await storage.createTeamInvitation({
       teamId,
-      userId: userToAdd.id,
-      role: 'member'
+      email,
+      status: 'pending',
+      token,
+      inviterId: req.user.id
     });
+    
+    console.log(`Invitation created with ID: ${invitation.id}`);
+    
+    // Send email invitation
+    console.log(`Checking email service status: ${emailService.isReady()}`);
+    
+    let emailSent = false;
+    
+    // Generate the invitation link
+    const inviteLink = `${appBaseUrl}/accept-invitation/${token}`;
+    console.log(`Invitation link: ${inviteLink}`);
+    
+    if (emailService.isReady()) {
+      if (userToAdd) {
+        // Send email to existing user
+        console.log(`Sending invitation email to existing user: ${email}`);
+        emailSent = await emailService.sendTeamInvitation(
+          invitation,
+          inviter,
+          team,
+          inviteLink
+        );
+      } else {
+        // Send email with registration link to new user
+        console.log(`Sending invitation email to new user: ${email}`);
+        const registerLink = `${appBaseUrl}/register?invite=${token}`;
+        emailSent = await emailService.sendInvitationWithRegistration(
+          invitation,
+          inviter,
+          team,
+          registerLink
+        );
+      }
+      
+      console.log(`Email sending result: ${emailSent ? 'success' : 'failed'}`);
+    } else {
+      console.log(`Email service is not configured properly`);
+    }
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Member added successfully',
-      member: addedMember
+      message: 'Member invitation sent successfully',
+      emailSent
     });
     
   } catch (error) {
-    console.error('Error adding team member directly:', error);
+    console.error('Error sending team invitation:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

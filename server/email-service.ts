@@ -2,6 +2,9 @@ import nodemailer from 'nodemailer';
 import { TeamInvitation, User, Team } from '@shared/schema';
 import { emailConfig, isEmailConfigured } from './config';
 
+// Set debug level for nodemailer
+process.env.NODE_DEBUG = 'nodemailer';
+
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private fromAddress: string;
@@ -10,17 +13,38 @@ export class EmailService {
   constructor() {
     this.fromAddress = emailConfig.from;
     
+    console.log('=== EMAIL SERVICE CONFIG DETAILS ===');
+    console.log('Host:', emailConfig.host);
+    console.log('Port:', emailConfig.port);
+    console.log('Secure:', emailConfig.secure);
+    console.log('Auth User:', emailConfig.auth.user ? 'Set (hidden)' : 'Not set');
+    console.log('Auth Pass:', emailConfig.auth.pass ? 'Set (hidden)' : 'Not set');
+    console.log('From Address:', emailConfig.from);
+    console.log('Is Email Configured:', isEmailConfigured());
+    
     if (isEmailConfigured()) {
       try {
-        this.transporter = nodemailer.createTransport({
+        const transportConfig = {
           host: emailConfig.host,
           port: emailConfig.port,
           secure: emailConfig.secure,
           auth: {
             user: emailConfig.auth.user,
             pass: emailConfig.auth.pass
+          },
+          logger: true, // Enable logging
+          debug: true   // Include debug information
+        };
+        
+        console.log('Creating transporter with config:', JSON.stringify({
+          ...transportConfig,
+          auth: {
+            user: transportConfig.auth.user ? 'Set (hidden)' : 'Not set',
+            pass: transportConfig.auth.pass ? 'Set (hidden)' : 'Not set'
           }
-        });
+        }));
+        
+        this.transporter = nodemailer.createTransport(transportConfig);
         this.isConfigured = true;
         console.log('Email service configured successfully');
       } catch (error) {
@@ -29,7 +53,7 @@ export class EmailService {
         this.transporter = nodemailer.createTransport({});
       }
     } else {
-      console.warn('Email service not configured. Set EMAIL_USER, EMAIL_PASS and EMAIL_FROM environment variables.');
+      console.warn('Email service not configured. Check EMAIL_USER, EMAIL_PASS and EMAIL_FROM environment variables.');
       this.isConfigured = false;
       this.transporter = nodemailer.createTransport({});
     }
@@ -69,21 +93,41 @@ export class EmailService {
   // שליחת מייל כללי
   async sendMail(to: string, subject: string, html: string): Promise<boolean> {
     if (!this.isConfigured) {
-      console.error('Email service not configured');
+      console.error('Email service not configured for sending mail');
       return false;
     }
 
+    console.log('=== SENDING EMAIL ===');
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    console.log('From:', this.fromAddress);
+    
     try {
-      const info = await this.transporter.sendMail({
+      console.log('Attempting to send email via transporter...');
+      const mailOptions = {
         from: this.fromAddress,
         to,
         subject,
         html
-      });
-      console.log('Email sent:', info.messageId);
+      };
+      console.log('Mail options:', JSON.stringify({
+        ...mailOptions,
+        html: '(HTML content not shown for brevity)'
+      }));
+      
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('Email sent successfully!');
+      console.log('Message ID:', info.messageId);
+      console.log('Response:', info.response);
+      if (info.accepted) console.log('Accepted by:', info.accepted);
+      if (info.rejected) console.log('Rejected by:', info.rejected);
+      
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('=== ERROR SENDING EMAIL ===');
+      console.error('Error name:', (error as Error).name);
+      console.error('Error message:', (error as Error).message);
+      console.error('Error stack:', (error as Error).stack);
       return false;
     }
   }
