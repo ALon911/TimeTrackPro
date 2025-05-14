@@ -171,8 +171,15 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
   
   // Timer effect - הלוגיקה של הטיימר קאונטדאון בלבד
-  // בדיקה אם יש טיימר ספירה לאחור פעיל בלוקל סטורג'
+  // בדיקה אם יש טיימר ספירה לאחור פעיל בלוקל סטורג' - רק בטעינה הראשונית
+  const didInitialLoad = useRef(false);
+  
   useEffect(() => {
+    // מבצעים את זה רק פעם אחת בטעינה הראשונית של הקומפוננטה
+    if (didInitialLoad.current) return;
+    
+    didInitialLoad.current = true;
+    
     try {
       // בדיקה אם יש טיימר פעיל בלוקל סטורג'
       const savedCountdown = localStorage.getItem('timetracker_countdown');

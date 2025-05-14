@@ -210,7 +210,13 @@ export function TimeTracker() {
   }, [selectedTopic, description, startTime]);
   
   // טעינת נתוני ממשק המשתמש (נושא, תיאור וזמן התחלה) בעת טעינת הקומפוננטה
+  const didInitialUILoad = useRef(false);
+  
   useEffect(() => {
+    // מונעים טעינה חוזרת בכל פעם שהקומפוננטה נטענת מחדש
+    if (didInitialUILoad.current) return;
+    didInitialUILoad.current = true;
+    
     try {
       const savedUIData = localStorage.getItem(TIMER_DATA_KEY);
       
