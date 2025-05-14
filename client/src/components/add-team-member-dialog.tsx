@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,74 +57,75 @@ export function AddTeamMemberDialog({ teamId, teamName, isOwner }: AddTeamMember
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          size="sm"
-          className="mr-2 flex items-center"
-        >
-          <UserPlus className="ml-1 h-4 w-4" />
-          הוסף משתמש
-        </Button>
-      </DialogTrigger>
+    <>
+      <Button 
+        variant="default" 
+        size="sm"
+        className="mr-2 flex items-center"
+        onClick={() => setIsOpen(true)}
+      >
+        <UserPlus className="ml-1 h-4 w-4" />
+        הוסף משתמש
+      </Button>
       
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>הוספת חבר לצוות: {teamName}</DialogTitle>
-          <DialogDescription>
-            הוסף משתמש קיים במערכת ישירות לצוות
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">כתובת אימייל</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="הזן את כתובת האימייל של המשתמש שברצונך להוסיף"
-              className={emailError ? "border-red-500" : ""}
-            />
-            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-            <p className="text-sm text-muted-foreground">
-              המשתמש חייב להיות רשום כבר למערכת
-            </p>
-          </div>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>הוספת חבר לצוות: {teamName}</DialogTitle>
+            <DialogDescription>
+              הוסף משתמש קיים במערכת ישירות לצוות
+            </DialogDescription>
+          </DialogHeader>
           
-          <div className="space-y-2">
-            <Label htmlFor="role">תפקיד בצוות</Label>
-            <Select value={role} onValueChange={(value: "member" | "admin") => setRole(value)}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="בחר תפקיד" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">חבר צוות</SelectItem>
-                <SelectItem value="admin">מנהל</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <DialogFooter className="pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsOpen(false)}
-            >
-              ביטול
-            </Button>
-            <Button 
-              type="submit"
-              disabled={addMemberMutation.isPending || !email}
-            >
-              {addMemberMutation.isPending && <Loader2 className="ml-1 h-4 w-4 animate-spin" />}
-              הוסף לצוות
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">כתובת אימייל</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="הזן את כתובת האימייל של המשתמש שברצונך להוסיף"
+                className={emailError ? "border-red-500" : ""}
+              />
+              {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+              <p className="text-sm text-muted-foreground">
+                המשתמש חייב להיות רשום כבר למערכת
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="role">תפקיד בצוות</Label>
+              <Select value={role} onValueChange={(value: "member" | "admin") => setRole(value)}>
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="בחר תפקיד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">חבר צוות</SelectItem>
+                  <SelectItem value="admin">מנהל</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <DialogFooter className="pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsOpen(false)}
+              >
+                ביטול
+              </Button>
+              <Button 
+                type="submit"
+                disabled={addMemberMutation.isPending || !email}
+              >
+                {addMemberMutation.isPending && <Loader2 className="ml-1 h-4 w-4 animate-spin" />}
+                הוסף לצוות
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
