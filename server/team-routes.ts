@@ -499,7 +499,7 @@ teamRouter.post('/invitations/:token', async (req, res) => {
 });
 
 // Get invitations for the current user
-teamRouter.get('/my-invitations', isAuthenticated, async (req, res) => {
+teamRouter.get('/teams/invitations/my', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
     
@@ -517,10 +517,22 @@ teamRouter.get('/my-invitations', isAuthenticated, async (req, res) => {
     // Filter to only pending invitations that haven't expired
     const pendingInvitations = invitations
       .filter(inv => inv.status === 'pending')
-      .filter(inv => new Date(inv.expiresAt) > new Date())
-      .map(({ token, ...rest }) => rest); // Remove token for security
+      .filter(inv => new Date(inv.expiresAt) > new Date());
+      
+    // Get team information for each invitation
+    const invitationsWithTeams = await Promise.all(
+      pendingInvitations.map(async (invitation) => {
+        const team = await storage.getTeam(invitation.teamId);
+        // Remove sensitive token information
+        const { token, ...rest } = invitation;
+        return {
+          ...rest,
+          team
+        };
+      })
+    );
     
-    res.json(pendingInvitations);
+    res.json(invitationsWithTeams);
   } catch (error) {
     console.error('Error fetching invitations:', error);
     res.status(500).json({ error: 'Error fetching invitations' });
