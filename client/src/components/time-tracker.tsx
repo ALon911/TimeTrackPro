@@ -693,7 +693,7 @@ export function TimeTracker() {
               disabled={isRunning || isPaused}
             >
               <SelectTrigger id="topic-select" className="select-trigger">
-                <SelectValue placeholder="בחר נושא" />
+                <SelectValue placeholder="בחר נושא" className="select-value" />
               </SelectTrigger>
               <SelectContent className="select-content">
                 {topics?.map((topic: any) => (
