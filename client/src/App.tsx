@@ -26,7 +26,7 @@ function Router() {
       <ProtectedRoute path="/teams" component={TeamsPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/direct-add/:teamId" component={AddDirectMemberPage} />
+      <Route path="/teams/:teamId/add-member" component={AddDirectMemberPage} />
       <Route component={NotFound} />
     </Switch>
   );

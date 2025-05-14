@@ -1,224 +1,173 @@
-import { useEffect, useState } from "react";
-import { useParams } from "wouter";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { apiRequest } from "@/lib/queryClient";
-
-// Form schema for adding a member directly
-const directAddSchema = z.object({
-  email: z.string().email({ message: "יש להזין כתובת אימייל תקינה" }),
-});
-
-type DirectAddFormData = z.infer<typeof directAddSchema>;
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
+import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function AddDirectMemberPage() {
-  const { teamId } = useParams();
-  const [teamName, setTeamName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
-
-  // Set up form with validation
-  const form = useForm<DirectAddFormData>({
-    resolver: zodResolver(directAddSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
-
-  // Load team details on mount
+  const [location, setLocation] = useLocation();
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [email, setEmail] = useState('');
+  const [teamId, setTeamId] = useState<number | null>(null);
+  const [teamName, setTeamName] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  
   useEffect(() => {
-    const loadTeam = async () => {
-      if (!teamId) {
-        setError("מזהה צוות חסר או לא תקין");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const res = await apiRequest("GET", `/api/teams/${teamId}`);
-        if (!res.ok) {
-          throw new Error("צוות לא נמצא או אין הרשאה לגישה");
-        }
-        
-        const team = await res.json();
-        setTeamName(team.name);
-      } catch (err: any) {
-        setError(err.message || "שגיאה בטעינת פרטי הצוות");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTeam();
-  }, [teamId]);
-
-  const onSubmit = async (data: DirectAddFormData) => {
-    if (!teamId) return;
+    // Extract teamId from URL path
+    const path = location;
+    const match = path.match(/\/teams\/(\d+)\/add-member/);
     
-    setIsSubmitting(true);
-    setError(null);
+    if (match && match[1]) {
+      const id = parseInt(match[1]);
+      setTeamId(id);
+      
+      // Fetch team info
+      const fetchTeam = async () => {
+        try {
+          const res = await fetch(`/api/teams/${id}`);
+          if (res.ok) {
+            const team = await res.json();
+            setTeamName(team.name);
+          } else {
+            setError('הצוות לא נמצא');
+          }
+        } catch (err) {
+          setError('שגיאה בטעינת פרטי הצוות');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchTeam();
+    } else {
+      setError('מזהה צוות לא תקין');
+      setLoading(false);
+    }
+  }, [location]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      setError('יש להזין כתובת אימייל');
+      return;
+    }
+    
+    if (!teamId) {
+      setError('מזהה צוות לא תקין');
+      return;
+    }
+    
+    setError('');
+    setSubmitting(true);
     
     try {
-      const response = await apiRequest("POST", `/api/teams/${teamId}/members`, {
-        email: data.email,
-        role: "member"
+      const response = await apiRequest('POST', `/api/teams/${teamId}/direct-member`, {
+        email,
+        role: 'member'
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "שגיאה בהוספת משתמש");
+        const data = await response.json();
+        throw new Error(data.error || 'שגיאה בהוספת המשתמש');
       }
       
       setSuccess(true);
       toast({
-        title: "משתמש נוסף בהצלחה",
-        description: `המשתמש ${data.email} נוסף לצוות ${teamName}`,
+        title: 'המשתמש נוסף בהצלחה',
+        description: `המשתמש ${email} נוסף לצוות ${teamName}`,
       });
-
-      // Auto-close window after 3 seconds
+      
+      // Close window after 3 seconds if it's a popup
       setTimeout(() => {
         window.close();
       }, 3000);
+      
     } catch (err: any) {
-      setError(err.message || "שגיאה בלתי ידועה");
-      toast({
-        title: "שגיאה בהוספת משתמש",
-        description: err.message || "שגיאה בלתי ידועה",
-        variant: "destructive",
-      });
+      setError(err.message || 'שגיאה בהוספת המשתמש');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
-
-  // Show loading
-  if (isLoading) {
+  
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">טוען פרטי צוות...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-border" />
       </div>
     );
   }
-
-  // Show error
-  if (error && !teamName) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <Card className="w-full max-w-md border-destructive">
-          <CardHeader className="bg-destructive/10">
-            <AlertCircle className="h-6 w-6 text-destructive mb-2" />
-            <CardTitle>שגיאה בטעינת פרטי צוות</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <p>{error}</p>
-          </CardContent>
-          <CardFooter className="border-t pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => window.close()}
-              className="w-full"
-            >
-              סגור
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show success
-  if (success) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-        <Card className="w-full max-w-md border-green-500">
-          <CardHeader className="bg-green-50 dark:bg-green-950/30">
-            <div className="flex items-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-500 mr-2" />
-              <CardTitle>פעולה הושלמה בהצלחה</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <p className="mb-2">המשתמש נוסף בהצלחה לצוות {teamName}.</p>
-            <p className="text-sm text-muted-foreground">חלון זה ייסגר אוטומטית תוך מספר שניות.</p>
-          </CardContent>
-          <CardFooter className="border-t pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => window.close()}
-              className="w-full"
-            >
-              סגור
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show the form
+  
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md border-primary">
-        <CardHeader className="bg-primary/10">
+    <div className="container max-w-md py-10">
+      <Card>
+        <CardHeader>
           <CardTitle>הוספת משתמש לצוות {teamName}</CardTitle>
+          <CardDescription>
+            הזן את כתובת האימייל של המשתמש להוספה ישירה לצוות
+          </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>כתובת אימייל</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="הזן אימייל של משתמש קיים"
-                        type="email"
-                        dir="ltr"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+        <CardContent>
+          {success ? (
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-md text-center">
+              <h3 className="text-lg font-semibold mb-2">המשתמש נוסף בהצלחה!</h3>
+              <p>חלון זה ייסגר אוטומטית תוך מספר שניות</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    כתובת אימייל
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="הזן כתובת אימייל"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="ltr-input"
+                    dir="ltr"
+                  />
+                </div>
+                
+                {error && (
+                  <div className="p-2 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+                    {error}
+                  </div>
                 )}
-              />
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                הוסף משתמש לצוות
-              </Button>
+              </div>
             </form>
-          </Form>
+          )}
         </CardContent>
-        <CardFooter className="border-t pt-4 justify-end">
-          <Button 
-            variant="outline" 
-            onClick={() => window.close()}
-          >
-            ביטול
-          </Button>
-        </CardFooter>
+        {!success && (
+          <CardFooter className="flex justify-end">
+            <Button 
+              type="button" 
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  מוסיף משתמש...
+                </>
+              ) : (
+                'הוסף משתמש'
+              )}
+            </Button>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );

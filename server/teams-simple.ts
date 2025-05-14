@@ -253,8 +253,8 @@ teamsRouter.delete('/api/teams/:teamId/members/:userId', isAuthenticated, async 
   }
 });
 
-// Simple HTML route for direct member addition
-teamsRouter.get('/direct-add/:teamId', isAuthenticated, async (req: Request, res: Response) => {
+// Simple HTML route for direct member addition - no authentication required for the form itself
+teamsRouter.get('/direct-add/:teamId', async (req: Request, res: Response) => {
   try {
     const teamId = parseInt(req.params.teamId);
     if (isNaN(teamId)) {
@@ -266,10 +266,7 @@ teamsRouter.get('/direct-add/:teamId', isAuthenticated, async (req: Request, res
       return res.status(404).send('Team not found');
     }
     
-    // Only team owner can add members
-    if (team.ownerId !== req.user?.id) {
-      return res.status(403).send('Only team owners can add members');
-    }
+    // No authentication check here - we'll verify ownership at the API level when a user is added
     
     // Return a simple HTML form for adding a member
     const html = `
