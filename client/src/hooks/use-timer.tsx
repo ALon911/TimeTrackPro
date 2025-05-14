@@ -171,23 +171,54 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
   
   // Timer effect - הלוגיקה של הטיימר קאונטדאון בלבד
-  // בדיקה אם יש טיימר ספירה לאחור פעיל בלוקל סטורג' - רק בטעינה הראשונית
-  const didInitialLoad = useRef(false);
-  
+  // בדיקה אם יש טיימר פעיל בלוקל סטורג' בעת הטעינה
   useEffect(() => {
-    // מבצעים את זה רק פעם אחת בטעינה הראשונית של הקומפוננטה
-    if (didInitialLoad.current) return;
-    
-    didInitialLoad.current = true;
-    
     try {
-      // בדיקה אם יש טיימר פעיל בלוקל סטורג'
+      // בדיקה אם יש טיימר ישיר פעיל
+      const directTimer = localStorage.getItem('timetracker_direct_timer');
+      
+      if (directTimer) {
+        // פענוח הנתונים
+        const data = JSON.parse(directTimer);
+        console.log(">>> נמצא טיימר ישיר שמור:", data);
+        
+        if (data.isRunning) {
+          // חישוב כמה זמן נשאר
+          const elapsedMs = Date.now() - data.startTime;
+          const elapsedSeconds = Math.floor(elapsedMs / 1000);
+          const remainingSeconds = Math.max(0, data.duration - elapsedSeconds);
+          
+          console.log(`>>> טיימר ישיר - חלפו ${elapsedSeconds} שניות, נותרו ${remainingSeconds} שניות`);
+          
+          if (remainingSeconds > 0) {
+            // שחזור מצב הטיימר ברפרנסים
+            originalDurationRef.current = data.duration;
+            startTimeRef.current = data.startTime;
+            
+            // עדכון המצב של הטיימר
+            setSeconds(remainingSeconds);
+            setIsRunning(true);
+            setIsPaused(false);
+            setIsCompleted(false);
+            setIsCountDown(true);
+            
+            console.log(">>> הטיימר הישיר שוחזר בהצלחה");
+            return; // יוצאים אם מצאנו טיימר ישיר פעיל
+          } else {
+            // הטיימר כבר הסתיים
+            console.log(">>> הטיימר הישיר שהיה שמור כבר הסתיים");
+            localStorage.removeItem('timetracker_direct_timer');
+          }
+        }
+      }
+      
+      // אם לא מצאנו טיימר ישיר פעיל, ננסה לבדוק את הטיימר הישן
       const savedCountdown = localStorage.getItem('timetracker_countdown');
       
       if (savedCountdown) {
         // פענוח הנתונים
         const data = JSON.parse(savedCountdown);
-        console.log(">>> נמצא טיימר שמור:", data);
+        console.log(">>> נמצא טיימר שמור ישן:", data);
         
         // שחזור מצב הטיימר
         originalDurationRef.current = data.duration;
@@ -198,7 +229,7 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
         const elapsedSeconds = Math.floor(elapsedMs / 1000);
         const remainingSeconds = Math.max(0, data.duration - elapsedSeconds);
         
-        console.log(`>>> טיימר שמור - חלפו ${elapsedSeconds} שניות, נותרו ${remainingSeconds} שניות`);
+        console.log(`>>> טיימר שמור ישן - חלפו ${elapsedSeconds} שניות, נותרו ${remainingSeconds} שניות`);
         
         if (remainingSeconds > 0) {
           // עדכון המצב של הטיימר
@@ -208,10 +239,10 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
           setIsCompleted(false);
           setIsCountDown(true);
           
-          console.log(">>> הטיימר שוחזר בהצלחה");
+          console.log(">>> הטיימר הישן שוחזר בהצלחה");
         } else {
           // הטיימר כבר הסתיים
-          console.log(">>> הטיימר שהיה שמור כבר הסתיים");
+          console.log(">>> הטיימר הישן שהיה שמור כבר הסתיים");
           localStorage.removeItem('timetracker_countdown');
         }
       }
@@ -221,9 +252,56 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
   }, []);
   
   useEffect(() => {
+    // נבדוק אם קיים טיימר ישיר לפני הכל
+    const checkDirectTimer = () => {
+      try {
+        const savedTimer = localStorage.getItem('timetracker_direct_timer');
+        
+        if (!savedTimer) return false;
+        
+        const timerData = JSON.parse(savedTimer);
+        if (!timerData.isRunning) return false;
+        
+        const startTimeTs = timerData.startTime;
+        const duration = timerData.duration;
+        const now = Date.now();
+        
+        // חישוב כמה זמן עבר
+        const elapsedSeconds = Math.floor((now - startTimeTs) / 1000);
+        
+        // חישוב כמה זמן נשאר
+        const remainingSeconds = Math.max(0, duration - elapsedSeconds);
+        
+        if (remainingSeconds <= 0) {
+          // הטיימר הסתיים כבר
+          localStorage.removeItem('timetracker_direct_timer');
+          return false;
+        }
+        
+        // עדכון המצב של הטיימר
+        console.log(`>>> נמצא טיימר ישיר: נותרו ${remainingSeconds} שניות`);
+        originalDurationRef.current = duration;
+        startTimeRef.current = startTimeTs;
+        
+        // עדכון הסטייט עם הזמן הנותר
+        setSeconds(remainingSeconds);
+        setIsRunning(true);
+        setIsCompleted(false);
+        setIsCountDown(true);
+        
+        return true;
+      } catch (error) {
+        console.error(">>> שגיאה בבדיקת טיימר ישיר:", error);
+        return false;
+      }
+    };
+    
     // רק אם הטיימר פעיל וזה טיימר ספירה לאחור
     if (isRunning && isCountDown) {
       console.log(`>>> טיימר ספירה לאחור פעיל - ${seconds} שניות`);
+      
+      // בדיקה חוזרת של הטיימר הישיר
+      checkDirectTimer();
       
       // וידוא שיש זמן התחלה תקף
       if (startTimeRef.current === 0) {
@@ -238,36 +316,30 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
       
       // הפעלת אינטרוול חדש
       intervalRef.current = setInterval(() => {
-        // חישוב כמה זמן עבר מאז תחילת הטיימר
-        const elapsedMs = Date.now() - startTimeRef.current;
-        const elapsedSeconds = Math.floor(elapsedMs / 1000);
-        
-        // חישוב כמה זמן נשאר בטיימר
-        const remainingSeconds = Math.max(0, originalDurationRef.current - elapsedSeconds);
-        
-        console.log(`>>> נותרו ${remainingSeconds} שניות בטיימר`);
-        
-        // עדכון הסטייט עם הזמן הנותר
-        setSeconds(remainingSeconds);
-        
-        // אם הטיימר הסתיים
-        if (remainingSeconds <= 0) {
-          // ניקוי האינטרוול
-          clearInterval(intervalRef.current!);
-          
-          // עדכון הסטייט
-          setIsRunning(false);
-          setIsCompleted(true);
-          setSeconds(0);
-          
-          // השמעת צליל סיום
-          audioManager.playTimerComplete();
-          
-          // ניקוי הלוקל סטורג'
-          localStorage.removeItem('timetracker_countdown');
-          localStorage.removeItem('timetracker_timer');
-          
-          console.log(">>> הטיימר הסתיים!");
+        // קודם כל בודקים שוב את הטיימר הישיר
+        if (!checkDirectTimer()) {
+          // אם אין טיימר ישיר, משתמשים ברפרנסים
+          if (startTimeRef.current > 0 && originalDurationRef.current > 0) {
+            // חישוב כמה זמן עבר מאז תחילת הטיימר
+            const elapsedMs = Date.now() - startTimeRef.current;
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
+            
+            // חישוב כמה זמן נשאר בטיימר
+            const remainingSeconds = Math.max(0, originalDurationRef.current - elapsedSeconds);
+            
+            console.log(`>>> נותרו ${remainingSeconds} שניות בטיימר`);
+            
+            // עדכון הסטייט עם הזמן הנותר
+            setSeconds(remainingSeconds);
+            
+            // אם הטיימר הסתיים
+            if (remainingSeconds <= 0) {
+              finishTimer();
+            }
+          } else {
+            console.warn(">>> אין נתוני טיימר תקפים");
+            finishTimer();
+          }
         }
       }, 1000);
     } else if (intervalRef.current) {
@@ -280,6 +352,30 @@ export function useTimer({ initialSeconds = 0, autoStart = false, countDown = fa
       }
     };
   }, [isRunning, isCountDown]);
+  
+  // פונקציה לסיום הטיימר
+  const finishTimer = () => {
+    // ניקוי האינטרוול
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    // עדכון הסטייט
+    setIsRunning(false);
+    setIsCompleted(true);
+    setSeconds(0);
+    
+    // השמעת צליל סיום
+    audioManager.playTimerComplete();
+    
+    // ניקוי הלוקל סטורג'
+    localStorage.removeItem('timetracker_countdown');
+    localStorage.removeItem('timetracker_timer');
+    localStorage.removeItem('timetracker_direct_timer');
+    
+    console.log(">>> הטיימר הסתיים!");
+  };
 
   const start = useCallback((): void => {
     setIsCountDown(false); // Default mode is counting up

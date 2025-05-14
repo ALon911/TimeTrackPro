@@ -149,14 +149,28 @@ export function TimeTracker() {
       startAudioRef.current.play().catch(e => console.log('Audio play failed:', e));
     }
     
-    setStartTime(new Date());
+    // שמירת זמן התחלה ותיאור בלוקל סטורג' באופן נפרד ואמין
+    const startTimeNow = new Date();
+    const directTimerData = {
+      startTime: startTimeNow.getTime(),
+      selectedTopic: selectedTopic,
+      description: description,
+      duration: minutes * 60, // בשניות
+      isRunning: true,
+      lastUpdated: Date.now()
+    };
+    
+    // שומרים מידע באופן ישיר בלוקל סטורג'
+    localStorage.setItem('timetracker_direct_timer', JSON.stringify(directTimerData));
+    
+    setStartTime(startTimeNow);
     startWithDuration(minutes);
     
     toast({
       title: `טיימר התחיל`,
       description: `קוצב זמן ל-${minutes} דקות`,
     });
-  }, [validateTopicSelection, startWithDuration, setStartTime, toast]);
+  }, [validateTopicSelection, startWithDuration, setStartTime, toast, selectedTopic, description]);
   
   // Handle manually stopping the timer
   const handleStop = useCallback(() => {
@@ -183,8 +197,14 @@ export function TimeTracker() {
     stop();
     reset();
     setStartTime(null);
-    // מנקים את הלוקל סטורג' גם
+    
+    // מנקים את כל הלוקל סטורג' שקשור לטיימר
     localStorage.removeItem('timetracker_timer_state');
+    localStorage.removeItem('timetracker_countdown');
+    localStorage.removeItem('timetracker_direct_timer');
+    localStorage.removeItem('timetracker_ui_data');
+    
+    console.log(">>> נמחקו כל נתוני הטיימר מהלוקל סטורג'");
   }, [stop, reset, startTime, selectedTopic, description, createTimeEntryMutation, toast]);
   
   // יצירת מזהה ייחודי לשמירת מצב הטיימר
