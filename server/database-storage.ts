@@ -969,6 +969,11 @@ export class DatabaseStorage implements IStorage {
     const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE token = ?');
     return stmt.get(token) as TeamInvitation | undefined;
   }
+  
+  async getTeamInvitationById(id: number): Promise<TeamInvitation | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM team_invitations WHERE id = ?');
+    return stmt.get(id) as TeamInvitation | undefined;
+  }
 
   async getTeamInvitationsByEmail(email: string): Promise<TeamInvitation[]> {
     const stmt = this.db.prepare(`

@@ -76,6 +76,7 @@ export interface IStorage {
   // Team invitations methods
   createTeamInvitation(invitation: InsertTeamInvitation & { token: string }): Promise<TeamInvitation>;
   getTeamInvitationByToken(token: string): Promise<TeamInvitation | undefined>;
+  getTeamInvitationById(id: number): Promise<TeamInvitation | undefined>;
   getTeamInvitationsByEmail(email: string): Promise<TeamInvitation[]>;
   getTeamInvitationsByTeam(teamId: number): Promise<TeamInvitation[]>;
   updateTeamInvitationStatus(id: number, status: string): Promise<TeamInvitation | undefined>;
