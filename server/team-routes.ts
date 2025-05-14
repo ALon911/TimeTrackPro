@@ -361,10 +361,10 @@ teamRouter.post('/teams/:teamId/invitations', isTeamOwner, async (req, res) => {
     });
     
     // Send invitation email
-    if (emailService.isReady()) {
+    let emailSent = false;
+    if (emailService.isReady()) { // Use configured email service
       const inviteLink = `${appBaseUrl}/invitations/${token}`;
       
-      let emailSent = false;
       if (existingUser) {
         // Send regular invitation
         emailSent = await emailService.sendTeamInvitation(
