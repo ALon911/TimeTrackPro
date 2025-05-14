@@ -16,6 +16,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
+// יצירת טיפוס Team המתאים לממשק ב-TeamSettingsDialogProps
+interface Team {
+  id: number;
+  name: string;
+  owner_id: number;
+}
+
 const createTeamSchema = z.object({
   name: z.string().min(1, { message: "שם הצוות הוא שדה חובה" }),
 });
@@ -70,7 +77,7 @@ export default function TeamsPage() {
     const token = invitation.token || invitationId.toString();
     
     respondToInvitationMutation.mutate(
-      { invitationId, token, action },
+      { token, action },
       {
         onSuccess: () => {
           toast({
@@ -246,13 +253,9 @@ export default function TeamsPage() {
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 >
                   <div>
-                    <AlertTitle className="mb-2">הוזמנת להצטרף לצוות "{invitation.team?.name}"</AlertTitle>
+                    <AlertTitle className="mb-2">הוזמנת להצטרף לצוות "{invitation.team?.name || invitation.teamName}"</AlertTitle>
                     <AlertDescription>
-                      {invitation.inviter ? (
-                        <p>הוזמנת על ידי {invitation.inviter?.email || invitation.inviter?.username}</p>
-                      ) : (
-                        <p>הוזמנת להצטרף לצוות זה</p>
-                      )}
+                      <p>הוזמנת להצטרף לצוות זה</p>
                     </AlertDescription>
                   </div>
                   <div className="flex gap-2 mt-2 sm:mt-0">
@@ -280,44 +283,65 @@ export default function TeamsPage() {
       )}
       
       {/* דיאלוגים לניהול צוות */}
-      {teams.map((team) => (
-        <div key={`dialogs-${team.id}`}>
-          {/* דיאלוג חברי צוות */}
-          <TeamMembersDialog
-            teamId={team.id} 
-            isOwner={team.owner_id === user?.id}
-            forceOwner={true}
-            isOpen={activeTeamMembers === team.id}
-            onOpenChange={(open) => setActiveTeamMembers(open ? team.id : null)}
-          />
-          
-          {/* דיאלוג הזמנת חברים */}
-          <TeamInvitationDialog
-            teamId={team.id}
-            teamName={team.name}
-            isOpen={activeTeamInvite === team.id}
-            onOpenChange={(open) => setActiveTeamInvite(open ? team.id : null)}
-          />
-          
-          {/* דיאלוג הגדרות צוות */}
-          <TeamSettingsDialog
-            team={team}
-            isOpen={activeTeamSettings === team.id}
-            onOpenChange={(open) => setActiveTeamSettings(open ? team.id : null)}
-            onDelete={() => {
-              deleteTeamMutation.mutate(team.id, {
-                onSuccess: () => {
-                  setActiveTeamSettings(null);
-                  toast({
-                    title: "הצוות נמחק בהצלחה",
-                    variant: "default",
-                  });
-                },
-              });
-            }}
-          />
-        </div>
-      ))}
+      {teams.map((teamItem) => {
+        // המרת המידע שמתקבל מהשרת לטיפוס Team שנדרש לקומפוננטות
+        const team: Team = {
+          id: teamItem.id,
+          name: teamItem.name,
+          owner_id: (teamItem.owner_id || teamItem.ownerId) as number
+        };
+        
+        return (
+          <div key={`dialogs-${team.id}`}>
+            {/* דיאלוג חברי צוות */}
+            {activeTeamMembers === team.id && (
+              <Dialog open={true} onOpenChange={(open) => setActiveTeamMembers(open ? team.id : null)}>
+                <TeamMembersDialog
+                  teamId={team.id} 
+                  isOwner={team.owner_id === user?.id}
+                  forceOwner={true}
+                  isOpen={activeTeamMembers === team.id}
+                  onOpenChange={(open) => setActiveTeamMembers(open ? team.id : null)}
+                />
+              </Dialog>
+            )}
+            
+            {/* דיאלוג הזמנת חברים */}
+            {activeTeamInvite === team.id && (
+              <Dialog open={true} onOpenChange={(open) => setActiveTeamInvite(open ? team.id : null)}>
+                <TeamInvitationDialog
+                  teamId={team.id}
+                  teamName={team.name}
+                  isOpen={activeTeamInvite === team.id}
+                  onOpenChange={(open) => setActiveTeamInvite(open ? team.id : null)}
+                />
+              </Dialog>
+            )}
+            
+            {/* דיאלוג הגדרות צוות */}
+            {activeTeamSettings === team.id && (
+              <Dialog open={true} onOpenChange={(open) => setActiveTeamSettings(open ? team.id : null)}>
+                <TeamSettingsDialog
+                  team={team}
+                  isOpen={activeTeamSettings === team.id}
+                  onOpenChange={(open) => setActiveTeamSettings(open ? team.id : null)}
+                  onDelete={() => {
+                    deleteTeamMutation.mutate(team.id, {
+                      onSuccess: () => {
+                        setActiveTeamSettings(null);
+                        toast({
+                          title: "הצוות נמחק בהצלחה",
+                          variant: "default",
+                        });
+                      },
+                    });
+                  }}
+                />
+              </Dialog>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }
