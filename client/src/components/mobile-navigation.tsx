@@ -1,43 +1,34 @@
 import { Link, useLocation } from "wouter";
+import { Home, Clock, FolderClosed, BarChart, Settings, Users } from "lucide-react";
 
 export function MobileNavigation() {
   const [location] = useLocation();
   
+  const navItems = [
+    { href: "/", label: "דף הבית", icon: <Home className="h-5 w-5" /> },
+    { href: "/time-entries", label: "מעקב", icon: <Clock className="h-5 w-5" /> },
+    { href: "/topics", label: "נושאים", icon: <FolderClosed className="h-5 w-5" /> },
+    { href: "/reports", label: "דוחות", icon: <BarChart className="h-5 w-5" /> },
+    { href: "/teams", label: "צוותים", icon: <Users className="h-5 w-5" /> },
+  ];
+  
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card dark:bg-slate-900 border-t border-border z-10">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card dark:bg-slate-800 border-t border-border z-10" dir="rtl">
       <div className="flex justify-around">
-        <div>
-          <Link href="/">
-            <div className={`flex flex-col items-center py-2 ${location === "/" ? "text-primary" : "text-neutral-500 dark:text-neutral-400"}`}>
-              <span className="material-icons">dashboard</span>
-              <span className="text-xs mt-1">דף הבית</span>
+        {navItems.map((item) => (
+          <Link key={item.href} href={item.href}>
+            <div 
+              className={`flex flex-col items-center py-2 ${
+                location === item.href 
+                  ? "text-primary dark:text-primary" 
+                  : "text-muted-foreground hover:text-foreground dark:text-neutral-400 dark:hover:text-neutral-200"
+              }`}
+            >
+              {item.icon}
+              <span className="text-xs mt-1">{item.label}</span>
             </div>
           </Link>
-        </div>
-        <div>
-          <Link href="/time-entries">
-            <div className={`flex flex-col items-center py-2 ${location === "/time-entries" ? "text-primary" : "text-neutral-500 dark:text-neutral-400"}`}>
-              <span className="material-icons">timer</span>
-              <span className="text-xs mt-1">מעקב</span>
-            </div>
-          </Link>
-        </div>
-        <div>
-          <Link href="/topics">
-            <div className={`flex flex-col items-center py-2 ${location === "/topics" ? "text-primary" : "text-neutral-500 dark:text-neutral-400"}`}>
-              <span className="material-icons">folder</span>
-              <span className="text-xs mt-1">נושאים</span>
-            </div>
-          </Link>
-        </div>
-        <div>
-          <Link href="/reports">
-            <div className={`flex flex-col items-center py-2 ${location === "/reports" ? "text-primary" : "text-neutral-500 dark:text-neutral-400"}`}>
-              <span className="material-icons">bar_chart</span>
-              <span className="text-xs mt-1">דוחות</span>
-            </div>
-          </Link>
-        </div>
+        ))}
       </div>
     </nav>
   );
