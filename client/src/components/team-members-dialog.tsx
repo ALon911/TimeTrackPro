@@ -96,21 +96,22 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
     }
   };
 
-  // פונקציה להוספת חבר צוות ישירות
+  // פונקציה להוספת הזמנה לחבר צוות
   const addMemberDirectly = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     
     setIsAddingMember(true);
     try {
-      await apiRequest('POST', `/api/teams/${teamId}/members`, {
+      // שליחת הזמנה במקום הוספה ישירה
+      await apiRequest('POST', `/api/teams/${teamId}/invitations`, {
         email,
         role: "member"
       });
       
       toast({
-        title: "חבר צוות נוסף בהצלחה",
-        description: `המשתמש ${email} נוסף לצוות בהצלחה`,
+        title: "הזמנה נשלחה בהצלחה",
+        description: `הזמנה נשלחה למשתמש ${email} להצטרף לצוות`,
       });
       
       // ניקוי השדה
@@ -122,10 +123,11 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
       // רענון המטמון
       queryClient.invalidateQueries({ queryKey: [`/api/teams/${teamId}/members`] });
       queryClient.invalidateQueries({ queryKey: ['/api/teams'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/teams/invitations'] });
     } catch (err: any) {
       toast({
-        title: "שגיאה בהוספת חבר צוות",
-        description: err.message || "אירעה שגיאה בעת הוספת חבר הצוות",
+        title: "שגיאה בשליחת הזמנה",
+        description: err.message || "אירעה שגיאה בעת שליחת ההזמנה",
         variant: "destructive",
       });
     } finally {
@@ -185,36 +187,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
           </div>
         )}
         
-        {(isOwner || forceOwner) && (
-          <div className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900 mb-6">
-            <h3 className="text-lg font-semibold mb-3">הוספת משתמש ישירות</h3>
-            <form onSubmit={addMemberDirectly} className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="email">כתובת אימייל</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="הזן את כתובת האימייל של המשתמש"
-                />
-                <p className="text-xs text-muted-foreground">
-                  המשתמש חייב להיות רשום כבר במערכת
-                </p>
-              </div>
-              <Button 
-                type="submit"
-                className="w-full"
-                variant="destructive"
-                disabled={isAddingMember || !email}
-              >
-                {isAddingMember && <Loader2 className="ml-1 h-4 w-4 animate-spin" />}
-                <UserPlus className="ml-1 h-4 w-4" />
-                הוסף משתמש ישירות
-              </Button>
-            </form>
-          </div>
-        )}
+        {/* הסרנו את הבלוק הכפול להוספת משתמשים */}
         
         <div className="py-4">
           <h3 className="text-lg font-semibold mb-3">חברי הצוות</h3>
@@ -260,7 +233,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
         <DialogFooter className="flex flex-col gap-4">
           {(isOwner || forceOwner) && (
             <div className="w-full p-4 border-2 border-dashed border-red-500 rounded-lg bg-red-50 dark:bg-red-950">
-              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-3">הוספת משתמש ישירות</h3>
+              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-3">שליחת הזמנה למשתמש</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const emailInput = e.currentTarget.querySelector('input');
@@ -270,7 +243,7 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
                 if (!email) return;
                 
                 setIsAddingMember(true);
-                fetch(`/api/teams/${teamId}/members`, {
+                fetch(`/api/teams/${teamId}/invitations`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -282,16 +255,29 @@ export function TeamMembersDialog({ teamId, teamName, isOwner = false }: TeamMem
                 })
                 .then(response => {
                   if (response.ok) {
-                    alert(`המשתמש ${email} נוסף לצוות בהצלחה`);
+                    toast({
+                      title: "הזמנה נשלחה בהצלחה",
+                      description: `הזמנה נשלחה למשתמש ${email} להצטרף לצוות`,
+                    });
                     emailInput.value = '';
                     loadMembers();
+                    // רענון המטמון
+                    queryClient.invalidateQueries({ queryKey: ['/api/teams/invitations'] });
                   } else {
-                    alert("שגיאה בהוספת משתמש");
+                    toast({
+                      title: "שגיאה בשליחת הזמנה",
+                      description: "לא ניתן היה לשלוח את ההזמנה",
+                      variant: "destructive",
+                    });
                   }
                   setIsAddingMember(false);
                 })
                 .catch(err => {
-                  alert("שגיאה בהוספת משתמש: " + err.message);
+                  toast({
+                    title: "שגיאה בשליחת הזמנה",
+                    description: err.message,
+                    variant: "destructive",
+                  });
                   setIsAddingMember(false);
                 });
               }}>
