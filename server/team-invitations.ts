@@ -57,8 +57,12 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
 });
 
 // Respond to an invitation (accept or decline) using invitation token or ID
-// Add support for both URL formats
-invitationsRouter.post(['/api/teams/invitations/:tokenOrId/:action', '/api/accept-invitation/:tokenOrId/:action'], isAuthenticated, async (req, res) => {
+// Support multiple API endpoints for maximum compatibility
+invitationsRouter.post([
+  '/api/teams/invitations/:tokenOrId/:action', 
+  '/api/accept-invitation/:tokenOrId/:action',
+  '/api/invitations/:tokenOrId/:action' // הוספת נתיב נוסף קצר יותר
+], isAuthenticated, async (req, res) => {
   try {
     const tokenOrId = req.params.tokenOrId;
     const action = req.params.action;
@@ -207,6 +211,131 @@ invitationsRouter.post(['/api/teams/invitations/:tokenOrId/:action', '/api/accep
   } catch (error) {
     console.error('Error processing invitation:', error);
     res.status(500).json({ error: 'Error processing invitation' });
+  }
+});
+
+// נתיב ייעודי לאישור הזמנה מהדף הסטטי
+invitationsRouter.post('/api/teams/invitations/:token/accept', isAuthenticated, async (req, res) => {
+  try {
+    const token = req.params.token;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'User not authenticated' 
+      });
+    }
+    
+    console.log('Direct invitation accept API called with token:', token);
+    
+    // נמצא את ההזמנה לפי הטוקן
+    let invitation;
+    try {
+      invitation = await storage.getTeamInvitationByToken(token);
+      console.log('Found invitation:', invitation);
+    } catch (error) {
+      console.error('Error finding invitation:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error finding invitation' 
+      });
+    }
+    
+    if (!invitation) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invitation not found' 
+      });
+    }
+    
+    // בדוק שההזמנה לא פג תוקף ולא כבר אושרה/נדחתה
+    const expiryTimestamp = invitation.expires_at || invitation.expiresAt;
+    const expiresAt = new Date(expiryTimestamp);
+    const now = new Date();
+    
+    if (now > expiresAt) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invitation has expired' 
+      });
+    }
+    
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invitation has already been ${invitation.status}` 
+      });
+    }
+    
+    // Check if user's email matches the invitation email
+    const user = await storage.getUser(userId);
+    if (!user || user.email !== invitation.email) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'This invitation is for a different email address' 
+      });
+    }
+    
+    // Check if user is already a member
+    const teamId = invitation.team_id || invitation.teamId;
+    if (!teamId) {
+      console.error('Team ID missing in invitation:', invitation);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid invitation data: missing team ID' 
+      });
+    }
+    
+    const members = await storage.getTeamMembers(teamId);
+    const isAlreadyMember = members.some(member => member.userId === userId);
+    
+    if (isAlreadyMember) {
+      await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You are already a member of this team' 
+      });
+    }
+    
+    // אישור ההזמנה
+    try {
+      // Add user to team
+      await storage.addTeamMember({
+        teamId: teamId,
+        userId: userId,
+        role: 'member',
+        joinedAt: new Date().toISOString()
+      });
+      
+      // Update invitation status
+      await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+      
+      // Get team information for better response
+      const team = await storage.getTeam(teamId);
+      console.log('Team info for response:', team);
+      
+      // Safety check for team name to avoid undefined
+      const teamName = team && team.name ? team.name : 'החדש';
+      
+      res.status(200).json({ 
+        success: true, 
+        message: `ההזמנה התקבלה בהצלחה. הצטרפת לצוות "${teamName}".`,
+        teamId
+      });
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error accepting invitation' 
+      });
+    }
+  } catch (error) {
+    console.error('Error in invitation accept API:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Server error' 
+    });
   }
 });
 

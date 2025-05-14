@@ -37,19 +37,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // סימפול יותר - במקום לנסות לטעון את אפליקציית הריאקט, נחזיר דף HTML פשוט עם הפניה והנחיות
+  // הפעם נשתמש בנתיב ישיר לAPI במקום לשאת את הלוגיקה בצד הלקוח
   app.get('/accept-invitation/:token', (req, res) => {
     const token = req.params.token;
     console.log('Accept-invitation route hit with token:', token);
     
-    // עמוד HTML פשוט עם הוראות
+    // עמוד HTML פשוט עם כפתור שעושה פנייה ישירה לAPI
     const htmlPage = `
     <!DOCTYPE html>
     <html lang="he" dir="rtl">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>הפניה להזמנה</title>
+      <title>הזמנה לצוות</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -82,6 +82,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           font-weight: bold;
           margin-top: 20px;
           transition: background-color 0.3s;
+          cursor: pointer;
+          border: none;
         }
         .button:hover {
           background-color: #3a56d4;
@@ -94,21 +96,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
           font-size: 0.9em;
           color: #666;
         }
+        .response {
+          margin-top: 20px;
+          padding: 15px;
+          border-radius: 4px;
+          display: none;
+        }
+        .success {
+          background-color: #d4edda;
+          color: #155724;
+          border: 1px solid #c3e6cb;
+        }
+        .error {
+          background-color: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+        }
       </style>
     </head>
     <body>
       <div class="container">
         <h1>הזמנה לצוות</h1>
         <p>התקבלה הזמנה להצטרף לצוות במערכת מעקב הזמן.</p>
-        <p>כדי לקבל את ההזמנה, יש להיכנס למערכת ואז ללחוץ על הקישור הבא:</p>
         
-        <a href="/invitations/${token}" class="button">אישור הזמנה</a>
+        <div id="not-logged-in">
+          <p>כדי לקבל את ההזמנה, יש להיכנס למערכת תחילה:</p>
+          <a href="/auth" class="button">התחבר למערכת</a>
+          <div class="note">
+            <p>לאחר ההתחברות, חזור לדף זה כדי לאשר את ההזמנה.</p>
+          </div>
+        </div>
         
-        <div class="note">
-          <p>אם אתה עדיין לא מחובר למערכת, תועבר תחילה לדף ההתחברות.</p>
-          <p>לאחר ההתחברות, תוכל לראות את פרטי ההזמנה ולקבל אותה.</p>
+        <div id="logged-in" style="display: none;">
+          <p>אתה מחובר למערכת. כעת תוכל לקבל את ההזמנה:</p>
+          <button onclick="acceptInvitation()" class="button">אשר הזמנה</button>
+          
+          <div id="response-success" class="response success">
+            <h3>ההזמנה התקבלה בהצלחה!</h3>
+            <p id="success-message"></p>
+            <a href="/teams" class="button" style="margin-top: 10px;">עבור לעמוד הצוותים</a>
+          </div>
+          
+          <div id="response-error" class="response error">
+            <h3>אירעה שגיאה</h3>
+            <p id="error-message"></p>
+            <button onclick="acceptInvitation()" class="button">נסה שוב</button>
+          </div>
         </div>
       </div>
+      
+      <script>
+        // בדוק אם המשתמש מחובר
+        checkAuth();
+        
+        function checkAuth() {
+          fetch('/api/user')
+            .then(response => {
+              if (response.ok) {
+                // משתמש מחובר
+                document.getElementById('not-logged-in').style.display = 'none';
+                document.getElementById('logged-in').style.display = 'block';
+                return response.json();
+              } else {
+                // משתמש לא מחובר
+                document.getElementById('not-logged-in').style.display = 'block';
+                document.getElementById('logged-in').style.display = 'none';
+                throw new Error('Not authenticated');
+              }
+            })
+            .catch(error => {
+              console.error('Auth check error:', error);
+            });
+        }
+        
+        function acceptInvitation() {
+          const token = "${token}";
+          
+          fetch(\`/api/teams/invitations/\${token}/accept\`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              document.getElementById('success-message').textContent = data.message || 'ההזמנה התקבלה בהצלחה';
+              document.getElementById('response-success').style.display = 'block';
+              document.getElementById('response-error').style.display = 'none';
+            } else {
+              throw new Error(data.error || 'אירעה שגיאה בעת קבלת ההזמנה');
+            }
+          })
+          .catch(error => {
+            document.getElementById('error-message').textContent = error.message;
+            document.getElementById('response-success').style.display = 'none';
+            document.getElementById('response-error').style.display = 'block';
+          });
+        }
+      </script>
     </body>
     </html>
     `;
