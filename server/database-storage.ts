@@ -1112,33 +1112,33 @@ export class DatabaseStorage implements IStorage {
       const totalStmt = this.db.prepare(`
         SELECT SUM(duration) as total
         FROM time_entries
-        WHERE user_id = ? AND team_id = ?
+        WHERE user_id = ?
       `);
       
-      const totalResult = totalStmt.get(member.user_id, teamId) as any;
+      const totalResult = totalStmt.get(member.user_id) as any;
       
       // Get most active hour
       const hourStmt = this.db.prepare(`
         SELECT strftime('%H', start_time) as hour, SUM(duration) as total
         FROM time_entries
-        WHERE user_id = ? AND team_id = ?
+        WHERE user_id = ?
         GROUP BY hour
         ORDER BY total DESC
         LIMIT 1
       `);
       
-      const hourResult = hourStmt.get(member.user_id, teamId) as any;
+      const hourResult = hourStmt.get(member.user_id) as any;
       
       // Get last active day
       const lastActiveStmt = this.db.prepare(`
         SELECT date(start_time) as last_day
         FROM time_entries
-        WHERE user_id = ? AND team_id = ?
+        WHERE user_id = ?
         ORDER BY start_time DESC
         LIMIT 1
       `);
       
-      const lastActiveResult = lastActiveStmt.get(member.user_id, teamId) as any;
+      const lastActiveResult = lastActiveStmt.get(member.user_id) as any;
       
       results.push({
         userId: member.user_id,

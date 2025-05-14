@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTeams } from "@/hooks/use-teams";
-import { Loader2, Plus, Users, UserPlus, UserX, Settings } from "lucide-react";
+import { BarChart2, Loader2, Plus, Users, UserPlus, UserX, Settings } from "lucide-react";
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
