@@ -4,10 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useTimer } from '@/hooks/use-timer';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon } from 'lucide-react';
+import { audioManager } from "@/lib/audio-utils";
 
 export function TimeTracker() {
   const { data: topics, isLoading } = useQuery({ 
@@ -18,21 +18,166 @@ export function TimeTracker() {
   const [description, setDescription] = useState<string>("");
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [customMinutes, setCustomMinutes] = useState<number>(0);
-  const { 
-    seconds, 
-    setSeconds,
-    isRunning,
-    isPaused,
-    isCompleted, 
-    start, 
-    startWithDuration,
-    stop, 
-    pause,
-    resume,
-    reset, 
-    formatTime 
-  } = useTimer();
+  
+  // טיימר מבוסס סטייט פשוט במקום hook מורכב
+  const [seconds, setSeconds] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  
+  // רפרנסים חשובים
+  const timerRef = useRef<number | null>(null);
+  const endTimeRef = useRef<number | null>(null);
+  
   const { toast } = useToast();
+  
+  // פונקציה לפרמוט זמן
+  const formatTime = useCallback(() => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, [seconds]);
+  
+  // פונקציה להתחלת הטיימר עם משך זמן
+  const startWithDuration = useCallback((minutes: number) => {
+    // קודם כל, נקה כל טיימר קודם
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // נקה את המצב הקודם
+    setIsCompleted(false);
+    
+    // המר דקות לשניות
+    const durationInSeconds = minutes * 60;
+    
+    // חשב את זמן הסיום
+    const endTime = Date.now() + (durationInSeconds * 1000);
+    endTimeRef.current = endTime;
+    
+    // שמור את זמן הסיום ומשך הזמן בלוקל סטורג' 
+    localStorage.setItem('timer_end_time', endTime.toString());
+    localStorage.setItem('timer_duration', durationInSeconds.toString());
+    localStorage.setItem('timer_is_paused', 'false');
+    
+    // עדכן את הסטייט
+    setSeconds(durationInSeconds);
+    setIsRunning(true);
+    setIsPaused(false);
+    
+    // שמור את זמן ההתחלה
+    setStartTime(new Date());
+    
+    // התחל את האינטרוול
+    timerRef.current = window.setInterval(() => {
+      const now = Date.now();
+      const timeLeft = Math.max(0, Math.floor((endTimeRef.current! - now) / 1000));
+      
+      // עדכן את הזמן שנותר
+      setSeconds(timeLeft);
+      
+      // אם הזמן נגמר
+      if (timeLeft <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        setIsRunning(false);
+        setIsCompleted(true);
+        
+        // נקה את המידע השמור
+        localStorage.removeItem('timer_end_time');
+        localStorage.removeItem('timer_duration');
+        localStorage.removeItem('timer_is_paused');
+        
+        // השמע צליל סיום
+        audioManager.playTimerComplete();
+      }
+    }, 1000);
+  }, []);
+  
+  // נקה את הטיימר כשהקומפוננטה נפרקת
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+  
+  // פונקציה למטרת תאימות עם הקוד הקיים
+  const start = () => {
+    setIsRunning(true);
+    setIsPaused(false);
+    setIsCompleted(false);
+  };
+  
+  // פונקציה לעצירת הטיימר
+  const stop = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsRunning(false);
+    setIsPaused(false);
+  }, []);
+  
+  // פונקציה לעצירה זמנית
+  const pause = useCallback(() => {
+    if (isRunning) {
+      clearInterval(timerRef.current!);
+      timerRef.current = null;
+      setIsPaused(true);
+      setIsRunning(false);
+      
+      // שמור את הזמן שנותר בסטייט הנוכחי
+      // אין צורך לחשב מחדש, הוא כבר מעודכן
+    }
+  }, [isRunning]);
+  
+  // פונקציה להמשך טיימר
+  const resume = useCallback(() => {
+    if (isPaused) {
+      // חשב מחדש את נקודת הסיום
+      const remainingMs = seconds * 1000;
+      const newEndTime = Date.now() + remainingMs;
+      endTimeRef.current = newEndTime;
+      
+      // עדכן את הסטייט
+      setIsRunning(true);
+      setIsPaused(false);
+      
+      // התחל את האינטרוול מחדש
+      timerRef.current = window.setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTimeRef.current! - now) / 1000));
+        
+        // עדכן את הזמן שנותר
+        setSeconds(timeLeft);
+        
+        // אם הזמן נגמר
+        if (timeLeft <= 0) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          setIsRunning(false);
+          setIsCompleted(true);
+          audioManager.playTimerComplete();
+        }
+      }, 1000);
+    }
+  }, [isPaused, seconds]);
+  
+  // פונקציה לאיפוס
+  const reset = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setSeconds(0);
+    setIsRunning(false);
+    setIsPaused(false);
+    setIsCompleted(false);
+  }, []);
   
   // Audio notifications
   const completeAudioRef = useRef<HTMLAudioElement | null>(null);
