@@ -364,8 +364,9 @@ teamRouter.post('/teams/:teamId/invitations', isTeamOwner, async (req, res) => {
     // Send invitation email
     let emailSent = false;
     if (emailService.isReady()) { // Use configured email service
-      // כתובת לטיפול בהזמנות בקליינט
-      const inviteLink = `${appBaseUrl}/invitations/${token}`;
+      // כתובת לטיפול בהזמנות בקליינט - שימוש בפורמט אחיד בכל המקומות
+      const inviteLink = `${appBaseUrl}/invitation/${token}`;
+      console.log(`Generated invitation link: ${inviteLink}`);
       
       if (existingUser) {
         // Send regular invitation

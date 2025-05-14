@@ -76,10 +76,19 @@ directMemberRouter.post('/api/teams/:teamId/invitations', isAuthenticated, async
     
     let emailSent = false;
     
-    // Generate the invitation link with the app's base URL
+    // Generate the invitation link with the app's base URL - הוספת לוגיקה מורחבת לקישורים אחידים
     const appUrl = appBaseUrl || 'http://localhost:5000'; // Default if no URL specified
-    const inviteLink = `${appUrl}/invitations/${token}`;
+    
+    // שימוש בנתיב אחיד בכל המקומות
+    const inviteLink = `${appUrl}/invitation/${token}`;
     console.log(`Generated invitation link: ${inviteLink}`);
+    
+    // לוג לדיבאג עם פירוט כל סוגי הקישורים האפשריים
+    console.log('Available invitation links:', {
+      preferredLink: `${appUrl}/invitation/${token}`,
+      compatLink1: `${appUrl}/invitations/${token}`,
+      compatLink2: `${appUrl}/accept-invitation/${token}`
+    });
     
     if (emailService.isReady()) {
       if (userToAdd) {
