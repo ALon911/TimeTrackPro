@@ -423,7 +423,7 @@ teamRouter.get('/teams/:teamId/invitations', isTeamOwner, async (req, res) => {
   }
 });
 
-// Accept or reject an invitation
+// Accept or reject an invitation by token (original route)
 teamRouter.post('/invitations/:token', async (req, res) => {
   try {
     const token = req.params.token;
@@ -495,6 +495,106 @@ teamRouter.post('/invitations/:token', async (req, res) => {
     }
     console.error('Error processing invitation:', error);
     res.status(500).json({ error: 'Error processing invitation' });
+  }
+});
+
+// Accept invitation by ID - new route
+teamRouter.post('/invitations/:invitationId/accept', isAuthenticated, async (req, res) => {
+  try {
+    const invitationId = parseInt(req.params.invitationId);
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Must be authenticated to accept an invitation' });
+    }
+    
+    // Get the invitation
+    const invitationStmt = `SELECT * FROM team_invitations WHERE id = ?`;
+    const invitation = await db.get(invitationStmt, [invitationId]);
+    
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+    
+    // Check if invitation is already processed
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ error: `Invitation has already been ${invitation.status}` });
+    }
+    
+    // Check if invitation is expired
+    const expiryDate = new Date(invitation.expires_at);
+    if (expiryDate < new Date()) {
+      return res.status(400).json({ error: 'Invitation has expired' });
+    }
+    
+    // Check if user's email matches the invitation email
+    const user = await storage.getUser(userId);
+    if (!user || user.email !== invitation.email) {
+      return res.status(403).json({ error: 'This invitation is for a different email address' });
+    }
+    
+    // Check if user is already a member
+    const members = await storage.getTeamMembers(invitation.team_id);
+    const isAlreadyMember = members.some(member => member.userId === userId);
+    
+    if (isAlreadyMember) {
+      await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+      return res.json({ success: true, message: 'You are already a member of this team' });
+    }
+    
+    // Add user to team
+    await storage.addTeamMember({
+      teamId: invitation.team_id,
+      userId: userId,
+      role: 'member',
+    });
+    
+    // Update invitation status
+    await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+    
+    res.json({ success: true, message: 'Invitation accepted. You are now a member of the team.' });
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    res.status(500).json({ error: 'Error accepting invitation' });
+  }
+});
+
+// Decline invitation by ID - new route
+teamRouter.post('/invitations/:invitationId/decline', isAuthenticated, async (req, res) => {
+  try {
+    const invitationId = parseInt(req.params.invitationId);
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Must be authenticated to decline an invitation' });
+    }
+    
+    // Get the invitation
+    const invitationStmt = `SELECT * FROM team_invitations WHERE id = ?`;
+    const invitation = await db.get(invitationStmt, [invitationId]);
+    
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+    
+    // Check if invitation is already processed
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ error: `Invitation has already been ${invitation.status}` });
+    }
+    
+    // Check if user's email matches the invitation email
+    const user = await storage.getUser(userId);
+    if (!user || user.email !== invitation.email) {
+      return res.status(403).json({ error: 'This invitation is for a different email address' });
+    }
+    
+    // Update invitation status
+    await storage.updateTeamInvitationStatus(invitation.id, 'declined');
+    
+    res.json({ success: true, message: 'Invitation declined.' });
+  } catch (error) {
+    console.error('Error declining invitation:', error);
+    res.status(500).json({ error: 'Error declining invitation' });
   }
 });
 
