@@ -716,14 +716,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Fallback route for SPA - all routes that are not API routes will serve the index.html
+  // Handle special Vite paths differently
+  app.get('/@vite*', (req, res) => {
+    console.log('Vite path requested, returning 404:', req.path);
+    res.status(404).send('Asset not found');
+  });
+  
+  app.get('/@react-refresh', (req, res) => {
+    console.log('React refresh requested, returning 404:', req.path);
+    res.status(404).send('Asset not found');
+  });
+
+  // General fallback route
   app.get('*', (req, res, next) => {
     // Skip API routes
     if (req.path.startsWith('/api/')) {
       return next();
     }
     
-    // Skip assets and files with extensions
-    if (req.path.includes('.')) {
+    // Skip assets and files with extensions (except for Vite special paths)
+    if (req.path.includes('.') && !req.path.startsWith('/@')) {
       return next();
     }
     
