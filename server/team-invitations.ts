@@ -85,6 +85,11 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
     });
     
     try {
+      // Get all tokens from the database to debug
+      const allTokensStmt = "SELECT id, token FROM team_invitations";
+      const allTokens = storage.db ? storage.db.prepare(allTokensStmt).all() : [];
+      console.log('All tokens in database:', allTokens);
+      
       // Check if tokenOrId is a number or a string token
       if (/^\d+$/.test(tokenOrId)) {
         // It's a number, treat as ID
@@ -92,10 +97,22 @@ invitationsRouter.post('/api/teams/invitations/:tokenOrId/:action', isAuthentica
         invitation = await storage.getTeamInvitationById(invitationId);
         console.log('Looking up invitation by ID:', invitationId, invitation);
       } else {
-        // It's a string, treat as token
-        console.log('Searching for invitation with token:', tokenOrId);
-        invitation = await storage.getTeamInvitationByToken(tokenOrId);
-        console.log('Looking up invitation by token result:', invitation);
+        // Hack: Try looking up by ID first, for testing
+        console.log('Trying to find by numeric ID in tokens table');
+        if (allTokens && allTokens.length > 0) {
+          const foundInvitation = allTokens.find(t => t.token === tokenOrId);
+          if (foundInvitation) {
+            console.log('Found invitation by token in local search:', foundInvitation);
+            invitation = await storage.getTeamInvitationById(foundInvitation.id);
+          }
+        }
+        
+        // If not found, try by token
+        if (!invitation) {
+          console.log('Searching for invitation with token:', tokenOrId);
+          invitation = await storage.getTeamInvitationByToken(tokenOrId);
+          console.log('Looking up invitation by token result:', invitation);
+        }
       }
     } catch (err) {
       console.error('Error looking up invitation:', err);

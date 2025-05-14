@@ -44,8 +44,10 @@ export function InvitationNotification() {
       return;
     }
     
-    const token = invitation.token || invitationId.toString();
-    console.log(`Using ${invitation.token ? 'token' : 'ID'} to respond to invitation:`, token);
+    // Use ID for now as a workaround
+    // const token = invitation.token || invitationId.toString();
+    const token = invitationId.toString();
+    console.log(`Using invitation ID to respond to invitation:`, token);
     
     respondToInvitationMutation.mutate(
       { token, action },
@@ -55,6 +57,9 @@ export function InvitationNotification() {
             // After accepting, navigate to teams page
             setLocation('/teams');
           }
+        },
+        onError: (error) => {
+          console.error('Error responding to invitation:', error);
         }
       }
     );

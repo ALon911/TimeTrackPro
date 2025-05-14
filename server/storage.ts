@@ -29,6 +29,7 @@ export interface TimeEntryFilters {
 }
 
 export interface IStorage {
+  db?: any; // Access to database object for debugging
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>; // Kept for backward compatibility
