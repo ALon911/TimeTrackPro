@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useTimer } from '@/hooks/use-timer';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { PlayIcon, PauseIcon, PlusIcon, TimerIcon, Clock5Icon, BellIcon } from 'lucide-react';
+import { PlayIcon, PauseIcon, PlusIcon, TimerIcon, Clock5Icon, BellIcon, XIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ManualTimeEntry } from '@/components/manual-time-entry';
 
