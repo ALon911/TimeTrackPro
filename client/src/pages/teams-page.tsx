@@ -13,7 +13,7 @@ import { Loader2, Plus, Users, UserPlus, UserX, Settings, Trash2 } from "lucide-
 import { TeamInvitationDialog } from "@/components/team-invitation-dialog";
 import { TeamMembersDialog } from "@/components/team-members-dialog";
 import { TeamSettingsDialog } from "@/components/team-settings-dialog";
-import { DirectAddButton } from "@/components/direct-add-button";
+// import { DirectAddButton } from "@/components/direct-add-button";
 import { AddDirectMemberButton } from "@/components/add-direct-member-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
