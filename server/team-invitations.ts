@@ -30,15 +30,15 @@ invitationsRouter.get('/api/teams/invitations/my', isAuthenticated, async (req, 
     
     // Modify the format to include team information
     const enhancedInvitations = pendingInvitations.map(inv => {
-      // Convert snake_case to camelCase
+      // Convert any snake_case to camelCase if needed
       return {
         id: inv.id,
-        teamId: inv.team_id,
+        teamId: inv.teamId || inv.team_id,
         email: inv.email,
         status: inv.status,
-        teamName: inv.team_name, // This comes from our SQL query
-        invitedBy: inv.invited_by,
-        expiresAt: inv.expires_at,
+        teamName: inv.teamName || inv.team_name, // This could come from SQL query
+        invitedBy: inv.invitedBy || inv.invited_by,
+        expiresAt: inv.expiresAt || inv.expires_at,
         token: inv.token,
       };
     });
@@ -113,22 +113,6 @@ invitationsRouter.post([
         // אם לא מצאנו, ננסה לחפש בדרכים חלופיות
         if (!invitation) {
           console.log('Invitation not found by direct token lookup, trying alternative method');
-          
-          // אופציונלי, אם יש גישה למסד הנתונים ישירות - נוסיף לוג חיפוש
-          try {
-            if (typeof storage.getInvitationsByQuery === 'function') {
-              const invitations = await storage.getInvitationsByQuery(
-                'SELECT * FROM team_invitations WHERE token = ?', 
-                [tokenOrId]
-              );
-              if (invitations && invitations.length > 0) {
-                invitation = invitations[0];
-                console.log('Found invitation through query:', invitation);
-              }
-            }
-          } catch (dbErr) {
-            console.error('Error in direct DB query:', dbErr);
-          }
         }
       }
     } catch (err) {
@@ -147,8 +131,8 @@ invitationsRouter.post([
       return res.status(400).json({ error: `Invitation has already been ${invitation.status}` });
     }
     
-    // Handle both property formats (snake_case from database and camelCase from API)
-    const expiryTimestamp = invitation.expires_at || invitation.expiresAt;
+    // Use camelCase property (normalize data access)
+    const expiryTimestamp = invitation.expiresAt;
     
     // Check if invitation is expired
     const expiryDate = new Date(expiryTimestamp);
@@ -167,7 +151,7 @@ invitationsRouter.post([
     
     if (action === 'accept') {
       // Check if user is already a member
-      const teamId = invitation.team_id || invitation.teamId;
+      const teamId = invitation.teamId;
       if (!teamId) {
         console.error('Team ID missing in invitation:', invitation);
         return res.status(500).json({ error: 'Invalid invitation data: missing team ID' });
@@ -369,7 +353,7 @@ invitationsRouter.post('/api/teams/invitations/:token/accept', isAuthenticated, 
     }
     
     // Check if user is already a member
-    const teamId = invitation.team_id || invitation.teamId;
+    const teamId = invitation.teamId;
     if (!teamId) {
       console.error('Team ID missing in invitation:', invitation);
       return res.status(500).json({ 
