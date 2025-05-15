@@ -149,7 +149,7 @@ export default function ReportsPage() {
     }
   };
   
-  const handleExportTeamData = async () => {
+  const handleExportTeamData = () => {
     if (!selectedTeam) {
       toast({
         title: "בחר צוות",
@@ -159,22 +159,15 @@ export default function ReportsPage() {
       return;
     }
     
-    try {
-      // Use window.location to create a download
-      window.location.href = `/api/teams/${selectedTeam}/export`;
-      
-      toast({
-        title: "ייצוא התחיל",
-        description: "דוח הצוות יורד כקובץ אקסל",
-      });
-    } catch (error) {
-      console.error("Error exporting team data:", error);
-      toast({
-        title: "שגיאה בייצוא",
-        description: "לא הצלחנו לייצא את נתוני הצוות. נסה שוב מאוחר יותר.",
-        variant: "destructive"
-      });
-    }
+    console.log("מתחיל ייצוא צוות עם מזהה:", selectedTeam);
+    
+    // Simple approach - just redirect the browser
+    window.location.href = `/api/teams/${selectedTeam}/export`;
+    
+    toast({
+      title: "ייצוא התחיל",
+      description: "אם הדו״ח מוכן, הוא יורד אוטומטית לקומפיוטר שלך",
+    });
   };
 
   return (
