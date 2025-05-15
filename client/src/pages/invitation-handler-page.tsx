@@ -15,7 +15,7 @@ export default function InvitationHandlerPage() {
   const { respondToInvitationMutation } = useTeams();
   
   // סטייטים
-  const [status, setStatus] = useState<"loading" | "error" | "success" | "unauthorized">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "success" | "unauthorized" | "choose" | "rejected">("loading");
   const [message, setMessage] = useState<string>("");
   const [tokenToUse, setTokenToUse] = useState<string | null>(null);
   
@@ -58,9 +58,9 @@ export default function InvitationHandlerPage() {
       return;
     }
     
-    // אם המשתמש מחובר ויש טוקן, מטפל בהזמנה
+    // אם המשתמש מחובר ויש טוקן - עברנו למסך בחירה (לא מאשרים אוטומטית!)
     if (user && !authLoading && tokenToUse) {
-      handleAcceptInvitation();
+      setStatus("choose");
     }
   }, [user, authLoading, tokenToUse]);
   
@@ -91,6 +91,43 @@ export default function InvitationHandlerPage() {
             console.error("Error accepting invitation:", error);
             setStatus("error");
             setMessage(error.message || "אירעה שגיאה בעת קבלת ההזמנה");
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Uncaught error:", error);
+      setStatus("error");
+      setMessage("אירעה שגיאה בעת עיבוד ההזמנה");
+    }
+  };
+  
+  // פונקציה לדחיית ההזמנה
+  const handleRejectInvitation = async () => {
+    if (!tokenToUse) {
+      setStatus("error");
+      setMessage("מזהה ההזמנה חסר");
+      return;
+    }
+    
+    try {
+      setStatus("loading");
+      
+      respondToInvitationMutation.mutate(
+        { token: tokenToUse, action: "decline" },
+        {
+          onSuccess: (data) => {
+            setStatus("rejected");
+            setMessage(data.message || "ההזמנה נדחתה בהצלחה");
+            
+            // הפנה לעמוד הראשי אחרי הצלחה
+            setTimeout(() => {
+              setLocation('/');
+            }, 2000);
+          },
+          onError: (error: any) => {
+            console.error("Error rejecting invitation:", error);
+            setStatus("error");
+            setMessage(error.message || "אירעה שגיאה בעת דחיית ההזמנה");
           }
         }
       );
@@ -149,6 +186,42 @@ export default function InvitationHandlerPage() {
     );
   }
 
+  // מסך בחירה לקבלה או דחייה
+  if (status === "choose") {
+    return (
+      <div className="container py-8 max-w-md mx-auto min-h-screen flex flex-col justify-center">
+        <Card className="border-primary-300 dark:border-primary-700">
+          <CardHeader>
+            <CardTitle className="text-center">הזמנה לצוות</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4 bg-blue-50 dark:bg-blue-950/20 text-black dark:text-blue-50 border-blue-300 dark:border-blue-800">
+              <AlertTitle>התקבלה הזמנה להצטרף לצוות</AlertTitle>
+              <AlertDescription>
+                נמצאה הזמנה עבורך להצטרף לצוות במערכת. האם ברצונך לקבל או לדחות את ההזמנה?
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-between gap-4 mt-4">
+              <Button 
+                onClick={handleAcceptInvitation} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                קבל הזמנה
+              </Button>
+              <Button 
+                onClick={handleRejectInvitation} 
+                variant="destructive" 
+                className="w-full"
+              >
+                דחה הזמנה
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // מסך שגיאה
   if (status === "error") {
     return (
@@ -159,7 +232,7 @@ export default function InvitationHandlerPage() {
           </CardHeader>
           <CardContent>
             <Alert variant="destructive" className="mb-4">
-              <AlertTitle>לא ניתן לקבל את ההזמנה</AlertTitle>
+              <AlertTitle>לא ניתן לעבד את ההזמנה</AlertTitle>
               <AlertDescription>
                 {message}
               </AlertDescription>
@@ -174,28 +247,66 @@ export default function InvitationHandlerPage() {
       </div>
     );
   }
+  
+  // מסך דחיית הזמנה
+  if (status === "rejected") {
+    return (
+      <div className="container py-8 max-w-md mx-auto min-h-screen flex flex-col justify-center">
+        <Card className="border-amber-300 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle className="text-center text-amber-600 dark:text-amber-400">ההזמנה נדחתה</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4 bg-amber-50 dark:bg-amber-950/20 text-black dark:text-amber-50 border-amber-300 dark:border-amber-800">
+              <AlertTitle>ההזמנה נדחתה בהצלחה</AlertTitle>
+              <AlertDescription>
+                {message}
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-center mt-4">
+              <Button onClick={() => setLocation('/')} className="w-full">
+                עבור לדף הראשי
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // מסך הצלחה
+  if (status === "success") {
+    return (
+      <div className="container py-8 max-w-md mx-auto min-h-screen flex flex-col justify-center">
+        <Card className="border-green-300 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="text-center text-green-600 dark:text-green-400">ההזמנה התקבלה בהצלחה!</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4 bg-green-50 dark:bg-green-950/20 text-black dark:text-green-50 border-green-300 dark:border-green-800">
+              <AlertTitle>ברוך הבא לצוות</AlertTitle>
+              <AlertDescription>
+                {message}
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-center mt-4">
+              <Button onClick={navigateToTeams} className="w-full">
+                עבור לדף הצוותים
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  // אם הגענו לכאן, מציגים מסך טעינה כברירת מחדל
   return (
-    <div className="container py-8 max-w-md mx-auto min-h-screen flex flex-col justify-center">
-      <Card className="border-green-300 dark:border-green-800">
-        <CardHeader>
-          <CardTitle className="text-center text-green-600 dark:text-green-400">ההזמנה התקבלה בהצלחה!</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert className="mb-4 bg-green-50 dark:bg-green-950/20 text-black dark:text-green-50 border-green-300 dark:border-green-800">
-            <AlertTitle>ברוך הבא לצוות</AlertTitle>
-            <AlertDescription>
-              {message}
-            </AlertDescription>
-          </Alert>
-          <div className="flex justify-center mt-4">
-            <Button onClick={navigateToTeams} className="w-full">
-              עבור לדף הצוותים
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="container py-8 flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+        <p className="mt-4 text-lg">טוען...</p>
+      </div>
     </div>
   );
 }
