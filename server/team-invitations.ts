@@ -379,8 +379,7 @@ invitationsRouter.post('/api/teams/invitations/:token/accept', isAuthenticated, 
       await storage.addTeamMember({
         teamId: teamId,
         userId: userId,
-        role: 'member',
-        joinedAt: new Date().toISOString()
+        role: 'member'
       });
       
       // Update invitation status

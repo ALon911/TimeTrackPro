@@ -720,6 +720,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Secure endpoint for handling invitations with email validation
+  app.post('/api/teams/invitation-secure/:token/:action', isAuthenticated, async (req, res) => {
+    try {
+      const { token, action } = req.params;
+      const { originalEmail } = req.body;
+      const userId = req.user?.id;
+      
+      console.log('Secure invitation endpoint called:', { token, action, userId, originalEmail });
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'User not authenticated' 
+        });
+      }
+      
+      if (action !== 'accept' && action !== 'reject') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid action. Must be "accept" or "reject"' 
+        });
+      }
+      
+      // Find the invitation
+      const invitation = await storage.getTeamInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Invitation not found' 
+        });
+      }
+      
+      // Check if invitation is already processed
+      if (invitation.status !== 'pending') {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Invitation has already been ${invitation.status}` 
+        });
+      }
+      
+      // Check if invitation is expired
+      const expiresAt = new Date(invitation.expiresAt);
+      if (expiresAt < new Date()) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invitation has expired' 
+        });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'User not found' 
+        });
+      }
+      
+      // Special check: if we have original email from the invitation link, use it to validate
+      // This allows users to accept invitations sent to different emails
+      if (originalEmail && originalEmail.trim() !== '') {
+        console.log(`Using original email from params: ${originalEmail} instead of user email: ${user.email}`);
+        
+        if (invitation.email !== originalEmail) {
+          return res.status(403).json({ 
+            success: false, 
+            error: `This invitation was sent to ${invitation.email}, not to ${originalEmail}` 
+          });
+        }
+      } else {
+        // Fall back to regular email check if no original email provided
+        if (user.email !== invitation.email) {
+          return res.status(403).json({ 
+            success: false, 
+            error: `This invitation was sent to ${invitation.email}, not to ${user.email}` 
+          });
+        }
+      }
+      
+      if (action === 'accept') {
+        // Check if user is already a member
+        const teamId = invitation.teamId;
+        const members = await storage.getTeamMembers(teamId);
+        const isAlreadyMember = members.some(member => member.userId === userId);
+        
+        if (isAlreadyMember) {
+          await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+          return res.status(200).json({ 
+            success: true, 
+            message: 'You are already a member of this team' 
+          });
+        }
+        
+        // Add user to team
+        await storage.addTeamMember({
+          teamId: teamId,
+          userId: userId,
+          role: 'member'
+        });
+        
+        // Update invitation status
+        await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+        
+        // Get team information for response
+        const team = await storage.getTeam(teamId);
+        const teamName = team ? team.name : 'החדש';
+        
+        return res.status(200).json({ 
+          success: true, 
+          message: `הזמנה התקבלה בהצלחה. הצטרפת לצוות "${teamName}".`,
+          teamId
+        });
+      } else {
+        // Reject invitation
+        await storage.updateTeamInvitationStatus(invitation.id, 'declined');
+        return res.status(200).json({ 
+          success: true, 
+          message: 'ההזמנה נדחתה בהצלחה.'
+        });
+      }
+    } catch (error) {
+      console.error('Error in secure invitation endpoint:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Server error processing invitation' 
+      });
+    }
+  });
 
   // Topic routes
   app.get("/api/topics", isAuthenticated, async (req, res) => {
