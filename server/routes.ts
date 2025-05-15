@@ -53,7 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // נתיב ישיר לקבלת הזמנה (עמוד פשוט עם לוגיקה מובנית, דף HTML נפרד מהSPA)
   // אפשר להשתמש בנתיב הזה ישירות מהמייל כדי לאשר ללא צורך בכניסה למערכת
-  app.get(['/direct-accept/:token', '/invitations/:token/accept', '/invitation/:token/accept', '/invitations/accept/:token'], (req, res) => {
+  app.get([
+    '/direct-accept/:token', 
+    '/invitations/:token/accept', 
+    '/invitation/:token/accept', 
+    '/invitations/accept/:token',
+    '/accept/:token', // תמיכה בקישורים קצרים
+    '/:token/accept'  // תמיכה בפורמט כללי מאוד למקרה חירום
+  ], (req, res) => {
     const token = req.params.token;
     console.log('Accept-invitation route hit with token:', token);
     
@@ -136,7 +143,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         <div id="not-logged-in">
           <p>כדי לקבל את ההזמנה, יש להיכנס למערכת תחילה:</p>
-          <a href="/auth" class="button">התחבר למערכת</a>
+          <div id="auth-message">
+            <p>לאחר ההתחברות, תוכל לאשר את ההזמנה.</p>
+          </div>
+          <a href="/auth?inviteToken=${token}" class="button">התחבר למערכת</a>
           <div class="note">
             <p>לאחר ההתחברות, חזור לדף זה כדי לאשר את ההזמנה.</p>
           </div>
@@ -161,25 +171,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       </div>
       
       <script>
+        // הוספת לוגיקה לקבלה אוטומטית כשמגיעים מ URL ישיר
+        const isDirectAccept = window.location.pathname.includes('/accept/') || 
+                              window.location.pathname.includes('/accept');
+                              
+        console.log('Direct accept mode:', isDirectAccept);
+        
         // בדוק אם המשתמש מחובר
         checkAuth();
         
         function checkAuth() {
+          console.log('Checking authentication status...');
           fetch('/api/user')
             .then(response => {
               if (response.ok) {
+                console.log('User is authenticated!');
                 // משתמש מחובר
                 document.getElementById('not-logged-in').style.display = 'none';
                 document.getElementById('logged-in').style.display = 'block';
                 
                 // אישור אוטומטי כאשר המשתמש מחובר (one-click)
+                console.log('Starting automatic invitation acceptance');
                 acceptInvitation();
                 
                 return response.json();
               } else {
+                console.log('User is NOT authenticated');
                 // משתמש לא מחובר
                 document.getElementById('not-logged-in').style.display = 'block';
                 document.getElementById('logged-in').style.display = 'none';
+                
+                // אם זה בקשת קבלה ישירה, נוסיף הודעה ייעודית
+                if (isDirectAccept) {
+                  document.getElementById('auth-message').innerHTML = 
+                    '<p><strong>לצורך קבלת ההזמנה באופן ישיר יש להתחבר תחילה</strong></p>' +
+                    '<p>לאחר ההתחברות, המערכת תאשר אוטומטית את ההזמנה.</p>';
+                }
+                
                 throw new Error('Not authenticated');
               }
             })

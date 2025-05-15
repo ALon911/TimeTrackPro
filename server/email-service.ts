@@ -145,8 +145,19 @@ export class EmailService {
   ): Promise<boolean> {
     // הכנת קישורים
     const viewLink = inviteLink; // קישור לצפייה בהזמנה
-    const acceptLink = inviteLink.replace("/invitation/", "/invitation/accept/");
-    const directAcceptLink = inviteLink.replace("/invitation/", "/invitations/accept/");
+    
+    // היות ומבנה הקישור יכול להיות שונה, נבצע בדיקה לפני החלפה
+    let directAcceptLink = "";
+    if (inviteLink.includes("/invitation/")) {
+      directAcceptLink = inviteLink.replace("/invitation/", "/invitations/accept/");
+    } else if (inviteLink.includes("/invitations/")) {
+      directAcceptLink = inviteLink.replace("/invitations/", "/invitations/accept/");
+    } else {
+      // במקרה הגרוע נוסיף לקישור המקורי
+      directAcceptLink = inviteLink + "/accept";
+    }
+    
+    console.log(`Direct accept link generated: ${directAcceptLink}`);
     
     const subject = `הזמנה להצטרף לצוות ${team.name} באפליקציית מעקב הזמן`;
     

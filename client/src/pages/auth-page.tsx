@@ -59,12 +59,25 @@ export default function AuthPage() {
     registerMutation.mutate(registerData);
   };
 
-  // Redirect to dashboard if user is already logged in
+  // בדיקה אם יש פרמטר invitation token בURL
+  const searchParams = new URLSearchParams(window.location.search);
+  const inviteToken = searchParams.get('inviteToken');
+  
+  console.log('Auth page loaded with inviteToken:', inviteToken);
+  
+  // הפניה בהתאם למצב המשתמש ולהימצאות טוקן
   useEffect(() => {
     if (user) {
-      navigate("/");
+      if (inviteToken) {
+        // עם טוקן, יש להפנות להזמנה אוטומטית
+        console.log('User authenticated with invite token, redirecting to invitation');
+        navigate(`/invitation/${inviteToken}`);
+      } else {
+        // ללא טוקן, הפניה לדף הראשי
+        navigate("/");
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, inviteToken]);
 
   if (isLoading) {
     return (
