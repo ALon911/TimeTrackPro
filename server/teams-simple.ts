@@ -393,7 +393,7 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       throw dataError; // זרוק את השגיאה המקורית אם לא קשורה למצב קריאה בלבד
     }
     
-    const topicsCount = topics.length;
+    const topicsCount = topics?.length || 0;
     
     console.log('Creating Excel workbook...');
     
@@ -402,9 +402,9 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     
     // Team Overview Sheet
     const overviewData = [
-      ['צוות', team.name],
-      ['זמן כולל', formatTime(teamStats.totalSeconds || 0)],
-      ['מספר חברי צוות', (teamStats.membersCount || 0).toString()],
+      ['צוות', team.name || 'ללא שם'],
+      ['זמן כולל', formatTime(teamStats?.totalSeconds || 0)],
+      ['מספר חברי צוות', (teamStats?.membersCount || 0).toString()],
       ['מספר נושאים', topicsCount.toString()]
     ];
     const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
@@ -412,11 +412,11 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     
     // Team Members Sheet
     const membersHeader = ['אימייל', 'זמן כולל', 'שעת פעילות מרכזית', 'יום פעילות אחרון'];
-    const membersData = members.map(member => [
-      member.email || 'N/A',
-      formatTime(member.totalSeconds || 0),
-      member.mostActiveHour ? `${member.mostActiveHour}:00` : 'N/A',
-      member.lastActiveDay || 'N/A'
+    const membersData = (members || []).map(member => [
+      member?.email || 'N/A',
+      formatTime(member?.totalTime || member?.totalSeconds || 0),
+      member?.mostActiveHour ? `${member.mostActiveHour}:00` : 'N/A',
+      member?.lastActiveDay || 'N/A'
     ]);
     
     const membersWs = XLSX.utils.aoa_to_sheet([membersHeader, ...membersData]);
@@ -424,10 +424,10 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     
     // Topics Sheet
     const topicsHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
-    const topicsData = topicDistributions.map(topic => [
-      topic.topic.name || 'N/A',
-      formatTime(topic.totalSeconds || 0),
-      `${(topic.percentage || 0).toFixed(1)}%`
+    const topicsData = (topicDistributions || []).map(topic => [
+      topic?.topic?.name || 'N/A',
+      formatTime(topic?.totalTime || topic?.totalSeconds || 0),
+      `${(topic?.percentage || 0).toFixed(1)}%`
     ]);
     
     const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsData]);
@@ -448,12 +448,29 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       console.log('Excel export complete');
     } catch (xlsxError) {
       console.error('XLSX error during file generation:', xlsxError);
-      return res.status(500).json({ error: 'Error generating Excel file' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Error generating Excel file. Please try again later.'
+      });
     }
     
   } catch (error) {
     console.error('Error exporting team data to Excel:', error);
-    res.status(500).json({ error: 'Failed to export team data' });
+    
+    // Special handling for read-only errors
+    const errorStr = String(error || '');
+    if (errorStr.includes('readonly') || errorStr.includes('READONLY')) {
+      return res.status(200).json({
+        success: false,
+        error: 'Database is in read-only mode. Export is not available in demo mode.',
+        readOnly: true
+      });
+    }
+    
+    res.status(200).json({ 
+      success: false, 
+      error: 'Failed to export team data. Please try again later.' 
+    });
   }
 });
 
