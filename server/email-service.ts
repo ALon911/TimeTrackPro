@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { TeamInvitation, User, Team } from '@shared/schema';
-import { emailConfig, isEmailConfigured } from './config';
+import { emailConfig, isEmailConfigured, appBaseUrl } from './config';
 
 // Set debug level for nodemailer
 process.env.NODE_DEBUG = 'nodemailer';
@@ -147,17 +147,12 @@ export class EmailService {
     const viewLink = inviteLink; // קישור לצפייה בהזמנה
     
     // היות ומבנה הקישור יכול להיות שונה, נבצע בדיקה לפני החלפה
-    let directAcceptLink = "";
-    if (inviteLink.includes("/invitation/")) {
-      directAcceptLink = inviteLink.replace("/invitation/", "/invitations/accept/");
-    } else if (inviteLink.includes("/invitations/")) {
-      directAcceptLink = inviteLink.replace("/invitations/", "/invitations/accept/");
-    } else {
-      // במקרה הגרוע נוסיף לקישור המקורי
-      directAcceptLink = inviteLink + "/accept";
-    }
+    // ייצור קישורים לפעולות ישירות (קבלה ודחייה)
+    let directAcceptLink = appBaseUrl + "/api/teams/invitations/direct-accept/" + invitation.token + "?email=" + encodeURIComponent(invitation.email);
+    let directRejectLink = appBaseUrl + "/api/teams/invitations/direct-reject/" + invitation.token + "?email=" + encodeURIComponent(invitation.email);
     
     console.log(`Direct accept link generated: ${directAcceptLink}`);
+    console.log(`Direct reject link generated: ${directRejectLink}`);
     
     const subject = `הזמנה להצטרף לצוות ${team.name} באפליקציית מעקב הזמן`;
     
@@ -168,14 +163,19 @@ export class EmailService {
         <p>${inviter.email} הזמין אותך להצטרף לצוות ${team.name} באפליקציית מעקב הזמן.</p>
         
         <div style="margin: 20px 0;">
-          <!-- כפתור אישור רגיל דרך הממשק -->
-          <a href="${viewLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-left: 10px;">
+          <!-- כפתור צפייה בהזמנה (מוביל לדף בחירה) -->
+          <a href="${viewLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 0 10px;">
             צפייה בהזמנה
           </a>
           
           <!-- כפתור לאישור ישיר מהמייל -->
-          <a href="${directAcceptLink}" style="background-color: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-            אישור מיידי
+          <a href="${directAcceptLink}" style="background-color: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 0 10px;">
+            קבל הזמנה
+          </a>
+          
+          <!-- כפתור לדחייה ישירה מהמייל -->
+          <a href="${directRejectLink}" style="background-color: #f44336; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 0 10px;">
+            דחה הזמנה
           </a>
         </div>
         

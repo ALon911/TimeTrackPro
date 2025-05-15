@@ -156,6 +156,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Token from URL
         const token = "${token}";
         
+        // בדיקה אם יש פרמטר פעולה ב-URL 
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        
+        // מחפש אימייל מקורי ב-LocalStorage (מהלינק במייל)
+        const originalEmail = localStorage.getItem('invitationOriginalEmail') || '';
+        console.log('Found original email in storage:', originalEmail);
+        
+        // If there's an action parameter, trigger the appropriate action
+        if (action === 'accept' || action === 'reject') {
+          console.log('Auto action requested:', action);
+        }
+        
         // Update login link to include token
         document.getElementById('login-link').href = '/auth?inviteToken=' + token;
         
@@ -544,6 +557,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(htmlPage);
   });
   
+  // נקודות סיום לטיפול ישיר בהזמנות מהמייל (כולל האימייל כפרמטר)
+  app.get("/api/teams/invitations/direct-accept/:token", async (req, res) => {
+    const token = req.params.token;
+    const email = req.query.email as string;
+    
+    if (!token || !email) {
+      return res.status(400).send("חסרים פרטים הכרחיים בבקשה");
+    }
+    
+    // מייצר עמוד HTML שיבצע הפנייה לדף ההזמנות עם האימייל המקורי בדף
+    const htmlPage = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>מקבל הזמנה...</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; direction: rtl; }
+        .loader { 
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #3498db;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          margin: 20px auto;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    </head>
+    <body>
+      <h2>מקבל את ההזמנה...</h2>
+      <p>אנא המתן, אתה מועבר לקבלת ההזמנה...</p>
+      <div class="loader"></div>
+      
+      <script>
+        // שומר את האימייל המקורי בLocal Storage
+        localStorage.setItem('invitationOriginalEmail', '${email}');
+        
+        // מעביר לדף ההזמנות עם הטוקן
+        setTimeout(() => {
+          window.location.href = '/invitation/${token}?action=accept';
+        }, 1000);
+      </script>
+    </body>
+    </html>
+    `;
+    
+    res.send(htmlPage);
+  });
+  
+  // דחיית הזמנה ישירות מהמייל
+  app.get("/api/teams/invitations/direct-reject/:token", async (req, res) => {
+    const token = req.params.token;
+    const email = req.query.email as string;
+    
+    if (!token || !email) {
+      return res.status(400).send("חסרים פרטים הכרחיים בבקשה");
+    }
+    
+    // מייצר עמוד HTML שיבצע הפנייה לדף ההזמנות עם האימייל המקורי בדף
+    const htmlPage = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>דוחה הזמנה...</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; direction: rtl; }
+        .loader { 
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #f44336;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          margin: 20px auto;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    </head>
+    <body>
+      <h2>דוחה את ההזמנה...</h2>
+      <p>אנא המתן, אתה מועבר לדחיית ההזמנה...</p>
+      <div class="loader"></div>
+      
+      <script>
+        // שומר את האימייל המקורי בLocal Storage
+        localStorage.setItem('invitationOriginalEmail', '${email}');
+        
+        // מעביר לדף ההזמנות עם הטוקן
+        setTimeout(() => {
+          window.location.href = '/invitation/${token}?action=reject';
+        }, 1000);
+      </script>
+    </body>
+    </html>
+    `;
+    
+    res.send(htmlPage);
+  });
+
   // נקודת סיום להשגת פרטי הזמנה לפי טוקן
   app.get("/api/teams/invitations/:token", async (req, res) => {
     try {
