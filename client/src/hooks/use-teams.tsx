@@ -47,7 +47,7 @@ interface AddMemberData {
   role?: 'member' | 'admin';
 }
 
-export function useTeams() {
+function useTeams() {
   const { toast } = useToast();
 
   // שליפת רשימת הצוותים שלי
@@ -267,3 +267,5 @@ export function useTeams() {
     addMemberMutation
   };
 }
+
+export { useTeams }

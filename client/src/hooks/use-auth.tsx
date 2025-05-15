@@ -25,8 +25,9 @@ type ProfileUpdateData = {
   username: string;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
-export function AuthProvider({ children }: { children: ReactNode }) {
+// Create a named export for consistent module structure
+const AuthContext = createContext<AuthContextType | null>(null);
+function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const {
     data: user,
@@ -160,10 +161,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
+
+// Export all components as named exports at the end of the file
+export { AuthContext, AuthProvider, useAuth }
