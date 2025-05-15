@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <div id="auth-message">
             <p>לאחר ההתחברות, תוכל לאשר את ההזמנה.</p>
           </div>
-          <a href="/auth?inviteToken=${token}" class="button">התחבר למערכת</a>
+          <a href="/auth?inviteToken=' + token + '" class="button">התחבר למערכת</a>
           <div class="note">
             <p>לאחר ההתחברות, חזור לדף זה כדי לאשר את ההזמנה.</p>
           </div>
