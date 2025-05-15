@@ -150,6 +150,8 @@ export type WeeklyData = {
   day: string;
   dayOfWeek: string;
   totalDuration: number;
+  totalTime: number; // לתאימות עם קוד קיים
+  date: string;
 };
 
 export type TimeEntrySummary = {
@@ -194,13 +196,6 @@ export type TeamMemberActivity = {
   totalSeconds: number;
   mostActiveHour: number;
   lastActiveDay: string;
-};
-
-export type WeeklyData = {
-  day: string;
-  dayOfWeek: string;
-  totalTime: number;
-  date: string;
 };
 
 // Export types
