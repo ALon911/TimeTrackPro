@@ -167,6 +167,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If there's an action parameter, trigger the appropriate action
         if (action === 'accept' || action === 'reject') {
           console.log('Auto action requested:', action);
+          
+          // מחכה להתחברות לפני ביצוע פעולה אוטומטית
+          window.addEventListener('load', () => {
+            setTimeout(() => {
+              checkAuthStatus().then(() => {
+                if (action === 'accept') {
+                  console.log('Auto-accepting invitation with email:', originalEmail);
+                  acceptInvitation(originalEmail);
+                } else if (action === 'reject') {
+                  console.log('Auto-rejecting invitation with email:', originalEmail);
+                  rejectInvitation(originalEmail);
+                }
+              });
+            }, 1500);
+          });
         }
         
         // Update login link to include token
@@ -472,18 +487,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
         }
         
-        function acceptInvitation() {
+        function acceptInvitation(providedEmail = '') {
           const token = "${token}";
           
+          // אם התקבל אימייל כפרמטר, השתמש בו
           // נשיג את האימייל המקורי תחילה למקרה שנזדקק לו
-          fetch(\`/api/teams/invitations/\${token}\`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          })
-          .then(response => response.json())
-          .catch(err => null)
-          .then(invData => {
-            const invitationEmail = invData?.email || '';
+          const emailPromise = providedEmail 
+            ? Promise.resolve(providedEmail) 
+            : fetch(\`/api/teams/invitations/\${token}\`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+              })
+              .then(response => response.json())
+              .then(invData => invData?.email || '')
+              .catch(err => '');
+          
+          emailPromise.then(invitationEmail => {
+            console.log('Using email for acceptance:', invitationEmail);
             
             // משתמש בנקודת הסיום המאובטחת לקבלת הזמנות
             return fetch(\`/api/teams/invitation-secure/\${token}/accept\`, {
@@ -511,18 +531,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        function rejectInvitation() {
+        function rejectInvitation(providedEmail = '') {
           const token = "${token}";
           
-          // נשיג את האימייל המקורי תחילה
-          fetch(\`/api/teams/invitations/\${token}\`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          })
-          .then(response => response.json())
-          .catch(err => null)
-          .then(invData => {
-            const invitationEmail = invData?.email || '';
+          // אם התקבל אימייל כפרמטר, השתמש בו
+          // נשיג את האימייל המקורי תחילה למקרה שנזדקק לו
+          const emailPromise = providedEmail 
+            ? Promise.resolve(providedEmail) 
+            : fetch(\`/api/teams/invitations/\${token}\`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+              })
+              .then(response => response.json())
+              .then(invData => invData?.email || '')
+              .catch(err => '');
+          
+          emailPromise.then(invitationEmail => {
+            console.log('Using email for rejection:', invitationEmail);
             
             // משתמש בנקודת הסיום המאובטחת לדחיית הזמנות
             return fetch(\`/api/teams/invitation-secure/\${token}/reject\`, {
