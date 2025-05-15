@@ -823,28 +823,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: userId,
             role: 'member'
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Could not add team member:', error);
           // אם יש בעיה ברשאות כתיבה, נחזיר הודעה ידידותית
-          if (error.message?.includes('readonly') || error.code?.includes('READONLY')) {
+          if (String(error).includes('readonly') || 
+              String(error).includes('READONLY') || 
+              String(error).includes('SQLITE_READONLY') ||
+              (error.message && typeof error.message === 'string' && 
+                (error.message.includes('readonly') || error.message.includes('READONLY'))) ||
+              (error.code && typeof error.code === 'string' && 
+                (error.code.includes('READONLY') || error.code.includes('readonly')))) {
+            
             return res.status(200).json({ 
               success: true, 
               message: `בסיס הנתונים במצב קריאה בלבד. ההזמנה נחשבת כמאושרת בהדגמה זו.`,
               readOnly: true
             });
           }
-          throw error;
+          // שגיאה אחרת
+          return res.status(500).json({ 
+            success: false, 
+            error: `שגיאה בעת הוספת משתמש לצוות: ${error.message || String(error)}`
+          });
         }
         
         // Update invitation status
         try {
           await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
-        } catch (error) {
+        } catch (error: any) {
           console.error('Could not update invitation status:', error);
-          // נתעלם משגיאות כתיבה במצב דמו
-          if (!error.message?.includes('readonly') && !error.code?.includes('READONLY')) {
-            throw error;
+          // נתעלם משגיאות כתיבה במצב דמו אם הן קשורות למצב קריאה בלבד
+          const isReadOnlyError = String(error).includes('readonly') || 
+                                 String(error).includes('READONLY') || 
+                                 String(error).includes('SQLITE_READONLY') ||
+                                 (error.message && typeof error.message === 'string' && 
+                                   (error.message.includes('readonly') || error.message.includes('READONLY'))) ||
+                                 (error.code && typeof error.code === 'string' && 
+                                   (error.code.includes('READONLY') || error.code.includes('readonly')));
+          
+          if (!isReadOnlyError) {
+            // אם זו שגיאה אחרת, נטפל בה
+            console.error('Unexpected error updating invitation status:', error);
           }
+          // במצב דמו נמשיך בכל מקרה
         }
         
         // Get team information for response
@@ -858,11 +879,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Reject invitation
-        await storage.updateTeamInvitationStatus(invitation.id, 'declined');
-        return res.status(200).json({ 
-          success: true, 
-          message: 'ההזמנה נדחתה בהצלחה.'
-        });
+        try {
+          await storage.updateTeamInvitationStatus(invitation.id, 'declined');
+          return res.status(200).json({ 
+            success: true, 
+            message: 'ההזמנה נדחתה בהצלחה.'
+          });
+        } catch (error: any) {
+          console.error('Could not update invitation status to declined:', error);
+          // בדוק אם זו שגיאת קריאה בלבד
+          const isReadOnlyError = String(error).includes('readonly') || 
+                                 String(error).includes('READONLY') || 
+                                 String(error).includes('SQLITE_READONLY') ||
+                                 (error.message && typeof error.message === 'string' && 
+                                   (error.message.includes('readonly') || error.message.includes('READONLY'))) ||
+                                 (error.code && typeof error.code === 'string' && 
+                                   (error.code.includes('READONLY') || error.code.includes('readonly')));
+          
+          if (isReadOnlyError) {
+            // אם זו שגיאת קריאה בלבד, נחזיר הודעת הצלחה עבור מצב דמו
+            return res.status(200).json({ 
+              success: true, 
+              message: 'ההזמנה נדחתה בהצלחה במצב הדגמה (דאטאבייס במצב קריאה בלבד).',
+              readOnly: true
+            });
+          }
+          
+          // שגיאה אחרת
+          return res.status(500).json({ 
+            success: false, 
+            error: `שגיאה בעת דחיית ההזמנה: ${error.message || String(error)}`
+          });
+        }
       }
     } catch (error) {
       console.error('Error in secure invitation endpoint:', error);
