@@ -373,7 +373,15 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       members = await storage.getTeamMemberActivity(teamId);
       topicDistributions = await storage.getTeamTopicDistribution(teamId);
       teamStats = await storage.getTeamStats(teamId);
-      topics = await storage.getTeamTopics(teamId);
+      // המשך עם שאר הנתונים אפילו אם אין אפשרות לקבל את נושאי הצוות
+      try {
+        topics = await storage.getTeamTopics(teamId);
+      } catch (error) {
+        console.warn("Failed to get team topics, using all topics instead:", error);
+        // בגלל שחסר עמודת team_id בחלק מהמקרים, נשתמש בכל הנושאים
+        const allTopics = await storage.getTopics(ownerId);
+        topics = allTopics;
+      }
     } catch (dataError: any) {
       console.error('Error fetching team data for Excel export:', dataError);
       

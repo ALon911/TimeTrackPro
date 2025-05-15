@@ -1190,14 +1190,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeamTopics(teamId: number): Promise<Topic[]> {
-    const stmt = this.db.prepare(`
-      SELECT t.*
-      FROM topics t
-      WHERE t.team_id = ?
-      ORDER BY t.name
-    `);
-    
-    return stmt.all(teamId) as Topic[];
+    try {
+      // בדיקה אם עמודת team_id קיימת בטבלת topics
+      const tableInfoStmt = this.db.prepare(`PRAGMA table_info(topics)`);
+      const columns = tableInfoStmt.all();
+      const hasTeamIdColumn = columns.some(col => col.name === 'team_id');
+      
+      if (hasTeamIdColumn) {
+        // אם העמודה קיימת, השתמש בה לשליפת נושאים
+        const stmt = this.db.prepare(`
+          SELECT t.*
+          FROM topics t
+          WHERE t.team_id = ?
+          ORDER BY t.name
+        `);
+        return stmt.all(teamId) as Topic[];
+      } else {
+        // אם העמודה לא קיימת, נחזיר רשימה ריקה של נושאים
+        console.warn(`team_id column not found in topics table, returning empty list`);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error in getTeamTopics:', error);
+      return [];
+    }
   }
 
   async deleteUser(id: number): Promise<boolean> {
