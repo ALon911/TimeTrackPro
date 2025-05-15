@@ -246,8 +246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.querySelector('.invitation-actions').style.display = 'none';
             document.getElementById('accept-spinner').style.display = 'block';
             
-            // מוסיף את האימייל של המוזמן לגוף הבקשה - שימוש בערך שכבר ייתכן שהשגנו
-            const response = await fetch('/api/teams/invitations/' + token + '/reject', {
+            // משתמש בנקודת הסיום המאובטחת החדשה לדחיית הזמנות
+            const response = await fetch('/api/teams/invitation-secure/' + token + '/reject', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -392,12 +392,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
         
         <div id="logged-in" style="display: none;">
-          <p>אתה מחובר למערכת. כעת תוכל לקבל את ההזמנה:</p>
-          <button onclick="acceptInvitation()" class="button">אשר הזמנה</button>
+          <p>אתה מחובר למערכת. כעת בחר אם לקבל או לדחות את ההזמנה:</p>
+          <div class="buttons-group" style="display: flex; gap: 10px; margin: 15px 0;">
+            <button onclick="acceptInvitation()" class="button primary">אשר הזמנה</button>
+            <button onclick="rejectInvitation()" class="button secondary">דחה הזמנה</button>
+          </div>
           
           <div id="response-success" class="response success">
-            <h3>ההזמנה התקבלה בהצלחה!</h3>
+            <h3>פעולה הושלמה בהצלחה!</h3>
             <p id="success-message"></p>
+            <p id="reject-message"></p>
             <a href="/teams" class="button" style="margin-top: 10px;">עבור לעמוד הצוותים</a>
           </div>
           
@@ -458,12 +462,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         function acceptInvitation() {
           const token = "${token}";
           
-          fetch(\`/api/teams/invitations/\${token}/accept\`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
+          // נשיג את האימייל המקורי תחילה למקרה שנזדקק לו
+          fetch(\`/api/teams/invitations/\${token}\`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(response => response.json())
+          .catch(err => null)
+          .then(invData => {
+            const invitationEmail = invData?.email || '';
+            
+            // משתמש בנקודת הסיום המאובטחת לקבלת הזמנות
+            return fetch(\`/api/teams/invitation-secure/\${token}/accept\`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ originalEmail: invitationEmail })
+            });
           })
           .then(response => response.json())
           .then(data => {
@@ -481,6 +497,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.getElementById('response-error').style.display = 'block';
           });
         }
+        
+        function rejectInvitation() {
+          const token = "${token}";
+          
+          // נשיג את האימייל המקורי תחילה
+          fetch(\`/api/teams/invitations/\${token}\`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(response => response.json())
+          .catch(err => null)
+          .then(invData => {
+            const invitationEmail = invData?.email || '';
+            
+            // משתמש בנקודת הסיום המאובטחת לדחיית הזמנות
+            return fetch(\`/api/teams/invitation-secure/\${token}/reject\`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ originalEmail: invitationEmail })
+            });
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              document.getElementById('reject-message').textContent = data.message || 'ההזמנה נדחתה';
+              document.getElementById('response-success').style.display = 'block';
+              document.getElementById('response-error').style.display = 'none';
+            } else {
+              throw new Error(data.error || 'אירעה שגיאה בעת דחיית ההזמנה');
+            }
+          })
+          .catch(error => {
+            document.getElementById('error-message').textContent = error.message;
+            document.getElementById('response-success').style.display = 'none';
+            document.getElementById('response-error').style.display = 'block';
+          });
+        }
       </script>
     </body>
     </html>
@@ -489,6 +544,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(htmlPage);
   });
   
+  // נקודת סיום להשגת פרטי הזמנה לפי טוקן
+  app.get("/api/teams/invitations/:token", async (req, res) => {
+    try {
+      const token = req.params.token;
+      
+      if (!token) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing token' 
+        });
+      }
+      
+      const invitation = await storage.getTeamInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Invitation not found' 
+        });
+      }
+      
+      // מחזיר מידע בסיסי רק (רק מה שנדרש - לא יותר)
+      res.json({
+        id: invitation.id,
+        email: invitation.email,
+        status: invitation.status,
+        teamId: invitation.teamId
+      });
+    } catch (error) {
+      console.error('Error fetching invitation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'An error occurred while fetching the invitation' 
+      });
+    }
+  });
+
   // Topic routes
   app.get("/api/topics", isAuthenticated, async (req, res) => {
     try {
