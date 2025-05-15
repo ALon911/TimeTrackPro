@@ -22,38 +22,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok" });
   });
   
+  // פונקציה משותפת למשלוח קובץ HTML ראשי
+  const serveIndexHTML = (req: Request, res: Response, next: NextFunction, routePath: string) => {
+    console.log(`${routePath} route hit with token:`, req.params.token);
+    const indexPath = path.resolve('client/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html file:', err);
+        next(err);
+      } else {
+        console.log(`Successfully served index.html for ${routePath}`);
+      }
+    });
+  };
+
   // Handle invitation routes for SPA with debug information
   app.get('/invitations/:token', (req, res, next) => {
-    console.log('Invitations route hit with token:', req.params.token);
-    // Send the index.html to handle on client side with React Router
-    const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error sending index.html file:', err);
-        next(err);
-      } else {
-        console.log('Successfully served index.html for /invitations/:token');
-      }
-    });
+    serveIndexHTML(req, res, next, '/invitations/:token');
   });
   
-  // נתיב חלופי נוסף אפשרי עבור הזמנות
+  // נתיב אחיד מועדף להזמנות - בלשון יחיד (invitation במקום invitations)
   app.get('/invitation/:token', (req, res, next) => {
-    console.log('Alternative invitation route hit with token:', req.params.token);
-    // Send the index.html to handle on client side with React Router
-    const indexPath = path.resolve('client/index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error sending index.html file:', err);
-        next(err);
-      } else {
-        console.log('Successfully served index.html for /invitation/:token');
-      }
-    });
+    serveIndexHTML(req, res, next, '/invitation/:token');
   });
   
-  // הפעם נשתמש בנתיב ישיר לAPI במקום לשאת את הלוגיקה בצד הלקוח
-  app.get('/accept-invitation/:token', (req, res) => {
+  // נתיב חלופי נוסף עבור הזמנות דרך המסך הראשי של הSPA
+  app.get('/accept-invitation/:token', (req, res, next) => {
+    serveIndexHTML(req, res, next, '/accept-invitation/:token');
+  });
+  
+  // נתיב ישיר לקבלת הזמנה (עמוד פשוט עם לוגיקה מובנית, דף HTML נפרד מהSPA)
+  app.get('/direct-accept/:token', (req, res) => {
     const token = req.params.token;
     console.log('Accept-invitation route hit with token:', token);
     
