@@ -340,6 +340,7 @@ teamsRouter.get('/teams/:teamId/add-member', async (req: Request, res: Response)
 // Export time entries to Excel for a specific team
 teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, res: Response) => {
   try {
+    console.log('Starting Excel export for team');
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
       return res.status(400).json({ error: 'Invalid team ID' });
@@ -360,23 +361,50 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       return res.status(403).json({ error: 'You do not have permission to export this team\'s data' });
     }
     
+    console.log('Gathering team data for export...');
+    
     // Get team member activity and topic distribution
-    const members = await storage.getTeamMemberActivity(teamId);
-    const topicDistributions = await storage.getTeamTopicDistribution(teamId);
-    const teamStats = await storage.getTeamStats(teamId);
+    let members;
+    let topicDistributions;
+    let teamStats;
+    let topics;
+    
+    try {
+      members = await storage.getTeamMemberActivity(teamId);
+      topicDistributions = await storage.getTeamTopicDistribution(teamId);
+      teamStats = await storage.getTeamStats(teamId);
+      topics = await storage.getTeamTopics(teamId);
+    } catch (dataError: any) {
+      console.error('Error fetching team data for Excel export:', dataError);
+      
+      // בדיקה אם הבעיה קשורה לדאטאבייס במצב קריאה בלבד 
+      const isReadOnlyError = String(dataError).includes('readonly') || 
+                             String(dataError).includes('READONLY') || 
+                             String(dataError).includes('SQLITE_READONLY');
+      
+      if (isReadOnlyError) {
+        return res.status(200).json({ 
+          success: false, 
+          error: 'Database is in read-only mode. Export is not available in demo mode.',
+          readOnly: true
+        });
+      }
+      
+      throw dataError; // זרוק את השגיאה המקורית אם לא קשורה למצב קריאה בלבד
+    }
+    
+    const topicsCount = topics.length;
+    
+    console.log('Creating Excel workbook...');
     
     // Create workbook with multiple sheets
     const wb = XLSX.utils.book_new();
     
-    // Calculate number of unique topics
-    const topics = await storage.getTeamTopics(teamId);
-    const topicsCount = topics.length;
-    
     // Team Overview Sheet
     const overviewData = [
       ['צוות', team.name],
-      ['זמן כולל', formatTime(teamStats.totalSeconds)],
-      ['מספר חברי צוות', teamStats.membersCount.toString()],
+      ['זמן כולל', formatTime(teamStats.totalSeconds || 0)],
+      ['מספר חברי צוות', (teamStats.membersCount || 0).toString()],
       ['מספר נושאים', topicsCount.toString()]
     ];
     const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
@@ -385,10 +413,10 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     // Team Members Sheet
     const membersHeader = ['אימייל', 'זמן כולל', 'שעת פעילות מרכזית', 'יום פעילות אחרון'];
     const membersData = members.map(member => [
-      member.email,
-      formatTime(member.totalSeconds),
-      `${member.mostActiveHour}:00`,
-      member.lastActiveDay
+      member.email || 'N/A',
+      formatTime(member.totalSeconds || 0),
+      member.mostActiveHour ? `${member.mostActiveHour}:00` : 'N/A',
+      member.lastActiveDay || 'N/A'
     ]);
     
     const membersWs = XLSX.utils.aoa_to_sheet([membersHeader, ...membersData]);
@@ -397,20 +425,31 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     // Topics Sheet
     const topicsHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
     const topicsData = topicDistributions.map(topic => [
-      topic.topic.name,
-      formatTime(topic.totalSeconds),
-      `${topic.percentage.toFixed(1)}%`
+      topic.topic.name || 'N/A',
+      formatTime(topic.totalSeconds || 0),
+      `${(topic.percentage || 0).toFixed(1)}%`
     ]);
     
     const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsData]);
     XLSX.utils.book_append_sheet(wb, topicsWs, 'נושאים');
     
-    // Write to buffer and send
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    console.log('Writing Excel buffer...');
     
-    res.setHeader('Content-Disposition', `attachment; filename="team-${team.name}-report.xlsx"`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buf);
+    // Write to buffer and send
+    try {
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      console.log('Excel file generated successfully, sending response...');
+      
+      res.setHeader('Content-Disposition', `attachment; filename="team-${team.name}-report.xlsx"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buf);
+      
+      console.log('Excel export complete');
+    } catch (xlsxError) {
+      console.error('XLSX error during file generation:', xlsxError);
+      return res.status(500).json({ error: 'Error generating Excel file' });
+    }
     
   } catch (error) {
     console.error('Error exporting team data to Excel:', error);
