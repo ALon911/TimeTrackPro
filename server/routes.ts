@@ -1420,7 +1420,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error('Error exporting personal data to Excel:', error);
-      res.status(500).json({ error: 'Failed to export personal data' });
+      
+      // Special handling for read-only errors
+      const errorStr = String(error || '');
+      if (errorStr.includes('readonly') || errorStr.includes('READONLY')) {
+        return res.status(200).json({
+          success: false,
+          error: 'Database is in read-only mode. Export is not available in demo mode.',
+          readOnly: true
+        });
+      }
+      
+      res.status(200).json({ 
+        success: false, 
+        error: 'Failed to export personal data. Please try again later.' 
+      });
     }
   });
   

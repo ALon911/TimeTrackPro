@@ -130,9 +130,38 @@ export default function ReportsPage() {
   };
 
   // Handle export to Excel
-  const handleExportPersonalData = () => {
+  const handleExportPersonalData = async () => {
     try {
-      // Use window.location to create a download
+      // לבדוק אם יש שגיאות או בעיות קריאה בלבד תחילה
+      const checkResponse = await fetch('/api/export', {
+        method: 'HEAD'
+      });
+      
+      if (checkResponse.headers.get('Content-Type')?.includes('application/json')) {
+        // יש שגיאה - לקרוא את הנתונים
+        const response = await fetch('/api/export');
+        const data = await response.json();
+        
+        if (data.readOnly) {
+          toast({
+            title: "מצב הדגמה",
+            description: "לא ניתן לייצא נתונים במצב הדגמה. מסד הנתונים במצב קריאה בלבד.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (!data.success) {
+          toast({
+            title: "שגיאה בייצוא",
+            description: data.error || "אירעה שגיאה בעת ייצוא הנתונים. נסה שוב מאוחר יותר.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      
+      // אם הגענו לכאן, אפשר להמשיך בהורדה
       window.location.href = '/api/export';
       
       toast({
@@ -149,7 +178,7 @@ export default function ReportsPage() {
     }
   };
   
-  const handleExportTeamData = () => {
+  const handleExportTeamData = async () => {
     if (!selectedTeam) {
       toast({
         title: "בחר צוות",
@@ -161,13 +190,51 @@ export default function ReportsPage() {
     
     console.log("מתחיל ייצוא צוות עם מזהה:", selectedTeam);
     
-    // Simple approach - just redirect the browser
-    window.location.href = `/api/teams/${selectedTeam}/export`;
-    
-    toast({
-      title: "ייצוא התחיל",
-      description: "אם הדו״ח מוכן, הוא יורד אוטומטית לקומפיוטר שלך",
-    });
+    try {
+      // לבדוק אם יש שגיאות או בעיות קריאה בלבד תחילה
+      const checkResponse = await fetch(`/api/teams/${selectedTeam}/export`, {
+        method: 'HEAD'
+      });
+      
+      if (checkResponse.headers.get('Content-Type')?.includes('application/json')) {
+        // יש שגיאה - לקרוא את הנתונים
+        const response = await fetch(`/api/teams/${selectedTeam}/export`);
+        const data = await response.json();
+        
+        if (data.readOnly) {
+          toast({
+            title: "מצב הדגמה",
+            description: "לא ניתן לייצא נתונים במצב הדגמה. מסד הנתונים במצב קריאה בלבד.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (!data.success) {
+          toast({
+            title: "שגיאה בייצוא",
+            description: data.error || "אירעה שגיאה בעת ייצוא הנתונים. נסה שוב מאוחר יותר.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      
+      // אם הגענו לכאן, אפשר להמשיך בהורדה
+      window.location.href = `/api/teams/${selectedTeam}/export`;
+      
+      toast({
+        title: "ייצוא התחיל",
+        description: "אם הדו״ח מוכן, הוא יורד אוטומטית לקומפיוטר שלך",
+      });
+    } catch (error) {
+      console.error("Error during team data export:", error);
+      toast({
+        title: "שגיאה בייצוא",
+        description: "אירעה שגיאה בעת ייצוא הנתונים. נסה שוב מאוחר יותר.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
