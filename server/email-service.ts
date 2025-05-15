@@ -143,6 +143,11 @@ export class EmailService {
     team: Team, 
     inviteLink: string
   ): Promise<boolean> {
+    // הכנת קישורים
+    const viewLink = inviteLink; // קישור לצפייה בהזמנה
+    const acceptLink = inviteLink.replace("/invitation/", "/invitation/accept/");
+    const directAcceptLink = inviteLink.replace("/invitation/", "/invitations/accept/");
+    
     const subject = `הזמנה להצטרף לצוות ${team.name} באפליקציית מעקב הזמן`;
     
     const html = `
@@ -152,8 +157,14 @@ export class EmailService {
         <p>${inviter.email} הזמין אותך להצטרף לצוות ${team.name} באפליקציית מעקב הזמן.</p>
         
         <div style="margin: 20px 0;">
-          <a href="${inviteLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-            אישור הצטרפות לצוות
+          <!-- כפתור אישור רגיל דרך הממשק -->
+          <a href="${viewLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-left: 10px;">
+            צפייה בהזמנה
+          </a>
+          
+          <!-- כפתור לאישור ישיר מהמייל -->
+          <a href="${directAcceptLink}" style="background-color: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+            אישור מיידי
           </a>
         </div>
         

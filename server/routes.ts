@@ -52,7 +52,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // נתיב ישיר לקבלת הזמנה (עמוד פשוט עם לוגיקה מובנית, דף HTML נפרד מהSPA)
-  app.get('/direct-accept/:token', (req, res) => {
+  // אפשר להשתמש בנתיב הזה ישירות מהמייל כדי לאשר ללא צורך בכניסה למערכת
+  app.get(['/direct-accept/:token', '/invitations/:token/accept', '/invitation/:token/accept', '/invitations/accept/:token'], (req, res) => {
     const token = req.params.token;
     console.log('Accept-invitation route hit with token:', token);
     
@@ -170,6 +171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // משתמש מחובר
                 document.getElementById('not-logged-in').style.display = 'none';
                 document.getElementById('logged-in').style.display = 'block';
+                
+                // אישור אוטומטי כאשר המשתמש מחובר (one-click)
+                acceptInvitation();
+                
                 return response.json();
               } else {
                 // משתמש לא מחובר
