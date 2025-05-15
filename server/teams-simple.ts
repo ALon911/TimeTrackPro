@@ -376,12 +376,41 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       // המשך עם שאר הנתונים אפילו אם אין אפשרות לקבל את נושאי הצוות
       try {
         topics = await storage.getTeamTopics(teamId);
+        // אם אין נושאים לצוות, קבל את כל הנושאים של בעל הצוות במקום
+        if (!topics || topics.length === 0) {
+          console.warn("No team topics found, using owner's topics instead");
+          topics = await storage.getTopics(ownerId);
+        }
       } catch (error) {
         console.warn("Failed to get team topics, using all topics instead:", error);
         // בגלל שחסר עמודת team_id בחלק מהמקרים, נשתמש בכל הנושאים
         const allTopics = await storage.getTopics(ownerId);
         topics = allTopics;
       }
+      
+      // קבל נתונים נוספים עבור כל משתמש בצוות
+      const membersWithDetails = await Promise.all((members || []).map(async (member) => {
+        try {
+          // נסה לקבל סטטיסטיקות שבועיות למשתמש
+          const weekly = await storage.getWeeklyStats(member.userId);
+          // קבל את הנושא המועדף על המשתמש
+          const mostTracked = await storage.getMostTrackedTopic(member.userId);
+          
+          return {
+            ...member,
+            weeklyTotal: weekly?.total || 0,
+            weeklyChange: weekly?.percentChange || 0,
+            favoriteTopicName: mostTracked?.topic?.name || '',
+            favoriteTopicTime: mostTracked?.totalTime || 0
+          };
+        } catch (error) {
+          console.warn(`Failed to get details for user ${member.userId}:`, error);
+          return member;
+        }
+      }));
+      
+      // החלף את רשימת החברים המקורית עם הרשימה המפורטת יותר
+      members = membersWithDetails;
     } catch (dataError: any) {
       console.error('Error fetching team data for Excel export:', dataError);
       
@@ -418,11 +447,25 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
     XLSX.utils.book_append_sheet(wb, overviewWs, 'סקירה כללית');
     
-    // Team Members Sheet
-    const membersHeader = ['אימייל', 'זמן כולל', 'שעת פעילות מרכזית', 'יום פעילות אחרון'];
+    // Team Members Sheet - הוספת עמודות נוספות עם מידע סטטיסטי על המשתמש
+    const membersHeader = [
+      'אימייל', 
+      'זמן כולל', 
+      'זמן שבועי',
+      'שינוי שבועי %',
+      'נושא מועדף',
+      'זמן בנושא מועדף',
+      'שעת פעילות מרכזית', 
+      'יום פעילות אחרון'
+    ];
+    
     const membersData = (members || []).map(member => [
       member?.email || 'N/A',
       formatTime(member?.totalTime || member?.totalSeconds || 0),
+      formatTime(member?.weeklyTotal || 0),
+      `${((member?.weeklyChange || 0) * 100).toFixed(1)}%`,
+      member?.favoriteTopicName || 'אין נתונים',
+      formatTime(member?.favoriteTopicTime || 0),
       member?.mostActiveHour ? `${member.mostActiveHour}:00` : 'N/A',
       member?.lastActiveDay || 'N/A'
     ]);
@@ -430,15 +473,54 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     const membersWs = XLSX.utils.aoa_to_sheet([membersHeader, ...membersData]);
     XLSX.utils.book_append_sheet(wb, membersWs, 'חברי צוות');
     
-    // Topics Sheet
-    const topicsHeader = ['נושא', 'זמן כולל', 'אחוז מסך הכל'];
-    const topicsData = (topicDistributions || []).map(topic => [
-      topic?.topic?.name || 'N/A',
-      formatTime(topic?.totalTime || topic?.totalSeconds || 0),
-      `${(topic?.percentage || 0).toFixed(1)}%`
-    ]);
+    // Topics Sheet - מידע מפורט יותר על הנושאים
+    const topicsHeader = [
+      'נושא', 
+      'זמן כולל', 
+      'אחוז מסך הכל', 
+      'צבע', 
+      'מספר רשומות',
+      'משתמשים שמשתמשים בנושא'
+    ];
     
-    const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsData]);
+    // בניית צד הנושאים עם יותר מידע על פי הבקשה
+    const topicDistributionsMap = new Map();
+    (topicDistributions || []).forEach(td => {
+      if (td?.topic?.name) {
+        topicDistributionsMap.set(td.topic.name, td);
+      }
+    });
+    
+    // הוספת מידע שימושי לכל נושא
+    const topicsDataEnhanced = (topics || []).map(topic => {
+      const td = topicDistributionsMap.get(topic.name) || {};
+      const topicName = topic.name || 'N/A';
+      
+      // מוסיף גם מספר הרשומות לכל נושא אם המידע הזה חסר
+      if (!td.entryCount) {
+        td.entryCount = 0;
+        // לוגיקה מורחבת לחישוב מספר רשומות יכולה להוסף כאן, אך זה ידרוש שאילתות נוספות
+      }
+      
+      // נמצא כמה משתמשים משתמשים בנושא זה
+      const usersWithThisTopic = new Set();
+      (members || []).forEach(member => {
+        if (member.favoriteTopicName === topicName) {
+          usersWithThisTopic.add(member.email);
+        }
+      });
+      
+      return [
+        topicName,
+        formatTime(td?.totalTime || td?.totalSeconds || 0),
+        `${(td?.percentage || 0).toFixed(1)}%`,
+        topic.color || '#cccccc',
+        (td?.entryCount || 0).toString(),
+        usersWithThisTopic.size.toString()
+      ];
+    });
+    
+    const topicsWs = XLSX.utils.aoa_to_sheet([topicsHeader, ...topicsDataEnhanced]);
     XLSX.utils.book_append_sheet(wb, topicsWs, 'נושאים');
     
     console.log('Writing Excel buffer...');
