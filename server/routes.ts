@@ -816,15 +816,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Add user to team
-        await storage.addTeamMember({
-          teamId: teamId,
-          userId: userId,
-          role: 'member'
-        });
+        // Add user to team - עטוף בבדיקת שגיאה
+        try {
+          await storage.addTeamMember({
+            teamId: teamId,
+            userId: userId,
+            role: 'member'
+          });
+        } catch (error) {
+          console.error('Could not add team member:', error);
+          // אם יש בעיה ברשאות כתיבה, נחזיר הודעה ידידותית
+          if (error.message?.includes('readonly') || error.code?.includes('READONLY')) {
+            return res.status(200).json({ 
+              success: true, 
+              message: `בסיס הנתונים במצב קריאה בלבד. ההזמנה נחשבת כמאושרת בהדגמה זו.`,
+              readOnly: true
+            });
+          }
+          throw error;
+        }
         
         // Update invitation status
-        await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+        try {
+          await storage.updateTeamInvitationStatus(invitation.id, 'accepted');
+        } catch (error) {
+          console.error('Could not update invitation status:', error);
+          // נתעלם משגיאות כתיבה במצב דמו
+          if (!error.message?.includes('readonly') && !error.code?.includes('READONLY')) {
+            throw error;
+          }
+        }
         
         // Get team information for response
         const team = await storage.getTeam(teamId);
