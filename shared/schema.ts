@@ -196,6 +196,13 @@ export type TeamMemberActivity = {
   lastActiveDay: string;
 };
 
+export type WeeklyData = {
+  day: string;
+  dayOfWeek: string;
+  totalTime: number;
+  date: string;
+};
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

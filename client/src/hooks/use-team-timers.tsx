@@ -3,7 +3,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ActiveTimer } from "@shared/schema";
 
-export interface ShareTimerData {
+interface ShareTimerData {
   topicId: number;
   topicName: string;
   topicColor: string;
@@ -15,7 +15,7 @@ export interface ShareTimerData {
   duration?: number | null;
 }
 
-export function useTeamTimers(teamId?: string | number) {
+function useTeamTimers(teamId?: string | number) {
   const { toast } = useToast();
   
   // Get active timers for a team
@@ -122,3 +122,5 @@ export function useTeamTimers(teamId?: string | number) {
     formatTimeLeft,
   };
 }
+
+export { useTeamTimers, type ShareTimerData }
