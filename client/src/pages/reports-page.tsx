@@ -130,7 +130,7 @@ export default function ReportsPage() {
   };
 
   // Handle export to Excel
-  const handleExportPersonalData = async () => {
+  const handleExportPersonalData = () => {
     try {
       // Use window.location to create a download
       window.location.href = '/api/export';
@@ -259,7 +259,7 @@ export default function ReportsPage() {
               
               <StatCard 
                 title="סה״כ נושאים" 
-                value={topicDistribution?.length || '0'} 
+                value={topicDistribution?.length ? topicDistribution.length.toString() : '0'} 
                 icon={<BarChart className="h-4 w-4" />}
                 iconBg="bg-purple-100"
                 iconColor="text-purple-700"
@@ -375,18 +375,24 @@ export default function ReportsPage() {
                     title="זמן כולל של הצוות" 
                     value={formatTime(teamStats?.totalSeconds || 0)} 
                     icon={<Clock className="h-4 w-4" />}
+                    iconBg="bg-blue-100"
+                    iconColor="text-blue-700"
                   />
                   
                   <StatCard 
                     title="חברי צוות" 
-                    value={teamStats?.membersCount || '0'} 
+                    value={teamStats?.membersCount?.toString() || '0'} 
                     icon={<Users className="h-4 w-4" />}
+                    iconBg="bg-green-100"
+                    iconColor="text-green-700"
                   />
                   
                   <StatCard 
                     title="נושאים בצוות" 
-                    value={teamTopicDistribution?.length || '0'} 
+                    value={teamTopicDistribution?.length?.toString() || '0'} 
                     icon={<BarChart className="h-4 w-4" />}
+                    iconBg="bg-purple-100"
+                    iconColor="text-purple-700"
                   />
                 </div>
               </section>
@@ -407,37 +413,27 @@ export default function ReportsPage() {
                       <div className="text-center py-8">
                         <Info className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                         <p className="text-muted-foreground">אין נתוני פעילות זמינים לצוות זה</p>
-                        <p className="text-sm text-muted-foreground mt-1">חברי הצוות צריכים להתחיל לתעד זמן</p>
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        {teamMemberActivity.map((member: TeamMemberActivity) => (
-                          <div key={member.userId} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-medium">{member.username || member.email}</h3>
-                                <p className="text-sm text-muted-foreground">{member.email}</p>
-                              </div>
-                              <Badge variant="outline" className="text-primary">
-                                {member.taskCount} משימות
-                              </Badge>
-                            </div>
-                            <div className="mt-3">
-                              <div className="flex justify-between items-center text-sm mb-1">
-                                <span>זמן כולל:</span>
-                                <span className="font-medium">{formatTime(member.totalSeconds || member.totalTime || 0)}</span>
-                              </div>
-                              <div className="w-full bg-muted rounded-full h-2.5">
-                                <div 
-                                  className="bg-primary h-2.5 rounded-full" 
-                                  style={{ 
-                                    width: `${Math.min(100, ((member.totalSeconds || member.totalTime || 0) / (teamStats?.totalSeconds || 1)) * 100)}%` 
-                                  }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="border-b text-right">
+                              <th className="py-2 px-4 text-xs font-semibold">משתמש</th>
+                              <th className="py-2 px-4 text-xs font-semibold">זמן כולל</th>
+                              <th className="py-2 px-4 text-xs font-semibold">מספר משימות</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teamMemberActivity.map((member: TeamMemberActivity) => (
+                              <tr key={member.userId} className="border-b hover:bg-muted/50">
+                                <td className="py-2 px-4">{member.email}</td>
+                                <td className="py-2 px-4">{formatTime(member.totalSeconds || 0)}</td>
+                                <td className="py-2 px-4">{member.taskCount || 0}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </CardContent>
@@ -448,8 +444,8 @@ export default function ReportsPage() {
               <section>
                 <Card>
                   <CardHeader>
-                    <CardTitle>התפלגות נושאים בצוות</CardTitle>
-                    <CardDescription>כיצד מתחלק הזמן בין הנושאים השונים בצוות</CardDescription>
+                    <CardTitle>התפלגות פעילות לפי נושא</CardTitle>
+                    <CardDescription>כיצד מתחלק הזמן שצוות זה מבלה על משימות שונות</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {isLoadingTeamTopicDistribution ? (
@@ -458,56 +454,46 @@ export default function ReportsPage() {
                       </div>
                     ) : !teamTopicDistribution || teamTopicDistribution.length === 0 ? (
                       <div className="text-center py-8">
-                        <BarChart className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <Info className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                         <p className="text-muted-foreground">אין נתוני נושאים זמינים לצוות זה</p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {teamTopicDistribution.map((item: TeamTopicDistribution) => (
-                          <div key={item.topic.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: item.topic.color || '#888' }}
-                                ></div>
-                                <span className="font-medium">{item.topic.name}</span>
-                              </div>
-                              <span className="text-sm">
-                                {formatTime(item.totalSeconds || item.totalTime || 0)} ({Math.round(item.percentage)}%)
-                              </span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div 
-                                className="h-2 rounded-full" 
-                                style={{ 
-                                  width: `${item.percentage}%`,
-                                  backgroundColor: item.topic.color || '#888'
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <>
+                        <div className="h-64 mb-6">
+                          <TopicDistributionChart data={teamTopicDistribution} />
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="border-b text-right">
+                                <th className="py-2 px-4 text-xs font-semibold">נושא</th>
+                                <th className="py-2 px-4 text-xs font-semibold">זמן כולל</th>
+                                <th className="py-2 px-4 text-xs font-semibold">אחוז</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {teamTopicDistribution.map((item: TeamTopicDistribution) => (
+                                <tr key={item.topic.id} className="border-b hover:bg-muted/50">
+                                  <td className="py-2 px-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.topic.color || '#888' }}></div>
+                                      <span>{item.topic.name}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-4">{formatTime(item.totalSeconds || 0)}</td>
+                                  <td className="py-2 px-4">{item.percentage?.toFixed(1) || 0}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
                     )}
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" size="sm" className="mr-auto">
-                      ייצא לאקסל
-                    </Button>
-                  </CardFooter>
                 </Card>
               </section>
             </>
-          ) : (
-            <div className="text-center p-12 border rounded-lg bg-muted/10">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">בחר צוות כדי לראות את הנתונים</h3>
-              <p className="text-muted-foreground">
-                כאן תוכל לראות סטטיסטיקות על פעילות הצוות שלך
-              </p>
-            </div>
-          )}
+          ) : null}
         </TabsContent>
       </Tabs>
     </>
