@@ -449,7 +449,10 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
       
       console.log('Excel file generated successfully, sending response...');
       
-      res.setHeader('Content-Disposition', `attachment; filename="team-${team.name}-report.xlsx"`);
+      // מנקה את שם הקובץ לגמרי מתווים עבריים שגורמים לבעיות 
+      const fileName = `team-report.xlsx`;
+      
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(buf);
       

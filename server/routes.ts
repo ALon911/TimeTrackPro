@@ -802,8 +802,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (action === 'accept') {
         // Check if user is already a member
-        // התמודדות עם שני פורמטים אפשריים של שם השדה (team_id או teamId)
-        const teamId = invitation.teamId || invitation.team_id;
+        // השתמש במזהה הצוות מההזמנה
+        const teamId = invitation.teamId;
         console.log('Using team ID for member addition:', teamId);
         const members = await storage.getTeamMembers(teamId);
         const isAlreadyMember = members.some(member => member.userId === userId);
