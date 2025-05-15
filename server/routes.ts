@@ -186,12 +186,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.querySelector('.invitation-actions').style.display = 'none';
             document.getElementById('accept-spinner').style.display = 'block';
             
+            // מוסיף את האימייל של המוזמן לגוף הבקשה, כך שהשרת ידע למי לקשר את ההזמנה
+            const invitationResponse = await fetch('/api/teams/invitations/' + token, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            // בדיקה אם הAPI של ההזמנות מחזיר תשובה
+            let invitationEmail = '';
+            if (invitationResponse.ok) {
+              try {
+                const invData = await invitationResponse.json();
+                if (invData && invData.email) {
+                  invitationEmail = invData.email;
+                  console.log('Invitation was for email:', invitationEmail);
+                } else {
+                  console.log('Invitation API returned data without email field:', invData);
+                }
+              } catch (err) {
+                console.error('Could not parse invitation details JSON');
+              }
+            } else {
+              console.log('Could not fetch invitation details, API returned:', invitationResponse.status);
+            }
+            
+            // שולח את הבקשה עם האימייל המקורי
             const response = await fetch('/api/teams/invitations/' + token + '/accept', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({})
+              body: JSON.stringify({ originalEmail: invitationEmail })
             });
             
             if (response.ok) {
@@ -221,12 +246,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.querySelector('.invitation-actions').style.display = 'none';
             document.getElementById('accept-spinner').style.display = 'block';
             
+            // מוסיף את האימייל של המוזמן לגוף הבקשה - שימוש בערך שכבר ייתכן שהשגנו
             const response = await fetch('/api/teams/invitations/' + token + '/reject', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({})
+              body: JSON.stringify({ originalEmail: invitationEmail || '' })
             });
             
             if (response.ok) {
