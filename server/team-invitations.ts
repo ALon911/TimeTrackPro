@@ -156,11 +156,14 @@ invitationsRouter.post([
       return res.status(400).json({ error: 'Invitation has expired' });
     }
     
-    // Check if user's email matches the invitation email
+    // בדיקת קיום המשתמש
     const user = await storage.getUser(userId);
-    if (!user || user.email !== invitation.email) {
-      return res.status(403).json({ error: 'This invitation is for a different email address' });
+    if (!user) {
+      return res.status(403).json({ error: 'User not found' });
     }
+    
+    // לוג לבדיקה - שימושי לדיבאג
+    console.log(`User ${user.id} (${user.email}) is handling invitation for: ${invitation.email}`);
     
     if (action === 'accept') {
       // Check if user is already a member
