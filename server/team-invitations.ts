@@ -214,6 +214,94 @@ invitationsRouter.post([
   }
 });
 
+// נתיב ייעודי לדחיית הזמנה מהדף הסטטי
+invitationsRouter.post('/api/teams/invitations/:token/reject', isAuthenticated, async (req, res) => {
+  try {
+    const token = req.params.token;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'User not authenticated' 
+      });
+    }
+    
+    console.log('Direct invitation reject API called with token:', token);
+    
+    // נמצא את ההזמנה לפי הטוקן
+    let invitation;
+    try {
+      invitation = await storage.getTeamInvitationByToken(token);
+      console.log('Found invitation for rejection:', invitation);
+    } catch (error) {
+      console.error('Error finding invitation for rejection:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error finding invitation' 
+      });
+    }
+    
+    if (!invitation) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invitation not found' 
+      });
+    }
+    
+    // בדוק שההזמנה לא פג תוקף ולא כבר אושרה/נדחתה
+    const expiryTimestamp = invitation.expires_at || invitation.expiresAt;
+    const expiresAt = new Date(expiryTimestamp);
+    const now = new Date();
+    
+    if (now > expiresAt) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invitation has expired' 
+      });
+    }
+    
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invitation has already been ${invitation.status}` 
+      });
+    }
+    
+    // Check if user's email matches the invitation email
+    const user = await storage.getUser(userId);
+    if (!user || user.email !== invitation.email) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'This invitation is for a different email address' 
+      });
+    }
+    
+    // דחיית ההזמנה
+    try {
+      // Update invitation status to declined
+      await storage.updateTeamInvitationStatus(invitation.id, 'declined');
+      
+      res.status(200).json({ 
+        success: true, 
+        message: `ההזמנה נדחתה בהצלחה.`
+      });
+    } catch (error) {
+      console.error('Error rejecting invitation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error rejecting invitation' 
+      });
+    }
+  } catch (error) {
+    console.error('Error in invitation reject API:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Server error' 
+    });
+  }
+});
+
 // נתיב ייעודי לאישור הזמנה מהדף הסטטי
 invitationsRouter.post('/api/teams/invitations/:token/accept', isAuthenticated, async (req, res) => {
   try {
