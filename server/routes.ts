@@ -36,19 +36,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
-  // Handle invitation routes for SPA with debug information
-  app.get('/invitations/:token', (req, res, next) => {
-    serveIndexHTML(req, res, next, '/invitations/:token');
-  });
-  
-  // נתיב אחיד מועדף להזמנות - בלשון יחיד (invitation במקום invitations)
-  app.get('/invitation/:token', (req, res, next) => {
-    serveIndexHTML(req, res, next, '/invitation/:token');
-  });
-  
-  // נתיב חלופי נוסף עבור הזמנות דרך המסך הראשי של הSPA
-  app.get('/accept-invitation/:token', (req, res, next) => {
-    serveIndexHTML(req, res, next, '/accept-invitation/:token');
+  // טיפול בנתיבי הזמנות - דף HTML פשוט שעושה redirect
+  app.get(['/invitations/:token', '/invitation/:token', '/accept-invitation/:token'], (req, res) => {
+    // חילוץ הטוקן מהפרמטרים
+    const { token } = req.params;
+    console.log('Invitation token route hit with token:', token);
+
+    // דף HTML פשוט שעושה redirect או לדף ההתחברות או לדף הReact בהתאם למצב המשתמש
+    const html = `
+    <!DOCTYPE html>
+    <html lang="he" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>מעבד הזמנה - מערכת מעקב זמן</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 20px;
+          background-color: #f5f5f5;
+          color: #333;
+          text-align: center;
+        }
+        .loader {
+          border: 6px solid #f3f3f3;
+          border-top: 6px solid #3498db;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+          margin: 20px auto;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        h1 {
+          color: #2c3e50;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>מעבד את ההזמנה...</h1>
+      <div class="loader"></div>
+      <p>אנא המתן...</p>
+
+      <script>
+        // בדיקה האם המשתמש מחובר
+        async function checkAuthAndRedirect() {
+          try {
+            const response = await fetch('/api/user');
+            
+            if (response.ok) {
+              // משתמש מחובר - מציג ממשק אישור הזמנה
+              document.getElementById('processing').style.display = 'none';
+              document.getElementById('accept-interface').style.display = 'block';
+            } else {
+              // משתמש לא מחובר - נפנה לדף ההתחברות עם פרמטר הזמנה
+              window.location.href = '/auth?inviteToken=' + '${token}';
+            }
+          } catch (error) {
+            console.error('שגיאה בבדיקת מצב התחברות:', error);
+            // במקרה של שגיאה, נפנה לדף ההתחברות
+            window.location.href = '/auth?inviteToken=${token}';
+          }
+        }
+
+        // פונקציה לקבלת ההזמנה
+        async function acceptInvitation() {
+          try {
+            const response = await fetch('/api/teams/invitations/${token}/accept', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+            });
+
+            if (response.ok) {
+              document.getElementById('success').style.display = 'block';
+              document.getElementById('accept-interface').style.display = 'none';
+              
+              // הפניה לדף הצוותים
+              setTimeout(() => {
+                window.location.href = '/teams';
+              }, 2000);
+            } else {
+              document.getElementById('error').style.display = 'block';
+              document.getElementById('error-message').textContent = 'אירעה שגיאה בעת קבלת ההזמנה.';
+            }
+          } catch (error) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error-message').textContent = 'אירעה שגיאה בעת התקשורת עם השרת.';
+          }
+        }
+
+        // הפעלת בדיקת אותנטיקציה בטעינת העמוד
+        checkAuthAndRedirect();
+      </script>
+
+      <div id="processing">
+        <!-- תוכן כבר מוצג למעלה -->
+      </div>
+
+      <div id="accept-interface" style="display: none;">
+        <h2>אישור הזמנה לצוות</h2>
+        <p>נמצאה הזמנה עבורך להצטרף לצוות במערכת מעקב הזמן.</p>
+        <button onclick="acceptInvitation()" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">אשר הזמנה</button>
+      </div>
+
+      <div id="success" style="display: none; color: green;">
+        <h2>ההזמנה התקבלה בהצלחה!</h2>
+        <p>מעביר אותך לדף הצוותים...</p>
+      </div>
+
+      <div id="error" style="display: none; color: red;">
+        <h2>שגיאה</h2>
+        <p id="error-message"></p>
+        <a href="/teams" style="color: #3498db;">חזור לדף הצוותים</a>
+      </div>
+    </body>
+    </html>
+    `;
+    
+    res.send(html);
+    console.log('Successfully served invitation handler HTML');
   });
   
   // נתיב ישיר לקבלת הזמנה (עמוד פשוט עם לוגיקה מובנית, דף HTML נפרד מהSPA)
