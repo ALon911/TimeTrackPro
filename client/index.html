@@ -15,6 +15,21 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Script added for better production compatibility -->
+    <script>
+      // Handle fallback if main script fails to load
+      window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT' && e.target.src.includes('main.tsx')) {
+          console.error('Main script failed to load, attempting fallback');
+          // Try to load from absolute path if script tag with relative path fails
+          // This can help with some deployment scenarios
+          const newScript = document.createElement('script');
+          newScript.type = 'module';
+          newScript.src = window.location.origin + '/src/main.tsx';
+          document.body.appendChild(newScript);
+        }
+      }, true);
+    </script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>
