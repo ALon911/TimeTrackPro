@@ -44,6 +44,8 @@ export function TimeEntriesTable({
   
   const { data: entries, isLoading } = useQuery({
     queryKey: ["/api/time-entries" + queryParams],
+    refetchInterval: 3000, // רענון אוטומטי כל 3 שניות
+    refetchOnWindowFocus: true, // רענון כאשר המשתמש חוזר לחלון
   });
   
   const { data: topics } = useQuery({
@@ -78,7 +80,7 @@ export function TimeEntriesTable({
 
   // Filter entries based on search term and current week if needed
   // First remove potential duplicates by using a Map with entry id as key
-  const uniqueEntries = entries ? 
+  const uniqueEntries = entries && Array.isArray(entries) ? 
     Array.from(new Map(entries.map((entry: any) => [entry.id, entry])).values()) : 
     [];
     
@@ -101,13 +103,15 @@ export function TimeEntriesTable({
   
   // Function to find topic name by ID
   const getTopicName = (topicId: number) => {
-    const topic = topics?.find((t: any) => t.id === topicId);
+    if (!topics || !Array.isArray(topics)) return "לא ידוע";
+    const topic = topics.find((t: any) => t.id === topicId);
     return topic?.name || "לא ידוע";
   };
   
   // Function to get topic color by ID
   const getTopicColor = (topicId: number) => {
-    const topic = topics?.find((t: any) => t.id === topicId);
+    if (!topics || !Array.isArray(topics)) return "#6366f1";
+    const topic = topics.find((t: any) => t.id === topicId);
     return topic?.color || "#6366f1";
   };
   
@@ -142,7 +146,7 @@ export function TimeEntriesTable({
     );
   }
   
-  if (!entries || entries.length === 0) {
+  if (!entries || !Array.isArray(entries) || entries.length === 0) {
     return (
       <div className="text-center p-10">
         <p className="text-neutral-500">אין רשומות זמן להצגה</p>
