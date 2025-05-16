@@ -77,7 +77,12 @@ export function TimeEntriesTable({
   });
 
   // Filter entries based on search term and current week if needed
-  const filteredEntries = entries?.filter((entry: any) => {
+  // First remove potential duplicates by using a Map with entry id as key
+  const uniqueEntries = entries ? 
+    Array.from(new Map(entries.map((entry: any) => [entry.id, entry])).values()) : 
+    [];
+    
+  const filteredEntries = uniqueEntries.filter((entry: any) => {
     // Filter by search term
     if (searchTerm && !entry.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
