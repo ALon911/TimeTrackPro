@@ -83,12 +83,6 @@ export default function TeamStatsPage() {
             <Link href={`/teams`}>
               <Button variant="outline">חזרה לרשימת הצוותים</Button>
             </Link>
-            <Link href={`/api/teams/${teamIdNumber}/export`}>
-              <Button className="gap-2">
-                <Download className="h-4 w-4" />
-                ייצוא לאקסל
-              </Button>
-            </Link>
           </div>
         )}
       </div>
