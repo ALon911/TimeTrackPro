@@ -1,0 +1,15 @@
+// התיקון שנעשה בשרת לטיפול בקישורי הזמנות במייל
+// מיקום: server/routes.ts
+
+// נתיב חדש שהוספנו:
+app.get('/invitations/:token', (req, res, next) => {
+  // Send the index.html to handle on client side with React Router
+  const indexPath = path.resolve('client/index.html');
+  res.sendFile(indexPath);
+});
+
+// שימוש בנתיב זה מאפשר לקליינט לקבל את הבקשות לקישורי ההזמנות
+// כשמשתמש לוחץ על קישור ההזמנה במייל, השרת מעביר את הבקשה לקליינט
+// והקליינט מטפל בטוקן ומציג את הדף המתאים
+
+// הערה: הוספה זו פותרת את הבעיה שבה קישורי הזמנות במייל הובילו לדף 404
