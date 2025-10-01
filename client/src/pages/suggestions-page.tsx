@@ -6,8 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Brain, CheckCircle, XCircle, RefreshCw, Sparkles, Lightbulb } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { MobileHeader } from '@/components/mobile-header';
-import { MobileNavigation } from '@/components/mobile-navigation';
 
 interface AISuggestion {
   id: string;
@@ -157,13 +155,21 @@ export default function SuggestionsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('he-IL', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'תאריך לא זמין';
+      }
+      return date.toLocaleDateString('he-IL', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'תאריך לא זמין';
+    }
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -192,9 +198,6 @@ export default function SuggestionsPage() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Mobile Header */}
-      <MobileHeader />
-      
       {/* Main Content */}
       <div className="max-w-7xl mx-auto py-4 px-2 sm:px-4 md:px-6 lg:px-8 mb-16 md:mb-0">
         <div className="mb-6">
@@ -330,9 +333,6 @@ export default function SuggestionsPage() {
           )}
         </div>
       </div>
-      
-      {/* Mobile Navigation */}
-      <MobileNavigation />
     </div>
   );
 }

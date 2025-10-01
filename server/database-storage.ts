@@ -1491,7 +1491,11 @@ export class DatabaseStorage implements IStorage {
     try {
       const limitClause = limit ? `LIMIT ${limit}` : '';
       const stmt = this.db.prepare(`
-        SELECT * FROM ai_suggestions 
+        SELECT 
+          id, user_id as userId, type, title, description, actionable, 
+          priority, confidence, is_read as isRead, is_applied as isApplied, 
+          created_at as createdAt
+        FROM ai_suggestions 
         WHERE user_id = ? 
         ORDER BY created_at DESC 
         ${limitClause}
@@ -1505,7 +1509,14 @@ export class DatabaseStorage implements IStorage {
 
   async getAISuggestion(id: string): Promise<AISuggestion | undefined> {
     try {
-      const stmt = this.db.prepare('SELECT * FROM ai_suggestions WHERE id = ?');
+      const stmt = this.db.prepare(`
+        SELECT 
+          id, user_id as userId, type, title, description, actionable, 
+          priority, confidence, is_read as isRead, is_applied as isApplied, 
+          created_at as createdAt
+        FROM ai_suggestions 
+        WHERE id = ?
+      `);
       return stmt.get(id) as AISuggestion | undefined;
     } catch (error) {
       console.error('Error getting AI suggestion:', error);
@@ -1602,7 +1613,11 @@ export class DatabaseStorage implements IStorage {
     try {
       const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
       const stmt = this.db.prepare(`
-        SELECT * FROM ai_suggestions 
+        SELECT 
+          id, user_id as userId, type, title, description, actionable, 
+          priority, confidence, is_read as isRead, is_applied as isApplied, 
+          created_at as createdAt
+        FROM ai_suggestions 
         WHERE user_id = ? AND created_at >= ?
         ORDER BY created_at DESC
       `);
