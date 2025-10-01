@@ -200,8 +200,8 @@ export class DatabaseStorage implements IStorage {
       console.log('Seeding database with sample data...');
       
       // Create default user directly with SQL (password = 'password')
-      const userStmt = this.db.prepare('INSERT INTO users (email, password) VALUES (?, ?)');
-      const userResult = userStmt.run('user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f');
+      const userStmt = this.db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
+      const userResult = userStmt.run('demo_user', 'user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f');
       const userId = userResult.lastInsertRowid as number;
       
       // Create default topics directly with SQL
