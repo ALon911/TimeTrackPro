@@ -283,7 +283,7 @@ export function SyncedTimeTracker() {
       </div>
       
       {/* Timer Controls */}
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center gap-3">
         {!isRunning && !isPaused ? (
           <Button
             onClick={handleStart}

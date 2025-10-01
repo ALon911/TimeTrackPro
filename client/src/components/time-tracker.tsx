@@ -794,7 +794,7 @@ export function TimeTracker() {
             )}
           </>
         ) : isRunning ? (
-          <div className="flex flex-col sm:flex-row gap-2 w-full">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Button 
               onClick={() => pause()} 
               className="w-full sm:w-1/2 px-4 py-3 bg-amber-500 dark:bg-amber-600 text-white rounded-md hover:bg-amber-600 dark:hover:bg-amber-700 flex items-center justify-center"
@@ -812,7 +812,7 @@ export function TimeTracker() {
             </Button>
           </div>
         ) : isPaused ? (
-          <div className="flex flex-col sm:flex-row gap-2 w-full">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Button 
               onClick={() => resume()} 
               className="w-full sm:w-1/2 px-4 py-3 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center"
