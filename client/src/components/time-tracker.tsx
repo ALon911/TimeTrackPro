@@ -734,7 +734,7 @@ export function TimeTracker() {
         {!isRunning && !isPaused ? (
           <>
             {/* כפתורי ברירת מחדל */}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
+            <div className="flex flex-wrap justify-center gap-3 mb-4">
               <Button 
                 onClick={() => handlePresetSelection(5)} 
                 className="px-2 md:px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded-md hover:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center"

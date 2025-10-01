@@ -397,7 +397,7 @@ export function SyncedTimeTracker() {
           {/* Preset Buttons */}
           <div className="space-y-2">
             <Label>בחר זמן מהיר:</Label>
-            <div className="flex space-x-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
