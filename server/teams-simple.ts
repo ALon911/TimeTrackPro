@@ -10,18 +10,35 @@ import { ActiveTimer } from '@shared/schema';
 
 const teamsRouter = Router();
 
-// Get all teams for the authenticated user
+// Get all teams for the authenticated user (with crew isolation)
 teamsRouter.get('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Not authorized' });
     }
     
+    // Get teams where user is a member (crew isolation by default)
     const teams = await storage.getTeams(req.user.id);
     res.json(teams);
   } catch (error) {
     console.error('Error fetching teams:', error);
     res.status(500).json({ error: 'Failed to fetch teams' });
+  }
+});
+
+// Get all teams including cross-crew access (for admin purposes)
+teamsRouter.get('/api/teams/all', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    // Get all teams including those with cross-crew access
+    const teams = await storage.getAllTeams(req.user.id);
+    res.json(teams);
+  } catch (error) {
+    console.error('Error fetching all teams:', error);
+    res.status(500).json({ error: 'Failed to fetch all teams' });
   }
 });
 
@@ -54,6 +71,8 @@ teamsRouter.post('/api/teams', isAuthenticated, async (req: Request, res: Respon
     
     const schema = z.object({
       name: z.string().min(1).max(100),
+      visibility: z.enum(['private', 'public']).default('private'),
+      allowCrossCrewAccess: z.boolean().default(false),
     });
     
     const validationResult = schema.safeParse(req.body);
@@ -64,12 +83,70 @@ teamsRouter.post('/api/teams', isAuthenticated, async (req: Request, res: Respon
     const team = await storage.createTeam({
       name: validationResult.data.name,
       ownerId: req.user.id,
+      visibility: validationResult.data.visibility,
+      allowCrossCrewAccess: validationResult.data.allowCrossCrewAccess,
     });
     
     res.status(201).json(team);
   } catch (error) {
     console.error('Error creating team:', error);
     res.status(500).json({ error: 'Failed to create team' });
+  }
+});
+
+// Get team admins
+teamsRouter.get('/api/teams/:id/admins', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const admins = await storage.getTeamAdmins(teamId);
+    res.json(admins);
+  } catch (error) {
+    console.error('Error fetching team admins:', error);
+    res.status(500).json({ error: 'Failed to fetch team admins' });
+  }
+});
+
+// Update team crew settings
+teamsRouter.patch('/api/teams/:id/crew-settings', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ error: 'Invalid team ID' });
+    }
+    
+    const schema = z.object({
+      visibility: z.enum(['private', 'public']).optional(),
+      allowCrossCrewAccess: z.boolean().optional(),
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Invalid crew settings', details: validationResult.error.errors });
+    }
+    
+    // Update team settings
+    const updateStmt = storage.db.prepare(`
+      UPDATE teams 
+      SET visibility = COALESCE(?, visibility), 
+          allow_cross_crew_access = COALESCE(?, allow_cross_crew_access)
+      WHERE id = ?
+    `);
+    
+    updateStmt.run(
+      validationResult.data.visibility,
+      validationResult.data.allowCrossCrewAccess ? 1 : 0,
+      teamId
+    );
+    
+    const updatedTeam = await storage.getTeam(teamId);
+    res.json(updatedTeam);
+  } catch (error) {
+    console.error('Error updating crew settings:', error);
+    res.status(500).json({ error: 'Failed to update crew settings' });
   }
 });
 
@@ -256,15 +333,71 @@ teamsRouter.delete('/api/teams/:teamId/members/:userId', isAuthenticated, async 
       return res.status(400).json({ error: 'Cannot remove the team owner' });
     }
     
-    const success = await storage.removeTeamMember(teamId, userId);
-    if (!success) {
-      return res.status(500).json({ error: 'Failed to remove team member' });
+    try {
+      const success = await storage.removeTeamMember(teamId, userId);
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to remove team member' });
+      }
+      
+      res.status(204).end();
+    } catch (adminError: any) {
+      if (adminError.message.includes('last admin')) {
+        return res.status(400).json({ error: adminError.message });
+      }
+      throw adminError;
     }
-    
-    res.status(204).end();
   } catch (error) {
     console.error('Error removing team member:', error);
     res.status(500).json({ error: 'Failed to remove team member' });
+  }
+});
+
+// Update team member role
+teamsRouter.patch('/api/teams/:teamId/members/:userId/role', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const teamId = parseInt(req.params.teamId);
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(teamId) || isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid team ID or user ID' });
+    }
+    
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    // Only the team owner can update member roles
+    const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
+    if (ownerId !== req.user?.id) {
+      return res.status(403).json({ error: 'Only team owners can update member roles' });
+    }
+    
+    const schema = z.object({
+      role: z.enum(['member', 'admin']),
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Invalid role data', details: validationResult.error.errors });
+    }
+    
+    try {
+      const updatedMember = await storage.updateTeamMemberRole(teamId, userId, validationResult.data.role);
+      if (!updatedMember) {
+        return res.status(404).json({ error: 'Team member not found' });
+      }
+      
+      res.json(updatedMember);
+    } catch (adminError: any) {
+      if (adminError.message.includes('last admin')) {
+        return res.status(400).json({ error: adminError.message });
+      }
+      throw adminError;
+    }
+  } catch (error) {
+    console.error('Error updating team member role:', error);
+    res.status(500).json({ error: 'Failed to update team member role' });
   }
 });
 

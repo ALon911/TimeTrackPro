@@ -43,6 +43,8 @@ export const teams = sqliteTable("teams", {
   ownerId: integer("owner_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  visibility: text("visibility").notNull().default("private"), // Options: private, public
+  allowCrossCrewAccess: integer("allow_cross_crew_access", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -51,6 +53,8 @@ export const teams = sqliteTable("teams", {
 export const insertTeamSchema = createInsertSchema(teams).pick({
   name: true,
   ownerId: true,
+  visibility: true,
+  allowCrossCrewAccess: true,
 });
 
 // Team members schema (relationship between users and teams)

@@ -44,7 +44,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API health check
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
+    const isHealthy = storage.isDatabaseHealthy();
+    res.json({ 
+      status: "ok", 
+      database: isHealthy ? "healthy" : "unhealthy",
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Database regeneration endpoint (for development/debugging)
+  app.post("/api/admin/regenerate-db", (_req, res) => {
+    try {
+      storage.regenerateDatabase();
+      res.json({ 
+        status: "success", 
+        message: "Database regenerated successfully",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Database regeneration failed:', error);
+      res.status(500).json({ 
+        status: "error", 
+        message: "Failed to regenerate database",
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
   });
   
   // פונקציה משותפת למשלוח קובץ HTML ראשי

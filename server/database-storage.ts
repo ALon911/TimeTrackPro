@@ -39,26 +39,51 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.db = new Database(path.join(dbDir, 'timetrack.db'));
+    const dbPath = path.join(dbDir, 'timetrack.db');
     
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON');
+    // Check if database file exists, if not, create it
+    if (!fs.existsSync(dbPath)) {
+      console.log('📁 Database file not found, creating new database...');
+    }
     
-    // Initialize the session store
-    const SQLiteSessionStore = SQLiteStore(session);
-    this.sessionStore = new SQLiteSessionStore({
-      client: this.db,
-      expired: {
-        clear: true,
-        intervalMs: 24 * 60 * 60 * 1000 // ms = 24 hours
+    try {
+      this.db = new Database(dbPath);
+      
+      // Enable foreign keys
+      this.db.pragma('foreign_keys = ON');
+      
+      // Initialize the session store
+      const SQLiteSessionStore = SQLiteStore(session);
+      this.sessionStore = new SQLiteSessionStore({
+        client: this.db,
+        expired: {
+          clear: true,
+          intervalMs: 24 * 60 * 60 * 1000 // ms = 24 hours
+        }
+      });
+      
+      this.initializeDatabase();
+      this.seedDatabaseIfEmpty();
+      
+      console.log('✅ Database initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize database:', error);
+      
+      // If database initialization fails, try to regenerate it
+      console.log('🔄 Attempting to regenerate database...');
+      try {
+        this.regenerateDatabase();
+        console.log('✅ Database regenerated successfully');
+      } catch (regenerateError) {
+        console.error('❌ Failed to regenerate database:', regenerateError);
+        throw new Error(`Database initialization and regeneration failed: ${error.message}`);
       }
-    });
-    
-    this.initializeDatabase();
-    this.seedDatabaseIfEmpty();
+    }
   }
 
   private initializeDatabase() {
+    console.log('🔧 Initializing database schema...');
+    
     // Create users table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -76,6 +101,8 @@ export class DatabaseStorage implements IStorage {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         owner_id INTEGER NOT NULL,
+        visibility TEXT NOT NULL DEFAULT 'private',
+        allow_cross_crew_access INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -159,9 +186,13 @@ export class DatabaseStorage implements IStorage {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+    
+    console.log('✅ Database schema initialized successfully');
   }
 
   private seedDatabaseIfEmpty() {
+    console.log('🌱 Checking if database needs seeding...');
+    
     // Check if users table is empty
     const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
     
@@ -266,6 +297,65 @@ export class DatabaseStorage implements IStorage {
           1 // isManual true
         );
       }
+    }
+    
+    console.log('✅ Database seeding completed');
+  }
+
+  /**
+   * Checks if the database is healthy and accessible
+   */
+  public isDatabaseHealthy(): boolean {
+    try {
+      // Try to execute a simple query
+      this.db.prepare('SELECT 1').get();
+      return true;
+    } catch (error) {
+      console.error('Database health check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Regenerates the database by recreating all tables and seeding with default data
+   * This method can be called when the database file is deleted or corrupted
+   */
+  public regenerateDatabase(): void {
+    console.log('🔄 Regenerating database...');
+    
+    try {
+      // Close the current database connection
+      this.db.close();
+      
+      // Remove the database file if it exists
+      const dbPath = path.join(dbDir, 'timetrack.db');
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+        console.log('🗑️ Removed existing database file');
+      }
+      
+      // Recreate the database
+      this.db = new Database(dbPath);
+      this.db.pragma('foreign_keys = ON');
+      
+      // Reinitialize the session store
+      const SQLiteSessionStore = SQLiteStore(session);
+      this.sessionStore = new SQLiteSessionStore({
+        client: this.db,
+        expired: {
+          clear: true,
+          intervalMs: 24 * 60 * 60 * 1000 // ms = 24 hours
+        }
+      });
+      
+      // Initialize schema and seed data
+      this.initializeDatabase();
+      this.seedDatabaseIfEmpty();
+      
+      console.log('✅ Database regenerated successfully');
+    } catch (error) {
+      console.error('❌ Failed to regenerate database:', error);
+      throw new Error(`Database regeneration failed: ${error.message}`);
     }
   }
 
@@ -831,14 +921,82 @@ export class DatabaseStorage implements IStorage {
     return stmt.all(userId) as Team[];
   }
 
+  // Get all teams (for admin purposes, respecting crew isolation)
+  async getAllTeams(userId: number): Promise<Team[]> {
+    // First get teams where user is a member
+    const userTeams = await this.getTeams(userId);
+    
+    // Get teams that allow cross-crew access
+    const crossCrewStmt = this.db.prepare(`
+      SELECT DISTINCT t.*
+      FROM teams t
+      WHERE t.allow_cross_crew_access = 1
+      AND t.id NOT IN (
+        SELECT tm.team_id 
+        FROM team_members tm 
+        WHERE tm.user_id = ?
+      )
+    `);
+    
+    const crossCrewTeams = crossCrewStmt.all(userId) as Team[];
+    
+    return [...userTeams, ...crossCrewTeams];
+  }
+
+  // Check if a team has at least one admin (owner or admin role)
+  async hasTeamAdmin(teamId: number): Promise<boolean> {
+    const stmt = this.db.prepare(`
+      SELECT COUNT(*) as count
+      FROM team_members
+      WHERE team_id = ? AND role IN ('owner', 'admin')
+    `);
+    
+    const result = stmt.get(teamId) as { count: number };
+    return result.count > 0;
+  }
+
+  // Get team admins
+  async getTeamAdmins(teamId: number): Promise<(TeamMember & { user: User })[]> {
+    const stmt = this.db.prepare(`
+      SELECT tm.*, u.id as user_id, u.email
+      FROM team_members tm
+      JOIN users u ON tm.user_id = u.id
+      WHERE tm.team_id = ? AND tm.role IN ('owner', 'admin')
+    `);
+    
+    const members = stmt.all(teamId) as any[];
+    
+    return members.map(member => ({
+      id: member.id,
+      teamId: member.team_id,
+      userId: member.user_id,
+      role: member.role,
+      joinedAt: member.joined_at || new Date().toISOString(),
+      user: {
+        id: member.user_id,
+        email: member.email,
+        password: '',
+        createdAt: new Date().toISOString()
+      }
+    }));
+  }
+
   async getTeam(id: number): Promise<Team | undefined> {
     const stmt = this.db.prepare('SELECT * FROM teams WHERE id = ?');
     return stmt.get(id) as Team | undefined;
   }
 
   async createTeam(team: InsertTeam): Promise<Team> {
-    const stmt = this.db.prepare('INSERT INTO teams (name, owner_id) VALUES (?, ?)');
-    const info = stmt.run(team.name, team.ownerId);
+    const stmt = this.db.prepare(`
+      INSERT INTO teams (name, owner_id, visibility, allow_cross_crew_access) 
+      VALUES (?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      team.name, 
+      team.ownerId, 
+      team.visibility || 'private',
+      team.allowCrossCrewAccess ? 1 : 0
+    );
     
     // Also add the owner as a member with 'owner' role
     await this.addTeamMember({
@@ -961,6 +1119,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async removeTeamMember(teamId: number, userId: number): Promise<boolean> {
+    // Check if this is the last admin
+    const hasAdmin = await this.hasTeamAdmin(teamId);
+    if (!hasAdmin) {
+      throw new Error('Cannot remove the last admin from the team');
+    }
+    
+    // Check if the user being removed is an admin
+    const memberStmt = this.db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?');
+    const member = memberStmt.get(teamId, userId) as { role: string } | undefined;
+    
+    if (member && (member.role === 'owner' || member.role === 'admin')) {
+      // Check if there are other admins
+      const adminCountStmt = this.db.prepare(`
+        SELECT COUNT(*) as count
+        FROM team_members
+        WHERE team_id = ? AND role IN ('owner', 'admin') AND user_id != ?
+      `);
+      const adminCount = adminCountStmt.get(teamId, userId) as { count: number };
+      
+      if (adminCount.count === 0) {
+        throw new Error('Cannot remove the last admin from the team');
+      }
+    }
+    
     const stmt = this.db.prepare('DELETE FROM team_members WHERE team_id = ? AND user_id = ?');
     const result = stmt.run(teamId, userId);
     
@@ -968,6 +1150,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTeamMemberRole(teamId: number, userId: number, role: string): Promise<TeamMember | undefined> {
+    // Check if the user being updated is currently an admin
+    const currentMemberStmt = this.db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?');
+    const currentMember = currentMemberStmt.get(teamId, userId) as { role: string } | undefined;
+    
+    if (currentMember && (currentMember.role === 'owner' || currentMember.role === 'admin')) {
+      // If demoting from admin to member, check if there are other admins
+      if (role === 'member') {
+        const adminCountStmt = this.db.prepare(`
+          SELECT COUNT(*) as count
+          FROM team_members
+          WHERE team_id = ? AND role IN ('owner', 'admin') AND user_id != ?
+        `);
+        const adminCount = adminCountStmt.get(teamId, userId) as { count: number };
+        
+        if (adminCount.count === 0) {
+          throw new Error('Cannot demote the last admin to member');
+        }
+      }
+    }
+    
     const stmt = this.db.prepare('UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?');
     stmt.run(role, teamId, userId);
     

@@ -32,6 +32,11 @@ export interface TimeEntryFilters {
 
 export interface IStorage {
   db?: any; // Access to database object for debugging
+  
+  // Database health and regeneration methods
+  isDatabaseHealthy(): boolean;
+  regenerateDatabase(): void;
+  
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>; // Kept for backward compatibility
@@ -65,10 +70,15 @@ export interface IStorage {
   
   // Team methods
   getTeams(userId: number): Promise<Team[]>;
+  getAllTeams(userId: number): Promise<Team[]>;
   getTeam(id: number): Promise<Team | undefined>;
   createTeam(team: InsertTeam): Promise<Team>;
   updateTeam(id: number, teamData: Partial<{ name: string }>): Promise<Team | undefined>;
   deleteTeam(id: number): Promise<boolean>;
+  
+  // Team admin methods
+  hasTeamAdmin(teamId: number): Promise<boolean>;
+  getTeamAdmins(teamId: number): Promise<(TeamMember & { user: User })[]>;
   
   // Team members methods
   getTeamMembers(teamId: number): Promise<(TeamMember & { user: User })[]>;
