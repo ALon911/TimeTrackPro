@@ -6,7 +6,8 @@ import {
   BarChart, 
   Settings, 
   Users, 
-  LogOut 
+  LogOut,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
