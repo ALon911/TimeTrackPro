@@ -169,19 +169,19 @@ export function TimeEntriesTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">תיאור</TableHead>
-              <TableHead className="text-right">נושא</TableHead>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">זמן</TableHead>
-              <TableHead className="text-right">משך</TableHead>
-              <TableHead className="text-right"></TableHead>
+              <TableHead className="text-center">תיאור</TableHead>
+              <TableHead className="text-center">נושא</TableHead>
+              <TableHead className="text-center">תאריך</TableHead>
+              <TableHead className="text-center">זמן</TableHead>
+              <TableHead className="text-center">משך</TableHead>
+              <TableHead className="text-center"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredEntries?.slice(0, limit).map((entry: any) => (
               <TableRow key={entry.id}>
-                <TableCell className="font-medium">{entry.description || "---"}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium text-center">{entry.description || "---"}</TableCell>
+                <TableCell className="text-center">
                   <span 
                     className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                     style={{ 
@@ -192,14 +192,14 @@ export function TimeEntriesTable({
                     {getTopicName(entry.topicId)}
                   </span>
                 </TableCell>
-                <TableCell className="text-neutral-600">{formatDate(entry.startTime)}</TableCell>
-                <TableCell className="text-neutral-600">{formatTimeRange(entry.startTime, entry.endTime)}</TableCell>
-                <TableCell className="text-neutral-600">
+                <TableCell className="text-neutral-600 text-center" dir="rtl">{formatDate(entry.startTime)}</TableCell>
+                <TableCell className="text-neutral-600 text-center">{formatTimeRange(entry.startTime, entry.endTime)}</TableCell>
+                <TableCell className="text-neutral-600 text-center">
                   {Math.floor(entry.duration / 3600)}:
                   {Math.floor((entry.duration % 3600) / 60).toString().padStart(2, '0')}:
                   {Math.floor(entry.duration % 60).toString().padStart(2, '0')}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">

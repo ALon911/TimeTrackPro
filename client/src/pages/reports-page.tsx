@@ -485,7 +485,7 @@ export default function ReportsPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                           <thead>
-                            <tr className="border-b text-right">
+                            <tr className="border-b text-center">
                               <th className="py-2 px-4 text-xs font-semibold">משתמש</th>
                               <th className="py-2 px-4 text-xs font-semibold">זמן כולל</th>
                               <th className="py-2 px-4 text-xs font-semibold">מספר משימות</th>
@@ -494,9 +494,9 @@ export default function ReportsPage() {
                           <tbody>
                             {teamMemberActivity.map((member: TeamMemberActivity) => (
                               <tr key={member.userId} className="border-b hover:bg-muted/50">
-                                <td className="py-2 px-4">{member.email}</td>
-                                <td className="py-2 px-4">{formatTime(member.totalSeconds || 0)}</td>
-                                <td className="py-2 px-4">{member.taskCount || 0}</td>
+                                <td className="py-2 px-4 text-center">{member.email}</td>
+                                <td className="py-2 px-4 text-center">{formatTime(member.totalSeconds || 0)}</td>
+                                <td className="py-2 px-4 text-center">{member.taskCount || 0}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -532,7 +532,7 @@ export default function ReportsPage() {
                         <div className="overflow-x-auto">
                           <table className="w-full border-collapse">
                             <thead>
-                              <tr className="border-b text-right">
+                              <tr className="border-b text-center">
                                 <th className="py-2 px-4 text-xs font-semibold">נושא</th>
                                 <th className="py-2 px-4 text-xs font-semibold">זמן כולל</th>
                                 <th className="py-2 px-4 text-xs font-semibold">אחוז</th>
@@ -541,14 +541,14 @@ export default function ReportsPage() {
                             <tbody>
                               {teamTopicDistribution.map((item: TeamTopicDistribution) => (
                                 <tr key={item.topic.id} className="border-b hover:bg-muted/50">
-                                  <td className="py-2 px-4">
-                                    <div className="flex items-center gap-2">
+                                  <td className="py-2 px-4 text-center">
+                                    <div className="flex items-center justify-center gap-2">
                                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.topic.color || '#888' }}></div>
                                       <span>{item.topic.name}</span>
                                     </div>
                                   </td>
-                                  <td className="py-2 px-4">{formatTime(item.totalSeconds || 0)}</td>
-                                  <td className="py-2 px-4">{item.percentage?.toFixed(1) || 0}%</td>
+                                  <td className="py-2 px-4 text-center">{formatTime(item.totalSeconds || 0)}</td>
+                                  <td className="py-2 px-4 text-center">{item.percentage?.toFixed(1) || 0}%</td>
                                 </tr>
                               ))}
                             </tbody>

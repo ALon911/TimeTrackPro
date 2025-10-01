@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Lightbulb, CheckCircle, XCircle, RefreshCw, Sparkles, BarChart3, Brain } from 'lucide-react';
+import { Loader2, Brain, CheckCircle, XCircle, RefreshCw, Sparkles, BarChart3, Lightbulb } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SummaryInsights } from '@/components/summary-insights';
+import { MobileHeader } from '@/components/mobile-header';
+import { MobileNavigation } from '@/components/mobile-navigation';
 
 interface AISuggestion {
   id: string;
@@ -157,7 +159,7 @@ export default function SuggestionsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('he-IL', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -191,14 +193,21 @@ export default function SuggestionsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">הצעות AI ותובנות</h1>
-          <p className="text-muted-foreground">
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Mobile Header */}
+      <MobileHeader />
+      
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto py-4 px-2 sm:px-4 md:px-6 lg:px-8 mb-16 md:mb-0">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2 dark:text-white">הצעות AI ותובנות</h1>
+          <p className="text-neutral-600 dark:text-neutral-400">
             המלצות ותובנות מותאמות אישית בהתבסס על נתוני מעקב הזמן שלך
           </p>
         </div>
+        
+        <div className="flex items-center justify-between mb-6">
+          <div></div>
         <Button
           onClick={handleGenerateSuggestions}
           disabled={isGenerating || generateSuggestionsMutation.isPending}
@@ -215,11 +224,11 @@ export default function SuggestionsPage() {
 
       <Tabs defaultValue="suggestions" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="suggestions" className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4" />
+          <TabsTrigger value="suggestions" className="flex items-center gap-2 text-right">
+            <Brain className="h-4 w-4" />
             הצעות AI
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
+          <TabsTrigger value="insights" className="flex items-center gap-2 text-right">
             <BarChart3 className="h-4 w-4" />
             סיכום ותובנות
           </TabsTrigger>
@@ -229,9 +238,9 @@ export default function SuggestionsPage() {
           {suggestions.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">אין הצעות עדיין</h3>
-                <p className="text-muted-foreground text-center mb-4">
+                <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2 text-right">אין הצעות עדיין</h3>
+                <p className="text-muted-foreground text-right mb-4">
                   אנחנו צריכים יותר נתונים על דפוסי העבודה שלך כדי ליצור הצעות מותאמות אישית.
                   <br />
                   התחל לעקוב אחר הזמן שלך וחזור בעוד כמה ימים!
@@ -252,7 +261,7 @@ export default function SuggestionsPage() {
                 <Card key={suggestion.id} className={`transition-all duration-200 ${!suggestion.isRead ? 'ring-2 ring-blue-200' : ''}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <div className="space-y-2">
+                      <div className="space-y-2 text-right">
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-lg">{suggestion.title}</CardTitle>
                           {!suggestion.isRead && (
@@ -274,18 +283,18 @@ export default function SuggestionsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-muted-foreground" dir="rtl">
                           {formatDate(suggestion.createdAt)}
                         </span>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-base text-right">
                       {suggestion.description}
                     </CardDescription>
                     
-                    <div className="bg-muted/50 p-4 rounded-lg">
+                    <div className="bg-muted/50 p-4 rounded-lg text-right">
                       <h4 className="font-semibold mb-2 flex items-center gap-2">
                         <Lightbulb className="h-4 w-4" />
                         צעדים מעשיים
@@ -339,6 +348,10 @@ export default function SuggestionsPage() {
           <SummaryInsights />
         </TabsContent>
       </Tabs>
+      </div>
+      
+      {/* Mobile Navigation */}
+      <MobileNavigation />
     </div>
   );
 }

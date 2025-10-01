@@ -12,7 +12,7 @@ export function Sidebar() {
   const { myInvitations, isLoadingMyInvitations } = useTeams();
   
   return (
-    <aside className="hidden md:flex md:w-64 bg-card shadow-md flex-col h-screen sticky top-0">
+    <aside className="hidden md:flex md:w-64 bg-card shadow-md flex-col h-screen sticky top-0" dir="rtl">
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">TimeTracker</h1>
@@ -60,6 +60,20 @@ export function Sidebar() {
                 }`}>
                   <span className="material-icons ml-3">folder</span>
                   <span>נושאים</span>
+                </div>
+              </Link>
+            </div>
+          </li>
+          <li className="mb-1">
+            <div className="mx-2">
+              <Link href="/suggestions">
+                <div className={`flex items-center px-4 py-3 font-medium rounded-md ${
+                  location === "/suggestions" 
+                    ? "text-primary bg-primary/10" 
+                    : "text-foreground hover:bg-muted"
+                }`}>
+                  <span className="material-icons ml-3">lightbulb</span>
+                  <span>הצעות AI</span>
                 </div>
               </Link>
             </div>

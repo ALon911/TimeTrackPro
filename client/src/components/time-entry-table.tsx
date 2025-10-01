@@ -89,19 +89,19 @@ export function TimeEntryTable({ entries, onEdit, showAll = false }: TimeEntryTa
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHeader className="text-right font-medium text-neutral-500">תיאור</TableHeader>
-              <TableHeader className="text-right font-medium text-neutral-500">נושא</TableHeader>
-              <TableHeader className="text-right font-medium text-neutral-500">תאריך</TableHeader>
-              <TableHeader className="text-right font-medium text-neutral-500">זמן</TableHeader>
-              <TableHeader className="text-right font-medium text-neutral-500">משך</TableHeader>
-              <TableHeader className="text-right font-medium text-neutral-500"></TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500">תיאור</TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500">נושא</TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500">תאריך</TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500">זמן</TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500">משך</TableHeader>
+              <TableHeader className="text-center font-medium text-neutral-500"></TableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entries.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell className="font-medium">{entry.description || "—"}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium text-center">{entry.description || "—"}</TableCell>
+                <TableCell className="text-center">
                   <span 
                     className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
                     style={{ 
@@ -112,10 +112,10 @@ export function TimeEntryTable({ entries, onEdit, showAll = false }: TimeEntryTa
                     {entry.topic.name}
                   </span>
                 </TableCell>
-                <TableCell className="text-neutral-600">{entry.date}</TableCell>
-                <TableCell className="text-neutral-600">{entry.timeRange}</TableCell>
-                <TableCell className="text-neutral-600">{entry.duration}</TableCell>
-                <TableCell>
+                <TableCell className="text-neutral-600 text-center">{entry.date}</TableCell>
+                <TableCell className="text-neutral-600 text-center">{entry.timeRange}</TableCell>
+                <TableCell className="text-neutral-600 text-center">{entry.duration}</TableCell>
+                <TableCell className="text-center">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 

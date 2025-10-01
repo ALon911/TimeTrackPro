@@ -68,7 +68,7 @@ export function StatCard({
         
         {secondaryValue && (
           <div className="mt-4 flex items-center">
-            <span className={`text-sm font-medium ${color || 'text-primary'}`}>
+            <span className={`text-sm font-medium ${color || 'text-primary'}`} dir="rtl">
               {secondaryValue}
             </span>
           </div>

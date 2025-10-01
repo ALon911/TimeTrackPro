@@ -49,6 +49,11 @@ export function MobileSidebar({ onClose }: MobileSidebarProps) {
       icon: <FolderClosed className="h-5 w-5 ml-3" /> 
     },
     { 
+      href: "/suggestions", 
+      label: "הצעות AI", 
+      icon: <Lightbulb className="h-5 w-5 ml-3" /> 
+    },
+    { 
       href: "/reports", 
       label: "דוחות", 
       icon: <BarChart className="h-5 w-5 ml-3" /> 

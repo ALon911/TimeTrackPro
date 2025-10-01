@@ -106,7 +106,7 @@ export default function TeamStatsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{formatTime(teamStats.totalSeconds)}</div>
-                  <p className="text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1" dir="rtl">
                     {teamStats.totalSeconds === 0 
                       ? "אין נתוני זמן לצוות זה עדיין" 
                       : formatDurationHumanReadable(teamStats.totalSeconds)}
@@ -161,7 +161,7 @@ export default function TeamStatsPage() {
                     <span>זמן כולל:</span>
                     <span className="font-medium">{formatTime(member.totalSeconds)}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground mb-2">
+                  <div className="text-sm text-muted-foreground mb-2" dir="rtl">
                     {member.totalSeconds === 0 
                       ? "אין נתוני זמן לחבר זה עדיין" 
                       : formatDurationHumanReadable(member.totalSeconds)}
@@ -169,7 +169,7 @@ export default function TeamStatsPage() {
                   
                   <div className="flex items-center justify-between mb-1">
                     <span>פעילות אחרונה:</span>
-                    <span className="font-medium">{formatDate(member.lastActiveDay)}</span>
+                    <span className="font-medium" dir="rtl">{formatDate(member.lastActiveDay)}</span>
                   </div>
                   
                   <div className="mt-4">
@@ -225,7 +225,7 @@ export default function TeamStatsPage() {
                     <span>זמן כולל:</span>
                     <span className="font-medium">{formatTime(topic.totalSeconds)}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground mb-2">
+                  <div className="text-sm text-muted-foreground mb-2" dir="rtl">
                     {topic.totalSeconds === 0 
                       ? "אין נתוני זמן לנושא זה עדיין" 
                       : formatDurationHumanReadable(topic.totalSeconds)}

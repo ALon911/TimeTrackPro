@@ -8,8 +8,8 @@ export function MobileNavigation() {
     { href: "/", label: "דף הבית", icon: <Home className="h-5 w-5" /> },
     { href: "/time-entries", label: "מעקב", icon: <Clock className="h-5 w-5" /> },
     { href: "/topics", label: "נושאים", icon: <FolderClosed className="h-5 w-5" /> },
-    { href: "/reports", label: "דוחות", icon: <BarChart className="h-5 w-5" /> },
     { href: "/suggestions", label: "הצעות", icon: <Lightbulb className="h-5 w-5" /> },
+    { href: "/reports", label: "דוחות", icon: <BarChart className="h-5 w-5" /> },
     { href: "/teams", label: "צוותים", icon: <Users className="h-5 w-5" /> },
   ];
   

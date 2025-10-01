@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon, Share2Icon } from 'lucide-react';
+import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon, Share2Icon, Loader2 } from 'lucide-react';
 import { audioManager } from "@/lib/audio-utils";
 import { useSyncedTimer } from '@/hooks/use-synced-timer';
 
@@ -19,8 +19,48 @@ export function SyncedTimeTracker() {
   const [description, setDescription] = useState<string>("");
   const [customMinutes, setCustomMinutes] = useState<number>(0);
   const [isSharing, setIsSharing] = useState<boolean>(false);
+  const [hasSaved, setHasSaved] = useState<boolean>(false);
   
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Mutation to save time entry to database
+  const createTimeEntryMutation = useMutation({
+    mutationFn: async (timeEntry: {
+      topicId: number;
+      description: string | null;
+      startTime: string;
+      endTime: string;
+      duration: number;
+    }) => {
+      const res = await apiRequest("POST", "/api/time-entries", timeEntry);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch time entries and stats
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/daily"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/weekly"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/recent-sessions"] });
+      
+      toast({
+        title: "זמן נשמר בהצלחה",
+        description: `נוספה רשומת זמן חדשה: ${description || "ללא תיאור"}`,
+      });
+    },
+    onError: (error) => {
+      console.error('❌ Failed to save time entry:', error);
+      toast({
+        title: "שגיאה בשמירת הזמן",
+        description: "לא ניתן לשמור את הזמן. אנא נסה שוב.",
+        variant: "destructive",
+      });
+    }
+  });
   
   // Use the synchronized timer hook
   const {
@@ -40,19 +80,56 @@ export function SyncedTimeTracker() {
     reset,
     formatTime,
     isLoading: timerLoading,
+    isStarting,
+    isUpdating,
+    isStopping,
     error: timerError
   } = useSyncedTimer({ autoSync: true, syncInterval: 2000 });
   
   // Handle timer completion
   useEffect(() => {
-    if (isCompleted && isCountDown) {
+    if (isCompleted && isCountDown && !hasSaved) {
+      console.log('🎉 Timer completed, saving to database...');
+      setHasSaved(true); // Prevent multiple saves
+      
       audioManager.playTimerComplete();
+      
+      // Save time entry to database when timer completes
+      if (topicId && startTime) {
+        const endTime = new Date();
+        const startTimeDate = new Date(startTime);
+        const duration = Math.floor((endTime.getTime() - startTimeDate.getTime()) / 1000);
+        
+        console.log('💾 Saving time entry to database:', {
+          topicId,
+          description,
+          startTime: startTimeDate.toISOString(),
+          endTime: endTime.toISOString(),
+          duration
+        });
+        
+        createTimeEntryMutation.mutate({
+          topicId,
+          description: description || null,
+          startTime: startTimeDate.toISOString(),
+          endTime: endTime.toISOString(),
+          duration: duration,
+        });
+      }
+      
       toast({
         title: "הטיימר הסתיים!",
-        description: "טיימר הספירה לאחור שלך הסתיים.",
+        description: "טיימר הספירה לאחור שלך הסתיים והזמן נשמר.",
       });
     }
-  }, [isCompleted, isCountDown, toast]);
+  }, [isCompleted, isCountDown, topicId, startTime, description, hasSaved, createTimeEntryMutation, toast]);
+  
+  // Reset save flag when starting a new timer
+  useEffect(() => {
+    if (isRunning && !isPaused && !isCompleted) {
+      setHasSaved(false);
+    }
+  }, [isRunning, isPaused, isCompleted]);
   
   // Handle timer errors
   useEffect(() => {
@@ -65,25 +142,6 @@ export function SyncedTimeTracker() {
     }
   }, [timerError, toast]);
   
-  // Start regular timer
-  const startRegularTimer = useCallback(() => {
-    if (!selectedTopic) {
-      toast({
-        title: "אנא בחר נושא",
-        description: "עליך לבחור נושא לפני התחלת הטיימר.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    audioManager.playTimerStart();
-    start(parseInt(selectedTopic), description, undefined, false);
-    
-    toast({
-      title: "הטיימר התחיל",
-      description: "הטיימר שלך פועל כעת ומסונכרן בכל המכשירים.",
-    });
-  }, [selectedTopic, description, start, toast]);
   
   // Start countdown timer
   const startCountdownTimer = useCallback((minutes: number) => {
@@ -108,55 +166,92 @@ export function SyncedTimeTracker() {
   
   // Handle timer controls
   const handleStart = useCallback(() => {
-    if (isRunning) {
-      if (isPaused) {
+    console.log('🔘 Button clicked:', { isRunning, isPaused });
+    
+    // If timer is paused, resume it
+    if (isPaused) {
+      console.log('▶️ Resuming timer');
+      try {
         resume();
         toast({
           title: "הטיימר חודש",
           description: "הטיימר שלך חודש ומסונכרן.",
         });
-      } else {
+      } catch (error) {
+        console.error('❌ Resume failed:', error);
+        toast({
+          title: "שגיאה בחידוש הטיימר",
+          description: "לא ניתן לחדש את הטיימר. אנא נסה שוב.",
+          variant: "destructive",
+        });
+      }
+    } else if (isRunning) {
+      // If timer is running, pause it
+      console.log('⏸️ Pausing timer');
+      try {
         pause();
         toast({
           title: "הטיימר הושהה",
           description: "הטיימר שלך הושהה ומסונכרן.",
         });
+      } catch (error) {
+        console.error('❌ Pause failed:', error);
+        toast({
+          title: "שגיאה בהשהיית הטיימר",
+          description: "לא ניתן להשהות את הטיימר. אנא נסה שוב.",
+          variant: "destructive",
+        });
       }
     } else {
-      startRegularTimer();
+      // Start new countdown timer with current customMinutes
+      if (customMinutes <= 0) {
+        toast({
+          title: "משך זמן לא תקין",
+          description: "אנא הכנס מספר דקות תקין (לפחות דקה אחת).",
+          variant: "destructive",
+        });
+        return;
+      }
+      console.log('🚀 Starting countdown timer');
+      startCountdownTimer(customMinutes);
     }
-  }, [isRunning, isPaused, resume, pause, startRegularTimer, toast]);
+  }, [isRunning, isPaused, resume, pause, customMinutes, startCountdownTimer, toast]);
   
   const handleStop = useCallback(() => {
-    stop();
-    setSelectedTopic("");
-    setDescription("");
-    toast({
-      title: "הטיימר נעצר",
-      description: "הטיימר שלך נעצר ומסונכרן.",
-    });
+    try {
+      stop();
+      setSelectedTopic("");
+      setDescription("");
+      toast({
+        title: "הטיימר נעצר",
+        description: "הטיימר שלך נעצר ומסונכרן.",
+      });
+    } catch (error) {
+      console.error('❌ Stop failed:', error);
+      toast({
+        title: "שגיאה בעצירת הטיימר",
+        description: "לא ניתן לעצור את הטיימר. אנא נסה שוב.",
+        variant: "destructive",
+      });
+    }
   }, [stop, toast]);
   
   const handleReset = useCallback(() => {
-    reset();
-    setSelectedTopic("");
-    setDescription("");
-    setCustomMinutes(0);
-  }, [reset]);
-  
-  // Handle countdown timer start
-  const handleStartCountdown = useCallback(() => {
-    if (customMinutes <= 0) {
+    try {
+      reset();
+      setSelectedTopic("");
+      setDescription("");
+      setCustomMinutes(0);
+    } catch (error) {
+      console.error('❌ Reset failed:', error);
       toast({
-        title: "משך זמן לא תקין",
-        description: "אנא הכנס מספר דקות תקין (לפחות דקה אחת).",
+        title: "שגיאה באיפוס הטיימר",
+        description: "לא ניתן לאפס את הטיימר. אנא נסה שוב.",
         variant: "destructive",
       });
-      return;
     }
-    
-    startCountdownTimer(customMinutes);
-  }, [customMinutes, startCountdownTimer, toast]);
+  }, [reset, toast]);
+  
   
   // Format display time
   const displayTime = formatTime(seconds);
@@ -189,15 +284,19 @@ export function SyncedTimeTracker() {
       
       {/* Timer Controls */}
       <div className="flex justify-center space-x-4">
-        {!isRunning ? (
+        {!isRunning && !isPaused ? (
           <Button
             onClick={handleStart}
-            disabled={timerLoading || !selectedTopic}
+            disabled={isStarting || !selectedTopic || customMinutes <= 0}
             size="lg"
             className="px-8"
           >
-            <PlayIcon className="w-5 h-5 mr-2" />
-            התחל טיימר
+            {isStarting ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <TimerIcon className="w-5 h-5 mr-2" />
+            )}
+            {isStarting ? "מתחיל..." : `התחל ${customMinutes} דקות`}
           </Button>
         ) : (
           <>
@@ -206,8 +305,11 @@ export function SyncedTimeTracker() {
               variant={isPaused ? "default" : "secondary"}
               size="lg"
               className="px-6"
+              disabled={isUpdating}
             >
-              {isPaused ? (
+              {isUpdating ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : isPaused ? (
                 <>
                   <PlayIcon className="w-5 h-5 mr-2" />
                   המשך
@@ -225,9 +327,14 @@ export function SyncedTimeTracker() {
               variant="destructive"
               size="lg"
               className="px-6"
+              disabled={isStopping}
             >
-              <XIcon className="w-5 h-5 mr-2" />
-              עצור
+              {isStopping ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <XIcon className="w-5 h-5 mr-2" />
+              )}
+              {isStopping ? "עוצר..." : "עצור"}
             </Button>
           </>
         )}
@@ -248,7 +355,7 @@ export function SyncedTimeTracker() {
       <div className="space-y-2">
         <Label htmlFor="topic">בחר נושא</Label>
         <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-1/3">
             <SelectValue placeholder="בחר נושא למעקב" />
           </SelectTrigger>
           <SelectContent>
@@ -332,15 +439,6 @@ export function SyncedTimeTracker() {
                 className="w-32"
               />
             </div>
-            
-            <Button
-              onClick={handleStartCountdown}
-              disabled={timerLoading || !selectedTopic || customMinutes <= 0}
-              className="mt-6"
-            >
-              <TimerIcon className="w-4 h-4 mr-2" />
-              התחל ספירה לאחור
-            </Button>
           </div>
         </div>
       )}

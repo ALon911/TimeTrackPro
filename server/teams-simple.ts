@@ -6,7 +6,6 @@ import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import { getActiveTimer, getTeamActiveTimers, setActiveTimer, removeActiveTimer, updateTimerState, getTimerWithElapsedTime, cleanupExpiredTimers } from './active-timers';
-import { ActiveTimer } from '@shared/schema';
 
 const teamsRouter = Router();
 
@@ -87,13 +86,15 @@ teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: 
       }
     }
     
-    const timerData: ActiveTimer = {
+    const timerData = {
       userId: req.user.id,
       topicId: validationResult.data.topicId || null,
       description: validationResult.data.description || null,
       startTime: new Date().toISOString(),
       duration: validationResult.data.duration || null,
-      isCountDown: validationResult.data.isCountDown
+      isCountDown: validationResult.data.isCountDown,
+      isRunning: true,
+      isPaused: false
     };
     
     setActiveTimer(req.user.id, timerData);
