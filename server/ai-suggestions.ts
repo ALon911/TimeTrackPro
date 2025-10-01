@@ -321,6 +321,12 @@ export class AISuggestionsService {
     };
   }
 
+  private isHebrewText(text: string): boolean {
+    // Check if text contains Hebrew characters
+    const hebrewRegex = /[\u0590-\u05FF]/;
+    return hebrewRegex.test(text);
+  }
+
   private async translateText(text: string): Promise<string> {
     if (!openai) {
       return text; // Return original if no API available
@@ -496,19 +502,23 @@ export class AISuggestionsService {
   // Save suggestions to database
   private async saveSuggestions(userId: number, suggestions: AISuggestion[]): Promise<void> {
     for (const suggestion of suggestions) {
-      const translatedSuggestion = await this.translateSuggestionToHebrew(suggestion);
+      // Check if suggestion is already in Hebrew (fallback suggestions)
+      const isAlreadyHebrew = this.isHebrewText(suggestion.title);
+      
+      const finalSuggestion = isAlreadyHebrew ? suggestion : await this.translateSuggestionToHebrew(suggestion);
+      
       await storage.createAISuggestion({
-        id: translatedSuggestion.id,
+        id: finalSuggestion.id,
         userId: userId,
-        type: translatedSuggestion.type,
-        title: translatedSuggestion.title,
-        description: translatedSuggestion.description,
-        actionable: translatedSuggestion.actionable,
-        priority: translatedSuggestion.priority,
-        confidence: Math.round(translatedSuggestion.confidence * 100), // Convert to 0-100 scale
-        isRead: translatedSuggestion.isRead,
-        isApplied: translatedSuggestion.isApplied,
-        createdAt: translatedSuggestion.createdAt
+        type: finalSuggestion.type,
+        title: finalSuggestion.title,
+        description: finalSuggestion.description,
+        actionable: finalSuggestion.actionable,
+        priority: finalSuggestion.priority,
+        confidence: Math.round(finalSuggestion.confidence * 100), // Convert to 0-100 scale
+        isRead: finalSuggestion.isRead,
+        isApplied: finalSuggestion.isApplied,
+        createdAt: finalSuggestion.createdAt
       });
     }
   }
