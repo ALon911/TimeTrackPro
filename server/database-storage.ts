@@ -638,6 +638,18 @@ export class DatabaseStorage implements IStorage {
     return result.changes > 0;
   }
 
+  async deleteAllTimeEntries(userId: number): Promise<boolean> {
+    try {
+      const stmt = this.db.prepare('DELETE FROM time_entries WHERE user_id = ?');
+      const result = stmt.run(userId);
+      console.log(`🗑️ Deleted ${result.changes} time entries for user ${userId}`);
+      return result.changes >= 0;
+    } catch (error) {
+      console.error('Error deleting all time entries:', error);
+      return false;
+    }
+  }
+
   // Statistics methods
   async getDailyStats(userId: number): Promise<TimeStat> {
     const today = new Date();

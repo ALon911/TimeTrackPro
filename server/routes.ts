@@ -1224,6 +1224,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all user's time entries
+  app.delete("/api/time-entries", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Delete all time entries for this user
+      const result = await storage.deleteAllTimeEntries(userId);
+      
+      if (result) {
+        res.json({ message: "All time entries deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete time entries" });
+      }
+    } catch (error) {
+      console.error("Error deleting all time entries:", error);
+      res.status(500).json({ message: "Failed to delete time entries" });
+    }
+  });
+
   // Statistics routes
   app.get("/api/stats/daily", isAuthenticated, async (req, res) => {
     try {

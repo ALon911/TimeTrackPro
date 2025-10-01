@@ -59,6 +59,7 @@ export interface IStorage {
   createTimeEntry(timeEntry: InsertTimeEntry): Promise<TimeEntry>;
   updateTimeEntry(id: number, timeEntry: Partial<InsertTimeEntry>): Promise<TimeEntry | undefined>;
   deleteTimeEntry(id: number): Promise<boolean>;
+  deleteAllTimeEntries(userId: number): Promise<boolean>;
   
   // Statistics methods
   getDailyStats(userId: number): Promise<TimeStat>;

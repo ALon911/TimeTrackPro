@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { MoreVertical, Loader2, Edit, Trash2 } from "lucide-react";
 import { format, isThisWeek, startOfWeek, endOfWeek } from "date-fns";
 import { he } from "date-fns/locale";
+import { formatDurationHumanReadable } from "@/lib/time-utils";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -194,10 +195,8 @@ export function TimeEntriesTable({
                 </TableCell>
                 <TableCell className="text-neutral-600 text-center" dir="rtl">{formatDate(entry.startTime)}</TableCell>
                 <TableCell className="text-neutral-600 text-center">{formatTimeRange(entry.startTime, entry.endTime)}</TableCell>
-                <TableCell className="text-neutral-600 text-center">
-                  {Math.floor(entry.duration / 3600)}:
-                  {Math.floor((entry.duration % 3600) / 60).toString().padStart(2, '0')}:
-                  {Math.floor(entry.duration % 60).toString().padStart(2, '0')}
+                <TableCell className="text-neutral-600 text-center" dir="rtl">
+                  {formatDurationHumanReadable(entry.duration)}
                 </TableCell>
                 <TableCell className="text-center">
                   <DropdownMenu>

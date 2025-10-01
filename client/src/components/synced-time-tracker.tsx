@@ -274,21 +274,58 @@ export function SyncedTimeTracker() {
     }
   }, [stop, toast]);
   
-  const handleReset = useCallback(() => {
+  const handleReset = useCallback(async () => {
     try {
+      // Stop server-side timer first
+      try {
+        await apiRequest('POST', '/api/timer/stop');
+        console.log('🛑 Stopped server-side timer');
+      } catch (error) {
+        console.log('⚠️ Server timer might not be running:', error);
+      }
+      
+      // Delete ALL time entries from database
+      try {
+        await apiRequest('DELETE', '/api/time-entries');
+        console.log('🗑️ Deleted all time entries from database');
+      } catch (error) {
+        console.log('⚠️ No time entries to delete or error:', error);
+      }
+      
+      // Reset local state
       reset();
       setSelectedTopic("");
       setDescription("");
       setCustomMinutes(0);
+      setHasSaved(false);
+      setIsInitialLoad(true);
       
-      // Clear localStorage timer data
+      // Clear ALL localStorage timer data
       localStorage.removeItem('synced_timer_state');
       localStorage.removeItem('timetracker_ui_data');
       localStorage.removeItem('timetracker_countdown');
+      localStorage.removeItem('timer_end_time');
+      localStorage.removeItem('timer_duration');
+      localStorage.removeItem('timer_is_paused');
+      localStorage.removeItem('timer_topic_id');
+      localStorage.removeItem('timer_description');
+      localStorage.removeItem('timer_start_time');
+      localStorage.removeItem('timer_is_running');
+      localStorage.removeItem('timer_is_completed');
+      
+      console.log('🧹 Cleared all timer data from localStorage');
+      
+      // Invalidate all queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['/api/time-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/daily'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/most-tracked'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/topic-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats/weekly-overview'] });
       
       toast({
-        title: "הטיימר אופס",
-        description: "הטיימר שלך אופס ומסונכרן.",
+        title: "הטיימר אופס לחלוטין",
+        description: "כל נתוני הטיימר נמחקו מהמסד נתונים ומהמכשיר.",
       });
     } catch (error) {
       console.error('❌ Reset failed:', error);
@@ -298,7 +335,7 @@ export function SyncedTimeTracker() {
         variant: "destructive",
       });
     }
-  }, [reset, toast]);
+  }, [reset, toast, queryClient]);
   
   
   // Format display time
@@ -387,16 +424,6 @@ export function SyncedTimeTracker() {
           </>
         )}
         
-        {(isRunning || isCompleted) && (
-          <Button
-            onClick={handleReset}
-            variant="outline"
-            size="lg"
-            className="px-6"
-          >
-            איפוס
-          </Button>
-        )}
       </div>
       
       {/* Topic Selection */}
