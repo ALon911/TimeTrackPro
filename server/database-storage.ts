@@ -830,7 +830,7 @@ export class DatabaseStorage implements IStorage {
       endDate: endOfWeek
     });
     
-    const daysOfWeek = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    const daysOfWeek = ['ש', 'ו', 'ה', 'ד', 'ג', 'ב', 'א']; // מימין לשמאל: שבת, שישי, חמישי, רביעי, שלישי, שני, ראשון
     const weekData: WeeklyData[] = [];
     
     // Initialize data for each day of the week

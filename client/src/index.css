@@ -50,6 +50,12 @@ input, select, textarea {
   direction: rtl !important;
 }
 
+/* Override for login/register inputs */
+input[dir="ltr"] {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
 html {
   font-family: 'Heebo', sans-serif;
 }

@@ -88,7 +88,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Hero Section */}
         <div className="bg-primary p-8 text-white md:w-1/2 flex flex-col justify-center">
@@ -125,19 +125,21 @@ export default function AuthPage() {
             <TabsContent value="login">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">התחברות</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-2xl text-right">התחברות</CardTitle>
+                  <CardDescription className="text-right">
                     הכנס את פרטי ההתחברות שלך להמשך.
                   </CardDescription>
                 </CardHeader>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-email">דוא״ל</Label>
+                      <Label htmlFor="login-email" className="text-right">דוא״ל</Label>
                       <Input
                         id="login-email"
                         type="email"
                         placeholder="הכנס כתובת דוא״ל"
+                        dir="ltr"
+                        className="text-left"
                         {...loginForm.register("email")}
                       />
                       {loginForm.formState.errors.email && (
@@ -148,11 +150,13 @@ export default function AuthPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="login-password">סיסמה</Label>
+                      <Label htmlFor="login-password" className="text-right">סיסמה</Label>
                       <Input
                         id="login-password"
                         type="password"
                         placeholder="הכנס סיסמה"
+                        dir="ltr"
+                        className="text-left"
                         {...loginForm.register("password")}
                       />
                       {loginForm.formState.errors.password && (
@@ -181,19 +185,21 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">הרשמה</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-2xl text-right">הרשמה</CardTitle>
+                  <CardDescription className="text-right">
                     צור חשבון חדש לשימוש באפליקציה.
                   </CardDescription>
                 </CardHeader>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="register-email">דוא״ל</Label>
+                      <Label htmlFor="register-email" className="text-right">דוא״ל</Label>
                       <Input
                         id="register-email"
                         type="email"
                         placeholder="הכנס כתובת דוא״ל"
+                        dir="ltr"
+                        className="text-left"
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
@@ -204,11 +210,13 @@ export default function AuthPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="reg-password">סיסמה</Label>
+                      <Label htmlFor="reg-password" className="text-right">סיסמה</Label>
                       <Input
                         id="reg-password"
                         type="password"
                         placeholder="בחר סיסמה"
+                        dir="ltr"
+                        className="text-left"
                         {...registerForm.register("password")}
                       />
                       {registerForm.formState.errors.password && (
@@ -219,11 +227,13 @@ export default function AuthPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password">אימות סיסמה</Label>
+                      <Label htmlFor="confirm-password" className="text-right">אימות סיסמה</Label>
                       <Input
                         id="confirm-password"
                         type="password"
                         placeholder="הכנס שוב את הסיסמה"
+                        dir="ltr"
+                        className="text-left"
                         {...registerForm.register("confirmPassword")}
                       />
                       {registerForm.formState.errors.confirmPassword && (
