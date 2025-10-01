@@ -48,8 +48,8 @@ export function SyncedTimeTracker() {
     if (isCompleted && isCountDown) {
       audioManager.playTimerComplete();
       toast({
-        title: "Timer Completed!",
-        description: "Your countdown timer has finished.",
+        title: "הטיימר הסתיים!",
+        description: "טיימר הספירה לאחור שלך הסתיים.",
       });
     }
   }, [isCompleted, isCountDown, toast]);
@@ -58,8 +58,8 @@ export function SyncedTimeTracker() {
   useEffect(() => {
     if (timerError) {
       toast({
-        title: "Timer Error",
-        description: "There was an error with the timer synchronization.",
+        title: "שגיאת טיימר",
+        description: "אירעה שגיאה בסנכרון הטיימר.",
         variant: "destructive",
       });
     }
@@ -69,8 +69,8 @@ export function SyncedTimeTracker() {
   const startRegularTimer = useCallback(() => {
     if (!selectedTopic) {
       toast({
-        title: "Please select a topic",
-        description: "You must select a topic before starting the timer.",
+        title: "אנא בחר נושא",
+        description: "עליך לבחור נושא לפני התחלת הטיימר.",
         variant: "destructive",
       });
       return;
@@ -80,8 +80,8 @@ export function SyncedTimeTracker() {
     start(parseInt(selectedTopic), description, undefined, false);
     
     toast({
-      title: "Timer Started",
-      description: "Your timer is now running and synced across all devices.",
+      title: "הטיימר התחיל",
+      description: "הטיימר שלך פועל כעת ומסונכרן בכל המכשירים.",
     });
   }, [selectedTopic, description, start, toast]);
   
@@ -89,8 +89,8 @@ export function SyncedTimeTracker() {
   const startCountdownTimer = useCallback((minutes: number) => {
     if (!selectedTopic) {
       toast({
-        title: "Please select a topic",
-        description: "You must select a topic before starting the timer.",
+        title: "אנא בחר נושא",
+        description: "עליך לבחור נושא לפני התחלת הטיימר.",
         variant: "destructive",
       });
       return;
@@ -101,8 +101,8 @@ export function SyncedTimeTracker() {
     start(parseInt(selectedTopic), description, durationSeconds, true);
     
     toast({
-      title: "Countdown Timer Started",
-      description: `Your ${minutes}-minute countdown timer is now running and synced across all devices.`,
+      title: "טיימר ספירה לאחור התחיל",
+      description: `טיימר הספירה לאחור של ${minutes} דקות פועל כעת ומסונכרן בכל המכשירים.`,
     });
   }, [selectedTopic, description, start, toast]);
   
@@ -112,14 +112,14 @@ export function SyncedTimeTracker() {
       if (isPaused) {
         resume();
         toast({
-          title: "Timer Resumed",
-          description: "Your timer has been resumed and synced.",
+          title: "הטיימר חודש",
+          description: "הטיימר שלך חודש ומסונכרן.",
         });
       } else {
         pause();
         toast({
-          title: "Timer Paused",
-          description: "Your timer has been paused and synced.",
+          title: "הטיימר הושהה",
+          description: "הטיימר שלך הושהה ומסונכרן.",
         });
       }
     } else {
@@ -132,8 +132,8 @@ export function SyncedTimeTracker() {
     setSelectedTopic("");
     setDescription("");
     toast({
-      title: "Timer Stopped",
-      description: "Your timer has been stopped and synced.",
+      title: "הטיימר נעצר",
+      description: "הטיימר שלך נעצר ומסונכרן.",
     });
   }, [stop, toast]);
   
@@ -148,8 +148,8 @@ export function SyncedTimeTracker() {
   const handleStartCountdown = useCallback(() => {
     if (customMinutes <= 0) {
       toast({
-        title: "Invalid Duration",
-        description: "Please enter a valid number of minutes.",
+        title: "משך זמן לא תקין",
+        description: "אנא הכנס מספר דקות תקין.",
         variant: "destructive",
       });
       return;
@@ -174,15 +174,15 @@ export function SyncedTimeTracker() {
         
         {isRunning && (
           <div className="text-sm text-muted-foreground">
-            {isCountDown ? 'Countdown Timer' : 'Regular Timer'} • 
-            {currentTopic ? ` Topic: ${currentTopic.name}` : ''}
+            {isCountDown ? 'טיימר ספירה לאחור' : 'טיימר רגיל'} • 
+            {currentTopic ? ` נושא: ${currentTopic.name}` : ''}
             {timerDescription && ` • ${timerDescription}`}
           </div>
         )}
         
         {startTime && (
           <div className="text-xs text-muted-foreground">
-            Started: {new Date(startTime).toLocaleTimeString()}
+            התחיל: {new Date(startTime).toLocaleTimeString('he-IL')}
           </div>
         )}
       </div>
@@ -197,7 +197,7 @@ export function SyncedTimeTracker() {
             className="px-8"
           >
             <PlayIcon className="w-5 h-5 mr-2" />
-            Start Timer
+            התחל טיימר
           </Button>
         ) : (
           <>
@@ -210,12 +210,12 @@ export function SyncedTimeTracker() {
               {isPaused ? (
                 <>
                   <PlayIcon className="w-5 h-5 mr-2" />
-                  Resume
+                  המשך
                 </>
               ) : (
                 <>
                   <PauseIcon className="w-5 h-5 mr-2" />
-                  Pause
+                  השהייה
                 </>
               )}
             </Button>
@@ -227,7 +227,7 @@ export function SyncedTimeTracker() {
               className="px-6"
             >
               <XIcon className="w-5 h-5 mr-2" />
-              Stop
+              עצור
             </Button>
           </>
         )}
@@ -239,17 +239,17 @@ export function SyncedTimeTracker() {
             size="lg"
             className="px-6"
           >
-            Reset
+            איפוס
           </Button>
         )}
       </div>
       
       {/* Topic Selection */}
       <div className="space-y-2">
-        <Label htmlFor="topic">Select Topic</Label>
+        <Label htmlFor="topic">בחר נושא</Label>
         <Select value={selectedTopic} onValueChange={setSelectedTopic}>
           <SelectTrigger>
-            <SelectValue placeholder="Choose a topic to track" />
+            <SelectValue placeholder="בחר נושא למעקב" />
           </SelectTrigger>
           <SelectContent>
             {topics?.map((topic) => (
@@ -269,12 +269,12 @@ export function SyncedTimeTracker() {
       
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description">Description (Optional)</Label>
+        <Label htmlFor="description">תיאור (אופציונלי)</Label>
         <Input
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="What are you working on?"
+          placeholder="על מה אתה עובד?"
           disabled={isRunning}
         />
       </div>
@@ -284,18 +284,18 @@ export function SyncedTimeTracker() {
         <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
           <div className="flex items-center space-x-2">
             <Clock5Icon className="w-5 h-5" />
-            <Label className="text-lg font-semibold">Countdown Timer</Label>
+            <Label className="text-lg font-semibold">טיימר ספירה לאחור</Label>
           </div>
           
           <div className="flex items-center space-x-4">
             <div className="space-y-2">
-              <Label htmlFor="customMinutes">Duration (minutes)</Label>
+              <Label htmlFor="customMinutes">משך זמן (דקות)</Label>
               <Input
                 id="customMinutes"
                 type="number"
                 value={customMinutes}
                 onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 0)}
-                placeholder="Enter minutes"
+                placeholder="הכנס דקות"
                 min="1"
                 max="1440"
                 className="w-32"
@@ -308,7 +308,7 @@ export function SyncedTimeTracker() {
               className="mt-6"
             >
               <TimerIcon className="w-4 h-4 mr-2" />
-              Start Countdown
+              התחל ספירה לאחור
             </Button>
           </div>
         </div>
@@ -319,7 +319,7 @@ export function SyncedTimeTracker() {
         {isRunning && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span>Synced across all devices</span>
+            <span>מסונכרן בכל המכשירים</span>
           </div>
         )}
       </div>
@@ -327,7 +327,7 @@ export function SyncedTimeTracker() {
       {/* Loading State */}
       {timerLoading && (
         <div className="text-center text-sm text-muted-foreground">
-          Syncing timer...
+          מסנכרן טיימר...
         </div>
       )}
     </div>
