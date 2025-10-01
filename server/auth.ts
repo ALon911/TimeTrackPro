@@ -79,7 +79,7 @@ export function setupAuth(app: Express) {
     try {
       const existingEmail = await storage.getUserByEmail(req.body.email);
       if (existingEmail) {
-        return res.status(400).json({ message: "Email already in use" });
+        return res.status(400).json({ message: "כתובת דוא״ל זו כבר בשימוש" });
       }
 
       // Generate username from email (e.g., part before @)
@@ -107,7 +107,7 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) {
-        return res.status(401).json({ message: "Invalid email or password" });
+        return res.status(401).json({ message: "כתובת דוא״ל או סיסמה שגויים" });
       }
       
       req.login(user, (err: any) => {
@@ -142,5 +142,5 @@ export function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ message: "Unauthorized" });
+  res.status(401).json({ message: "לא מורשה" });
 }

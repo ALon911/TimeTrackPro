@@ -149,7 +149,7 @@ export function SyncedTimeTracker() {
     if (customMinutes <= 0) {
       toast({
         title: "משך זמן לא תקין",
-        description: "אנא הכנס מספר דקות תקין.",
+        description: "אנא הכנס מספר דקות תקין (לפחות דקה אחת).",
         variant: "destructive",
       });
       return;
@@ -215,7 +215,7 @@ export function SyncedTimeTracker() {
               ) : (
                 <>
                   <PauseIcon className="w-5 h-5 mr-2" />
-                  השהייה
+                  השהה
                 </>
               )}
             </Button>
@@ -285,6 +285,37 @@ export function SyncedTimeTracker() {
           <div className="flex items-center space-x-2">
             <Clock5Icon className="w-5 h-5" />
             <Label className="text-lg font-semibold">טיימר ספירה לאחור</Label>
+          </div>
+          
+          {/* Preset Buttons */}
+          <div className="space-y-2">
+            <Label>בחר זמן מהיר:</Label>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCustomMinutes(5)}
+                className="flex-1"
+              >
+                5 דקות
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCustomMinutes(20)}
+                className="flex-1"
+              >
+                20 דקות
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCustomMinutes(40)}
+                className="flex-1"
+              >
+                40 דקות
+              </Button>
+            </div>
           </div>
           
           <div className="flex items-center space-x-4">

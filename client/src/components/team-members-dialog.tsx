@@ -200,7 +200,7 @@ export function TeamMembersDialog({
             <div className="flex gap-2">
               <Input
                 type="email"
-                placeholder="example@email.com"
+                placeholder="דוגמה@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1"

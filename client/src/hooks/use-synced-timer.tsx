@@ -131,10 +131,14 @@ export function useSyncedTimer({
       let calculatedSeconds = 0;
       let isCompleted = false;
 
-      if (serverTimer.duration && serverTimer.isCountDown) {
-        // Countdown timer
+      if (serverTimer.duration && serverTimer.isCountDown && serverTimer.duration > 0) {
+        // Countdown timer - only if duration is valid
         calculatedSeconds = Math.max(0, serverTimer.duration - elapsedSeconds);
         isCompleted = calculatedSeconds === 0;
+      } else if (serverTimer.isCountDown && (!serverTimer.duration || serverTimer.duration <= 0)) {
+        // Invalid countdown timer - stop it
+        calculatedSeconds = 0;
+        isCompleted = true;
       } else {
         // Regular timer
         calculatedSeconds = elapsedSeconds;
@@ -164,13 +168,21 @@ export function useSyncedTimer({
     if (localState.isRunning && !localState.isPaused && !localState.isCompleted) {
       intervalRef.current = setInterval(() => {
         setLocalState(prev => {
-          if (prev.isCountDown && prev.duration) {
+          if (prev.isCountDown && prev.duration && prev.duration > 0) {
             const newSeconds = Math.max(0, prev.seconds - 1);
             return {
               ...prev,
               seconds: newSeconds,
               isCompleted: newSeconds === 0,
               isRunning: newSeconds > 0
+            };
+          } else if (prev.isCountDown && (!prev.duration || prev.duration <= 0)) {
+            // Invalid countdown timer - stop it
+            return {
+              ...prev,
+              seconds: 0,
+              isCompleted: true,
+              isRunning: false
             };
           } else {
             return {
@@ -207,6 +219,12 @@ export function useSyncedTimer({
   }, [autoSync, localState.isRunning, localState.isPaused, syncInterval, refetch]);
 
   const start = useCallback((topicId?: number, description?: string, duration?: number, isCountDown = false) => {
+    // Validate countdown timer duration
+    if (isCountDown && duration !== undefined && duration <= 0) {
+      console.error('Countdown timer duration must be greater than 0');
+      return;
+    }
+    
     startTimerMutation.mutate({
       topicId,
       description,

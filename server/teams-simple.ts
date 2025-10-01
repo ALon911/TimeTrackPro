@@ -14,7 +14,7 @@ const teamsRouter = Router();
 teamsRouter.get('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     // Get teams where user is a member (crew isolation by default)
@@ -22,7 +22,7 @@ teamsRouter.get('/api/teams', isAuthenticated, async (req: Request, res: Respons
     res.json(teams);
   } catch (error) {
     console.error('Error fetching teams:', error);
-    res.status(500).json({ error: 'Failed to fetch teams' });
+    res.status(500).json({ error: 'נכשל בטעינת הצוותים' });
   }
 });
 
@@ -30,7 +30,7 @@ teamsRouter.get('/api/teams', isAuthenticated, async (req: Request, res: Respons
 teamsRouter.get('/api/teams/all', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     // Get all teams including those with cross-crew access
@@ -38,7 +38,7 @@ teamsRouter.get('/api/teams/all', isAuthenticated, async (req: Request, res: Res
     res.json(teams);
   } catch (error) {
     console.error('Error fetching all teams:', error);
-    res.status(500).json({ error: 'Failed to fetch all teams' });
+    res.status(500).json({ error: 'נכשל בטעינת כל הצוותים' });
   }
 });
 
@@ -47,7 +47,7 @@ teamsRouter.get('/api/teams/all', isAuthenticated, async (req: Request, res: Res
 teamsRouter.get('/api/timer/active', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     // Clean up expired timers first
@@ -57,7 +57,7 @@ teamsRouter.get('/api/timer/active', isAuthenticated, async (req: Request, res: 
     res.json(timer || null);
   } catch (error) {
     console.error('Error fetching active timer:', error);
-    res.status(500).json({ error: 'Failed to fetch active timer' });
+    res.status(500).json({ error: 'נכשל בטעינת הטיימר הפעיל' });
   }
 });
 
@@ -65,7 +65,7 @@ teamsRouter.get('/api/timer/active', isAuthenticated, async (req: Request, res: 
 teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     const schema = z.object({
@@ -77,7 +77,14 @@ teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: 
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid timer data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני טיימר לא תקינים', details: validationResult.error.errors });
+    }
+    
+    // Validate countdown timer duration
+    if (validationResult.data.isCountDown && validationResult.data.duration !== undefined) {
+      if (validationResult.data.duration <= 0) {
+        return res.status(400).json({ error: 'משך זמן הטיימר חייב להיות גדול מ-0' });
+      }
     }
     
     const timerData: ActiveTimer = {
@@ -93,7 +100,7 @@ teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: 
     res.json(timerData);
   } catch (error) {
     console.error('Error starting timer:', error);
-    res.status(500).json({ error: 'Failed to start timer' });
+    res.status(500).json({ error: 'נכשל בהתחלת הטיימר' });
   }
 });
 
@@ -101,7 +108,7 @@ teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: 
 teamsRouter.patch('/api/timer/update', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     const schema = z.object({
@@ -113,7 +120,7 @@ teamsRouter.patch('/api/timer/update', isAuthenticated, async (req: Request, res
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid timer update data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני עדכון טיימר לא תקינים', details: validationResult.error.errors });
     }
     
     updateTimerState(req.user.id, validationResult.data);
@@ -121,7 +128,7 @@ teamsRouter.patch('/api/timer/update', isAuthenticated, async (req: Request, res
     res.json(updatedTimer);
   } catch (error) {
     console.error('Error updating timer:', error);
-    res.status(500).json({ error: 'Failed to update timer' });
+    res.status(500).json({ error: 'נכשל בעדכון הטיימר' });
   }
 });
 
@@ -129,14 +136,14 @@ teamsRouter.patch('/api/timer/update', isAuthenticated, async (req: Request, res
 teamsRouter.post('/api/timer/stop', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     removeActiveTimer(req.user.id);
     res.json({ success: true, message: 'Timer stopped' });
   } catch (error) {
     console.error('Error stopping timer:', error);
-    res.status(500).json({ error: 'Failed to stop timer' });
+    res.status(500).json({ error: 'נכשל בעצירת הטיימר' });
   }
 });
 
@@ -145,18 +152,18 @@ teamsRouter.get('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     res.json(team);
   } catch (error) {
     console.error('Error fetching team:', error);
-    res.status(500).json({ error: 'Failed to fetch team' });
+    res.status(500).json({ error: 'נכשל בטעינת הצוות' });
   }
 });
 
@@ -164,7 +171,7 @@ teamsRouter.get('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
 teamsRouter.post('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     const schema = z.object({
@@ -175,7 +182,7 @@ teamsRouter.post('/api/teams', isAuthenticated, async (req: Request, res: Respon
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid team data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני צוות לא תקינים', details: validationResult.error.errors });
     }
     
     const team = await storage.createTeam({
@@ -188,7 +195,7 @@ teamsRouter.post('/api/teams', isAuthenticated, async (req: Request, res: Respon
     res.status(201).json(team);
   } catch (error) {
     console.error('Error creating team:', error);
-    res.status(500).json({ error: 'Failed to create team' });
+    res.status(500).json({ error: 'נכשל ביצירת הצוות' });
   }
 });
 
@@ -197,14 +204,14 @@ teamsRouter.get('/api/teams/:id/admins', isAuthenticated, async (req: Request, r
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const admins = await storage.getTeamAdmins(teamId);
     res.json(admins);
   } catch (error) {
     console.error('Error fetching team admins:', error);
-    res.status(500).json({ error: 'Failed to fetch team admins' });
+    res.status(500).json({ error: 'נכשל בטעינת מנהלי הצוות' });
   }
 });
 
@@ -213,7 +220,7 @@ teamsRouter.patch('/api/teams/:id/crew-settings', isAuthenticated, async (req: R
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const schema = z.object({
@@ -223,7 +230,7 @@ teamsRouter.patch('/api/teams/:id/crew-settings', isAuthenticated, async (req: R
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid crew settings', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'הגדרות צוות לא תקינות', details: validationResult.error.errors });
     }
     
     // Update team settings
@@ -244,7 +251,7 @@ teamsRouter.patch('/api/teams/:id/crew-settings', isAuthenticated, async (req: R
     res.json(updatedTeam);
   } catch (error) {
     console.error('Error updating crew settings:', error);
-    res.status(500).json({ error: 'Failed to update crew settings' });
+    res.status(500).json({ error: 'נכשל בעדכון הגדרות הצוות' });
   }
 });
 
@@ -253,18 +260,18 @@ teamsRouter.put('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'You do not have permission to update this team' });
+      return res.status(403).json({ error: 'אין לך הרשאה לעדכן צוות זה' });
     }
     
     const schema = z.object({
@@ -273,7 +280,7 @@ teamsRouter.put('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid team data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני צוות לא תקינים', details: validationResult.error.errors });
     }
     
     const updatedTeam = await storage.updateTeam(teamId, { name: validationResult.data.name });
@@ -281,7 +288,7 @@ teamsRouter.put('/api/teams/:id', isAuthenticated, async (req: Request, res: Res
     res.json(updatedTeam);
   } catch (error) {
     console.error('Error updating team:', error);
-    res.status(500).json({ error: 'Failed to update team' });
+    res.status(500).json({ error: 'נכשל בעדכון הצוות' });
   }
 });
 
@@ -290,29 +297,29 @@ teamsRouter.delete('/api/teams/:id', isAuthenticated, async (req: Request, res: 
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'You do not have permission to delete this team' });
+      return res.status(403).json({ error: 'אין לך הרשאה למחוק צוות זה' });
     }
     
     const success = await storage.deleteTeam(teamId);
     if (!success) {
-      return res.status(500).json({ error: 'Failed to delete team' });
+      return res.status(500).json({ error: 'נכשל במחיקת הצוות' });
     }
     
     res.status(204).end();
   } catch (error) {
     console.error('Error deleting team:', error);
-    res.status(500).json({ error: 'Failed to delete team' });
+    res.status(500).json({ error: 'נכשל במחיקת הצוות' });
   }
 });
 
@@ -321,12 +328,12 @@ teamsRouter.get('/api/teams/:id/members', isAuthenticated, async (req: Request, 
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Check if user is a member of the team
@@ -336,13 +343,13 @@ teamsRouter.get('/api/teams/:id/members', isAuthenticated, async (req: Request, 
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (!isMember && ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'You do not have permission to view this team\'s members' });
+      return res.status(403).json({ error: 'אין לך הרשאה לצפות בחברי צוות זה' });
     }
     
     res.json(teamMembers);
   } catch (error) {
     console.error('Error fetching team members:', error);
-    res.status(500).json({ error: 'Failed to fetch team members' });
+    res.status(500).json({ error: 'נכשל בטעינת חברי הצוות' });
   }
 });
 
@@ -351,19 +358,19 @@ teamsRouter.post('/api/teams/:id/direct-member', isAuthenticated, async (req: Re
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Only team owner can add members directly
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'Only team owners can add members directly' });
+      return res.status(403).json({ error: 'רק מנהלי צוות יכולים להוסיף חברים ישירות' });
     }
     
     const schema = z.object({
@@ -373,13 +380,13 @@ teamsRouter.post('/api/teams/:id/direct-member', isAuthenticated, async (req: Re
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid member data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני חבר לא תקינים', details: validationResult.error.errors });
     }
     
     // Find user by email
     const user = await storage.getUserByEmail(validationResult.data.email);
     if (!user) {
-      return res.status(404).json({ error: 'User not found with this email' });
+      return res.status(404).json({ error: 'משתמש לא נמצא עם כתובת דוא״ל זו' });
     }
     
     // Check if user is already a team member
@@ -387,7 +394,7 @@ teamsRouter.post('/api/teams/:id/direct-member', isAuthenticated, async (req: Re
     const existingMember = teamMembers.find(member => member.userId === user.id);
     
     if (existingMember) {
-      return res.status(400).json({ error: 'User is already a member of this team' });
+      return res.status(400).json({ error: 'המשתמש כבר חבר בצוות זה' });
     }
     
     // Add user to team
@@ -400,7 +407,7 @@ teamsRouter.post('/api/teams/:id/direct-member', isAuthenticated, async (req: Re
     res.status(201).json(teamMember);
   } catch (error) {
     console.error('Error adding team member directly:', error);
-    res.status(500).json({ error: 'Failed to add team member' });
+    res.status(500).json({ error: 'נכשל בהוספת חבר לצוות' });
   }
 });
 
@@ -411,30 +418,30 @@ teamsRouter.delete('/api/teams/:teamId/members/:userId', isAuthenticated, async 
     const userId = parseInt(req.params.userId);
     
     if (isNaN(teamId) || isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid team ID or user ID' });
+      return res.status(400).json({ error: 'מזהה צוות או משתמש לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Only the team owner can remove members
     // Handle both formats of the owner id field (ownerId or owner_id)
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'Only team owners can remove members' });
+      return res.status(403).json({ error: 'רק מנהלי צוות יכולים להסיר חברים' });
     }
     
     // Cannot remove the owner
     if (userId === ownerId) {
-      return res.status(400).json({ error: 'Cannot remove the team owner' });
+      return res.status(400).json({ error: 'לא ניתן להסיר את מנהל הצוות' });
     }
     
     try {
       const success = await storage.removeTeamMember(teamId, userId);
       if (!success) {
-        return res.status(500).json({ error: 'Failed to remove team member' });
+        return res.status(500).json({ error: 'נכשל בהסרת חבר הצוות' });
       }
       
       res.status(204).end();
@@ -446,7 +453,7 @@ teamsRouter.delete('/api/teams/:teamId/members/:userId', isAuthenticated, async 
     }
   } catch (error) {
     console.error('Error removing team member:', error);
-    res.status(500).json({ error: 'Failed to remove team member' });
+    res.status(500).json({ error: 'נכשל בהסרת חבר הצוות' });
   }
 });
 
@@ -457,18 +464,18 @@ teamsRouter.patch('/api/teams/:teamId/members/:userId/role', isAuthenticated, as
     const userId = parseInt(req.params.userId);
     
     if (isNaN(teamId) || isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid team ID or user ID' });
+      return res.status(400).json({ error: 'מזהה צוות או משתמש לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Only the team owner can update member roles
     const ownerId = 'ownerId' in team ? team.ownerId : (team as any).owner_id;
     if (ownerId !== req.user?.id) {
-      return res.status(403).json({ error: 'Only team owners can update member roles' });
+      return res.status(403).json({ error: 'רק מנהלי צוות יכולים לעדכן תפקידי חברים' });
     }
     
     const schema = z.object({
@@ -477,13 +484,13 @@ teamsRouter.patch('/api/teams/:teamId/members/:userId/role', isAuthenticated, as
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid role data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני תפקיד לא תקינים', details: validationResult.error.errors });
     }
     
     try {
       const updatedMember = await storage.updateTeamMemberRole(teamId, userId, validationResult.data.role);
       if (!updatedMember) {
-        return res.status(404).json({ error: 'Team member not found' });
+        return res.status(404).json({ error: 'חבר צוות לא נמצא' });
       }
       
       res.json(updatedMember);
@@ -495,7 +502,7 @@ teamsRouter.patch('/api/teams/:teamId/members/:userId/role', isAuthenticated, as
     }
   } catch (error) {
     console.error('Error updating team member role:', error);
-    res.status(500).json({ error: 'Failed to update team member role' });
+    res.status(500).json({ error: 'נכשל בעדכון תפקיד חבר הצוות' });
   }
 });
 
@@ -503,17 +510,17 @@ teamsRouter.patch('/api/teams/:teamId/members/:userId/role', isAuthenticated, as
 teamsRouter.post('/api/direct-add-team-member', async (req: Request, res: Response) => {
   try {
     if (!req.body.teamId || !req.body.email) {
-      return res.status(400).json({ error: 'teamId and email are required' });
+      return res.status(400).json({ error: 'מזהה צוות וכתובת דוא״ל נדרשים' });
     }
     
     const teamId = parseInt(req.body.teamId);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // This endpoint does not check for authentication or ownership
@@ -522,7 +529,7 @@ teamsRouter.post('/api/direct-add-team-member', async (req: Request, res: Respon
     // Find user by email
     const user = await storage.getUserByEmail(req.body.email);
     if (!user) {
-      return res.status(404).json({ error: 'User not found with this email' });
+      return res.status(404).json({ error: 'משתמש לא נמצא עם כתובת דוא״ל זו' });
     }
     
     // Check if user is already a team member
@@ -530,7 +537,7 @@ teamsRouter.post('/api/direct-add-team-member', async (req: Request, res: Respon
     const existingMember = teamMembers.find(member => member.userId === user.id);
     
     if (existingMember) {
-      return res.status(400).json({ error: 'User is already a member of this team' });
+      return res.status(400).json({ error: 'המשתמש כבר חבר בצוות זה' });
     }
     
     // Add user to team
@@ -547,7 +554,7 @@ teamsRouter.post('/api/direct-add-team-member', async (req: Request, res: Respon
     });
   } catch (error) {
     console.error('Error adding team member directly:', error);
-    res.status(500).json({ error: 'Failed to add team member' });
+    res.status(500).json({ error: 'נכשל בהוספת חבר לצוות' });
   }
 });
 
@@ -574,12 +581,12 @@ teamsRouter.get('/api/teams/:id/export', isAuthenticated, async (req: Request, r
     console.log('Starting Excel export for team');
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Check if user is a member of the team
@@ -812,12 +819,12 @@ teamsRouter.get('/api/teams/:id/stats', isAuthenticated, async (req: Request, re
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Get team members and always allow access for testing
@@ -848,12 +855,12 @@ teamsRouter.get('/api/teams/:id/stats/member-activity', isAuthenticated, async (
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Get team members and always allow access for testing
@@ -884,12 +891,12 @@ teamsRouter.get('/api/teams/:id/stats/topic-distribution', isAuthenticated, asyn
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Get team members and always allow access for testing
@@ -934,12 +941,12 @@ teamsRouter.get('/api/teams/:id/active-timers', isAuthenticated, async (req: Req
   try {
     const teamId = parseInt(req.params.id);
     if (isNaN(teamId)) {
-      return res.status(400).json({ error: 'Invalid team ID' });
+      return res.status(400).json({ error: 'מזהה צוות לא תקין' });
     }
     
     const team = await storage.getTeam(teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'צוות לא נמצא' });
     }
     
     // Check if user is a member of the team
@@ -969,7 +976,7 @@ teamsRouter.get('/api/teams/:id/active-timers', isAuthenticated, async (req: Req
 teamsRouter.post('/api/teams/share-timer', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     const schema = z.object({
@@ -986,7 +993,7 @@ teamsRouter.post('/api/teams/share-timer', isAuthenticated, async (req: Request,
     
     const validationResult = schema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ error: 'Invalid timer data', details: validationResult.error.errors });
+      return res.status(400).json({ error: 'נתוני טיימר לא תקינים', details: validationResult.error.errors });
     }
     
     const timerData = validationResult.data;
@@ -1021,7 +1028,7 @@ teamsRouter.post('/api/teams/share-timer', isAuthenticated, async (req: Request,
 teamsRouter.post('/api/teams/stop-share-timer', isAuthenticated, async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
-      return res.status(401).json({ error: 'Not authorized' });
+      return res.status(401).json({ error: 'לא מורשה' });
     }
     
     // Remove the active timer
