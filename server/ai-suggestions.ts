@@ -485,10 +485,8 @@ export class AISuggestionsService {
   public async getSuggestions(userId: number): Promise<AISuggestion[]> {
     try {
       const suggestions = await storage.getRecentAISuggestions(userId, 24); // Last 24 hours
-      const translatedSuggestions = await Promise.all(
-        suggestions.map(suggestion => this.translateSuggestionToHebrew(suggestion))
-      );
-      return translatedSuggestions;
+      // Don't translate again - suggestions are already translated when saved
+      return suggestions as AISuggestion[];
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       return [];
@@ -519,10 +517,8 @@ export class AISuggestionsService {
   private async getRecentSuggestions(userId: number): Promise<AISuggestion[]> {
     try {
       const suggestions = await storage.getRecentAISuggestions(userId, 24); // Last 24 hours
-      const translatedSuggestions = await Promise.all(
-        suggestions.map(suggestion => this.translateSuggestionToHebrew(suggestion))
-      );
-      return translatedSuggestions;
+      // Don't translate again - suggestions are already translated when saved
+      return suggestions as AISuggestion[];
     } catch (error) {
       console.error('Error fetching recent suggestions:', error);
       return [];
