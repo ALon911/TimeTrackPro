@@ -5,7 +5,7 @@ import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
-import { getActiveTimer, getTeamActiveTimers, setActiveTimer, removeActiveTimer } from './active-timers';
+import { getActiveTimer, getTeamActiveTimers, setActiveTimer, removeActiveTimer, updateTimerState, getTimerWithElapsedTime, cleanupExpiredTimers } from './active-timers';
 import { ActiveTimer } from '@shared/schema';
 
 const teamsRouter = Router();
@@ -39,6 +39,104 @@ teamsRouter.get('/api/teams/all', isAuthenticated, async (req: Request, res: Res
   } catch (error) {
     console.error('Error fetching all teams:', error);
     res.status(500).json({ error: 'Failed to fetch all teams' });
+  }
+});
+
+// Timer synchronization endpoints
+// Get user's active timer
+teamsRouter.get('/api/timer/active', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    // Clean up expired timers first
+    cleanupExpiredTimers();
+    
+    const timer = getTimerWithElapsedTime(req.user.id);
+    res.json(timer || null);
+  } catch (error) {
+    console.error('Error fetching active timer:', error);
+    res.status(500).json({ error: 'Failed to fetch active timer' });
+  }
+});
+
+// Start/Update timer
+teamsRouter.post('/api/timer/start', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    const schema = z.object({
+      topicId: z.number().optional(),
+      description: z.string().optional(),
+      duration: z.number().optional(), // in seconds, for countdown timers
+      isCountDown: z.boolean().default(false)
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Invalid timer data', details: validationResult.error.errors });
+    }
+    
+    const timerData: ActiveTimer = {
+      userId: req.user.id,
+      topicId: validationResult.data.topicId || null,
+      description: validationResult.data.description || null,
+      startTime: new Date().toISOString(),
+      duration: validationResult.data.duration || null,
+      isCountDown: validationResult.data.isCountDown
+    };
+    
+    setActiveTimer(req.user.id, timerData);
+    res.json(timerData);
+  } catch (error) {
+    console.error('Error starting timer:', error);
+    res.status(500).json({ error: 'Failed to start timer' });
+  }
+});
+
+// Update timer state (pause/resume)
+teamsRouter.patch('/api/timer/update', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    const schema = z.object({
+      isRunning: z.boolean().optional(),
+      isPaused: z.boolean().optional(),
+      description: z.string().optional(),
+      topicId: z.number().optional()
+    });
+    
+    const validationResult = schema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ error: 'Invalid timer update data', details: validationResult.error.errors });
+    }
+    
+    updateTimerState(req.user.id, validationResult.data);
+    const updatedTimer = getTimerWithElapsedTime(req.user.id);
+    res.json(updatedTimer);
+  } catch (error) {
+    console.error('Error updating timer:', error);
+    res.status(500).json({ error: 'Failed to update timer' });
+  }
+});
+
+// Stop timer
+teamsRouter.post('/api/timer/stop', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    
+    removeActiveTimer(req.user.id);
+    res.json({ success: true, message: 'Timer stopped' });
+  } catch (error) {
+    console.error('Error stopping timer:', error);
+    res.status(500).json({ error: 'Failed to stop timer' });
   }
 });
 

@@ -1,4 +1,4 @@
-import { TimeTracker } from "@/components/time-tracker";
+import { SyncedTimeTracker } from "@/components/synced-time-tracker";
 import { TimeEntriesTable } from "@/components/time-entries-table";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -30,7 +30,7 @@ export default function TimeEntriesPage() {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">נתחיל לעקוב</h3>
         </div>
-        <TimeTracker />
+        <SyncedTimeTracker />
       </section>
       
       {/* Time Entries Section */}

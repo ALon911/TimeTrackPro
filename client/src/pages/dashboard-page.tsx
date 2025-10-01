@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
-import { TimeTracker } from "@/components/time-tracker";
+import { SyncedTimeTracker } from "@/components/synced-time-tracker";
 import { StatCard } from "@/components/stat-card";
 import { WeeklyChart } from "@/components/charts/weekly-chart";
 import { TopicDistributionChart } from "@/components/charts/topic-distribution-chart";
@@ -53,7 +53,7 @@ export default function DashboardPage() {
       {/* Timer Section */}
       <section className="bg-card dark:bg-slate-800 rounded-xl shadow-md p-6 mb-8">
         <h3 className="text-xl font-semibold mb-4 dark:text-white">מעקב זמן</h3>
-        <TimeTracker />
+        <SyncedTimeTracker />
       </section>
       
       {/* Stats Overview */}
