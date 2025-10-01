@@ -4,10 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Brain, CheckCircle, XCircle, RefreshCw, Sparkles, BarChart3, Lightbulb } from 'lucide-react';
+import { Loader2, Brain, CheckCircle, XCircle, RefreshCw, Sparkles, Lightbulb } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { SummaryInsights } from '@/components/summary-insights';
 import { MobileHeader } from '@/components/mobile-header';
 import { MobileNavigation } from '@/components/mobile-navigation';
 
@@ -222,19 +220,7 @@ export default function SuggestionsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="suggestions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="suggestions" className="flex items-center gap-2 text-right">
-            <Brain className="h-4 w-4" />
-            הצעות AI
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2 text-right">
-            <BarChart3 className="h-4 w-4" />
-            סיכום ותובנות
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="suggestions" className="space-y-6">
+      <div className="space-y-6">
           {suggestions.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
@@ -342,12 +328,7 @@ export default function SuggestionsPage() {
               ))}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-6">
-          <SummaryInsights />
-        </TabsContent>
-      </Tabs>
+        </div>
       </div>
       
       {/* Mobile Navigation */}
