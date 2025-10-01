@@ -45,24 +45,6 @@ export function useSyncedTimer({
 }: UseSyncedTimerOptions = {}): UseSyncedTimerReturn {
   const queryClient = useQueryClient();
   
-  // Load saved state from localStorage
-  const savedState = loadTimerState();
-  
-  const [localState, setLocalState] = useState<SyncedTimerState>(savedState || {
-    seconds: 0,
-    isRunning: false,
-    isPaused: false,
-    isCompleted: false,
-    isCountDown: false,
-    startTime: null,
-    duration: null,
-    topicId: null,
-    description: null
-  });
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSyncRef = useRef<number>(0);
-  
   // Timer state persistence key
   const TIMER_STATE_KEY = 'synced_timer_state';
   
@@ -100,6 +82,24 @@ export function useSyncedTimer({
       console.error('Error clearing timer state:', error);
     }
   };
+  
+  // Load saved state from localStorage
+  const savedState = loadTimerState();
+  
+  const [localState, setLocalState] = useState<SyncedTimerState>(savedState || {
+    seconds: 0,
+    isRunning: false,
+    isPaused: false,
+    isCompleted: false,
+    isCountDown: false,
+    startTime: null,
+    duration: null,
+    topicId: null,
+    description: null
+  });
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncRef = useRef<number>(0);
 
   // Fetch active timer from server
   const { data: serverTimer, isLoading, error, refetch } = useQuery({
@@ -216,7 +216,10 @@ export function useSyncedTimer({
             return {
               ...prev,
               isRunning: serverTimer.isRunning,
-              isPaused: serverTimer.isPaused
+              isPaused: serverTimer.isPaused,
+              description: serverTimer.description,
+              topicId: serverTimer.topicId,
+              startTime: serverTimer.startTime
             };
           }
           return prev; // No change needed
@@ -263,7 +266,10 @@ export function useSyncedTimer({
             isRunning: serverTimer.isRunning,
             isPaused: serverTimer.isPaused,
             seconds: calculatedSeconds,
-            isCompleted
+            isCompleted,
+            description: serverTimer.description,
+            topicId: serverTimer.topicId,
+            startTime: serverTimer.startTime
           };
         }
         
@@ -496,6 +502,7 @@ export function useSyncedTimer({
     stop,
     reset,
     formatTime,
+    updateTimerMutation,
     isLoading: isLoading,
     isStarting: startTimerMutation.isPending,
     isUpdating: updateTimerMutation.isPending,

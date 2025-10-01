@@ -20,6 +20,7 @@ export function SyncedTimeTracker() {
   const [customMinutes, setCustomMinutes] = useState<number>(0);
   const [isSharing, setIsSharing] = useState<boolean>(false);
   const [hasSaved, setHasSaved] = useState<boolean>(false);
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,6 +80,7 @@ export function SyncedTimeTracker() {
     stop,
     reset,
     formatTime,
+    updateTimerMutation,
     isLoading: timerLoading,
     isStarting,
     isUpdating,
@@ -111,12 +113,17 @@ export function SyncedTimeTracker() {
         
         createTimeEntryMutation.mutate({
           topicId,
-          description: description || null,
+          description: timerDescription || description || null,
           startTime: startTimeDate.toISOString(),
           endTime: endTime.toISOString(),
           duration: duration,
         });
       }
+      
+      // Clear localStorage when timer completes
+      localStorage.removeItem('synced_timer_state');
+      localStorage.removeItem('timetracker_ui_data');
+      localStorage.removeItem('timetracker_countdown');
       
       toast({
         title: "הטיימר הסתיים!",
@@ -133,6 +140,34 @@ export function SyncedTimeTracker() {
       setHasSaved(false);
     }
   }, [isRunning, isPaused, isCompleted]);
+
+  // Initialize description from hook only once
+  useEffect(() => {
+    if (timerDescription && !description && isInitialLoad) {
+      setDescription(timerDescription);
+      setIsInitialLoad(false);
+    }
+  }, [timerDescription, description, isInitialLoad]);
+
+  // Update timer description when local description changes (with debounce)
+  useEffect(() => {
+    // Don't update on initial load or if description is empty
+    if (isInitialLoad || !description) {
+      return;
+    }
+
+    // Only update if description is different from timerDescription
+    if (description !== timerDescription) {
+      // Debounce the update to prevent excessive API calls
+      const timeoutId = setTimeout(() => {
+        updateTimerMutation.mutate({
+          description: description
+        });
+      }, 1000); // 1 second debounce
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [description, timerDescription, updateTimerMutation, isInitialLoad]);
   
   // Handle timer errors
   useEffect(() => {
@@ -245,6 +280,16 @@ export function SyncedTimeTracker() {
       setSelectedTopic("");
       setDescription("");
       setCustomMinutes(0);
+      
+      // Clear localStorage timer data
+      localStorage.removeItem('synced_timer_state');
+      localStorage.removeItem('timetracker_ui_data');
+      localStorage.removeItem('timetracker_countdown');
+      
+      toast({
+        title: "הטיימר אופס",
+        description: "הטיימר שלך אופס ומסונכרן.",
+      });
     } catch (error) {
       console.error('❌ Reset failed:', error);
       toast({
@@ -385,7 +430,6 @@ export function SyncedTimeTracker() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="על מה אתה עובד?"
-          disabled={isRunning}
         />
       </div>
       
