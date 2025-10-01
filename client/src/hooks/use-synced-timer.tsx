@@ -44,7 +44,11 @@ export function useSyncedTimer({
   syncInterval = 2000 
 }: UseSyncedTimerOptions = {}): UseSyncedTimerReturn {
   const queryClient = useQueryClient();
-  const [localState, setLocalState] = useState<SyncedTimerState>({
+  
+  // Load saved state from localStorage
+  const savedState = loadTimerState();
+  
+  const [localState, setLocalState] = useState<SyncedTimerState>(savedState || {
     seconds: 0,
     isRunning: false,
     isPaused: false,
@@ -58,6 +62,44 @@ export function useSyncedTimer({
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncRef = useRef<number>(0);
+  
+  // Timer state persistence key
+  const TIMER_STATE_KEY = 'synced_timer_state';
+  
+  // Load timer state from localStorage
+  const loadTimerState = (): SyncedTimerState | null => {
+    try {
+      const saved = localStorage.getItem(TIMER_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('🔄 Loaded timer state from localStorage:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Error loading timer state:', error);
+    }
+    return null;
+  };
+  
+  // Save timer state to localStorage
+  const saveTimerState = (state: SyncedTimerState): void => {
+    try {
+      localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+      console.log('💾 Saved timer state to localStorage:', state);
+    } catch (error) {
+      console.error('Error saving timer state:', error);
+    }
+  };
+  
+  // Clear timer state from localStorage
+  const clearTimerState = (): void => {
+    try {
+      localStorage.removeItem(TIMER_STATE_KEY);
+      console.log('🗑️ Cleared timer state from localStorage');
+    } catch (error) {
+      console.error('Error clearing timer state:', error);
+    }
+  };
 
   // Fetch active timer from server
   const { data: serverTimer, isLoading, error, refetch } = useQuery({
@@ -252,10 +294,11 @@ export function useSyncedTimer({
       intervalRef.current = setInterval(() => {
         setLocalState(prev => {
           console.log('⏱️ Local timer tick, prev state:', prev);
+          let newState;
           if (prev.isCountDown && prev.duration && prev.duration > 0) {
             const newSeconds = Math.max(0, prev.seconds - 1);
             console.log('⏰ Countdown tick:', { prev: prev.seconds, new: newSeconds });
-            return {
+            newState = {
               ...prev,
               seconds: newSeconds,
               isCompleted: newSeconds === 0,
@@ -264,7 +307,7 @@ export function useSyncedTimer({
           } else if (prev.isCountDown && (!prev.duration || prev.duration <= 0)) {
             // Invalid countdown timer - stop it
             console.log('❌ Invalid countdown timer, stopping');
-            return {
+            newState = {
               ...prev,
               seconds: 0,
               isCompleted: true,
@@ -273,11 +316,15 @@ export function useSyncedTimer({
           } else {
             const newSeconds = prev.seconds + 1;
             console.log('⏰ Regular timer tick:', { prev: prev.seconds, new: newSeconds });
-            return {
+            newState = {
               ...prev,
               seconds: newSeconds
             };
           }
+          
+          // Save state to localStorage
+          saveTimerState(newState);
+          return newState;
         });
       }, 1000);
     } else {
@@ -314,6 +361,13 @@ export function useSyncedTimer({
       return;
     }
     
+    // Update local state with description
+    setLocalState(prev => ({
+      ...prev,
+      topicId: topicId || null,
+      description: description || null
+    }));
+    
     startTimerMutation.mutate({
       topicId,
       description,
@@ -326,11 +380,15 @@ export function useSyncedTimer({
     console.log('⏸️ Pause function called, current state:', { isRunning: localState.isRunning, isPaused: localState.isPaused });
     
     // Immediately update local state to stop the timer
-    setLocalState(prev => ({
-      ...prev,
-      isRunning: false,
-      isPaused: true
-    }));
+    setLocalState(prev => {
+      const newState = {
+        ...prev,
+        isRunning: false,
+        isPaused: true
+      };
+      saveTimerState(newState);
+      return newState;
+    });
     
     // Clear the interval immediately
     if (intervalRef.current) {
@@ -348,11 +406,15 @@ export function useSyncedTimer({
     console.log('▶️ Resume function called, current state:', { isRunning: localState.isRunning, isPaused: localState.isPaused });
     
     // Immediately update local state to resume the timer
-    setLocalState(prev => ({
-      ...prev,
-      isRunning: true,
-      isPaused: false
-    }));
+    setLocalState(prev => {
+      const newState = {
+        ...prev,
+        isRunning: true,
+        isPaused: false
+      };
+      saveTimerState(newState);
+      return newState;
+    });
     
     updateTimerMutation.mutate({
       isRunning: true,
@@ -362,13 +424,17 @@ export function useSyncedTimer({
 
   const stop = useCallback(() => {
     // Immediately update local state to stop the timer
-    setLocalState(prev => ({
-      ...prev,
-      isRunning: false,
-      isPaused: false,
-      isCompleted: true,
-      seconds: 0
-    }));
+    setLocalState(prev => {
+      const newState = {
+        ...prev,
+        isRunning: false,
+        isPaused: false,
+        isCompleted: true,
+        seconds: 0
+      };
+      saveTimerState(newState);
+      return newState;
+    });
     
     // Clear the interval immediately
     if (intervalRef.current) {
@@ -381,13 +447,17 @@ export function useSyncedTimer({
 
   const reset = useCallback(() => {
     // Immediately update local state to reset the timer
-    setLocalState(prev => ({
-      ...prev,
-      isRunning: false,
-      isPaused: false,
-      isCompleted: false,
-      seconds: 0
-    }));
+    setLocalState(prev => {
+      const newState = {
+        ...prev,
+        isRunning: false,
+        isPaused: false,
+        isCompleted: false,
+        seconds: 0
+      };
+      saveTimerState(newState);
+      return newState;
+    });
     
     // Clear the interval immediately
     if (intervalRef.current) {

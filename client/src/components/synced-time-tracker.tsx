@@ -88,7 +88,7 @@ export function SyncedTimeTracker() {
   
   // Handle timer completion
   useEffect(() => {
-    if (isCompleted && isCountDown && !hasSaved) {
+    if (isCompleted && !hasSaved) {
       console.log('🎉 Timer completed, saving to database...');
       setHasSaved(true); // Prevent multiple saves
       
@@ -105,7 +105,8 @@ export function SyncedTimeTracker() {
           description,
           startTime: startTimeDate.toISOString(),
           endTime: endTime.toISOString(),
-          duration
+          duration,
+          isCountDown
         });
         
         createTimeEntryMutation.mutate({
@@ -119,10 +120,12 @@ export function SyncedTimeTracker() {
       
       toast({
         title: "הטיימר הסתיים!",
-        description: "טיימר הספירה לאחור שלך הסתיים והזמן נשמר.",
+        description: isCountDown 
+          ? "טיימר הספירה לאחור שלך הסתיים והזמן נשמר."
+          : "הטיימר שלך הסתיים והזמן נשמר.",
       });
     }
-  }, [isCompleted, isCountDown, topicId, startTime, description, hasSaved, createTimeEntryMutation, toast]);
+  }, [isCompleted, topicId, startTime, description, hasSaved, createTimeEntryMutation, toast, isCountDown]);
   
   // Reset save flag when starting a new timer
   useEffect(() => {
