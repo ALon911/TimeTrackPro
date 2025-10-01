@@ -91,7 +91,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Hero Section */}
-        <div className="bg-primary p-8 text-white md:w-1/2 flex flex-col justify-center">
+        <div className="bg-primary p-8 text-white md:w-1/2 flex flex-col justify-center" dir="rtl">
           <h1 className="text-3xl font-bold mb-4">TimeTracker</h1>
           <p className="text-lg mb-6">אפליקציה לניהול הזמן שלך בצורה יעילה ומסודרת</p>
           <ul className="space-y-3">
@@ -118,8 +118,8 @@ export default function AuthPage() {
         <div className="p-8 md:w-1/2">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">התחברות</TabsTrigger>
-              <TabsTrigger value="register">הרשמה</TabsTrigger>
+              <TabsTrigger value="login" className="text-right">התחברות</TabsTrigger>
+              <TabsTrigger value="register" className="text-right">הרשמה</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
@@ -133,7 +133,7 @@ export default function AuthPage() {
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-email" className="text-right">דוא״ל</Label>
+                      <Label htmlFor="login-email" className="text-right block">דוא״ל</Label>
                       <Input
                         id="login-email"
                         type="email"
@@ -143,14 +143,14 @@ export default function AuthPage() {
                         {...loginForm.register("email")}
                       />
                       {loginForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 text-right">
                           {loginForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="login-password" className="text-right">סיסמה</Label>
+                      <Label htmlFor="login-password" className="text-right block">סיסמה</Label>
                       <Input
                         id="login-password"
                         type="password"
@@ -160,7 +160,7 @@ export default function AuthPage() {
                         {...loginForm.register("password")}
                       />
                       {loginForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 text-right">
                           {loginForm.formState.errors.password.message}
                         </p>
                       )}
@@ -169,7 +169,7 @@ export default function AuthPage() {
                   <CardFooter>
                     <Button 
                       type="submit" 
-                      className="w-full" 
+                      className="w-full text-right" 
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -193,7 +193,7 @@ export default function AuthPage() {
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="register-email" className="text-right">דוא״ל</Label>
+                      <Label htmlFor="register-email" className="text-right block">דוא״ל</Label>
                       <Input
                         id="register-email"
                         type="email"
@@ -203,14 +203,14 @@ export default function AuthPage() {
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 text-right">
                           {registerForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="reg-password" className="text-right">סיסמה</Label>
+                      <Label htmlFor="reg-password" className="text-right block">סיסמה</Label>
                       <Input
                         id="reg-password"
                         type="password"
@@ -220,14 +220,14 @@ export default function AuthPage() {
                         {...registerForm.register("password")}
                       />
                       {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 text-right">
                           {registerForm.formState.errors.password.message}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password" className="text-right">אימות סיסמה</Label>
+                      <Label htmlFor="confirm-password" className="text-right block">אימות סיסמה</Label>
                       <Input
                         id="confirm-password"
                         type="password"
@@ -237,7 +237,7 @@ export default function AuthPage() {
                         {...registerForm.register("confirmPassword")}
                       />
                       {registerForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 text-right">
                           {registerForm.formState.errors.confirmPassword.message}
                         </p>
                       )}
@@ -246,7 +246,7 @@ export default function AuthPage() {
                   <CardFooter>
                     <Button 
                       type="submit" 
-                      className="w-full" 
+                      className="w-full text-right" 
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
