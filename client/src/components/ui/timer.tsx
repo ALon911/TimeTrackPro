@@ -123,7 +123,7 @@ export function Timer({ topics, userId }: TimerProps) {
             onValueChange={setSelectedTopicId}
             disabled={isActive}
           >
-            <SelectTrigger className="w-full p-3 border border-neutral-300 focus:ring-2 focus:ring-primary focus:border-primary">
+            <SelectTrigger className="w-full p-3 border border-neutral-300 focus:ring-2 focus:ring-primary focus:border-primary text-right">
               <SelectValue placeholder="בחר נושא" />
             </SelectTrigger>
             <SelectContent>

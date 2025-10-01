@@ -56,6 +56,13 @@ input[dir="ltr"] {
   text-align: left !important;
 }
 
+/* Override for select triggers with text-right class */
+.select-trigger.text-right,
+[role="combobox"].text-right {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
 html {
   font-family: 'Heebo', sans-serif;
 }

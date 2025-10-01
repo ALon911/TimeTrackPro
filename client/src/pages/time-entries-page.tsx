@@ -63,7 +63,7 @@ export default function TimeEntriesPage() {
                 value={selectedTopic}
                 onValueChange={setSelectedTopic}
               >
-                <SelectTrigger id="topic-filter" className="select-trigger w-1/3">
+                <SelectTrigger id="topic-filter" className="select-trigger w-1/3 text-right">
                   <SelectValue placeholder="בחר נושא" className="select-value" />
                 </SelectTrigger>
                 <SelectContent className="select-content">

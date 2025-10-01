@@ -353,9 +353,9 @@ export function SyncedTimeTracker() {
       
       {/* Topic Selection */}
       <div className="space-y-2">
-        <Label htmlFor="topic">בחר נושא</Label>
+        <Label htmlFor="topic" className="text-right">בחר נושא</Label>
         <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-          <SelectTrigger className="w-full sm:w-1/3">
+          <SelectTrigger className="w-full sm:w-1/3 text-right">
             <SelectValue placeholder="בחר נושא למעקב" />
           </SelectTrigger>
           <SelectContent>

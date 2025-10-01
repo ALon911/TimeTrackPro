@@ -692,7 +692,7 @@ export function TimeTracker() {
               onValueChange={setSelectedTopic}
               disabled={isRunning || isPaused}
             >
-              <SelectTrigger id="topic-select" className="select-trigger w-1/3">
+              <SelectTrigger id="topic-select" className="select-trigger w-1/3 text-right">
                 <SelectValue placeholder="בחר נושא" className="select-value" />
               </SelectTrigger>
               <SelectContent className="select-content">

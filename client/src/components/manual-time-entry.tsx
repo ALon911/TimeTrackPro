@@ -94,7 +94,7 @@ export function ManualTimeEntry() {
       <div className="space-y-2">
         <Label htmlFor="topic">נושא</Label>
         <Select onValueChange={(value) => register("topicId").onChange({ target: { value } } as any)}>
-          <SelectTrigger id="topic" className="w-full">
+          <SelectTrigger id="topic" className="w-full text-right">
             <SelectValue placeholder="בחר נושא" />
           </SelectTrigger>
           <SelectContent>

@@ -195,7 +195,7 @@ export function TimeEntryDialog({
             <div className="space-y-2">
               <Label htmlFor="topic">נושא</Label>
               <Select value={topicId} onValueChange={setTopicId}>
-                <SelectTrigger className="w-1/3">
+                <SelectTrigger className="w-1/3 text-right">
                   <SelectValue placeholder="בחר נושא" />
                 </SelectTrigger>
                 <SelectContent>
