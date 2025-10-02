@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+
+// GLOBAL flag to prevent ANY duplicate saves across ALL instances
+let GLOBAL_COMPLETION_LOCK: string | null = null;
+let GLOBAL_SAVE_IN_PROGRESS = false;
+let HOOK_INSTANCE_COUNT = 0;
+
+// Debug: Track all hook instances
+const DEBUG_INSTANCES = new Map<number, string>();
 
 interface SyncedTimerState {
   seconds: number;
@@ -45,8 +54,202 @@ export function useSyncedTimer({
 }: UseSyncedTimerOptions = {}): UseSyncedTimerReturn {
   const queryClient = useQueryClient();
   
+  // Track this hook instance
+  const instanceId = useRef(++HOOK_INSTANCE_COUNT);
+  const instanceIdValue = instanceId.current;
+  
+  useEffect(() => {
+    DEBUG_INSTANCES.set(instanceIdValue, `Hook-${instanceIdValue}`);
+    console.log(`🏗️ Hook instance ${instanceIdValue} created. Total instances:`, DEBUG_INSTANCES.size);
+    console.log('📊 All instances:', Array.from(DEBUG_INSTANCES.values()));
+    
+    return () => {
+      DEBUG_INSTANCES.delete(instanceIdValue);
+      console.log(`🗑️ Hook instance ${instanceIdValue} destroyed. Remaining instances:`, DEBUG_INSTANCES.size);
+    };
+  }, [instanceIdValue]);
+  
   // Timer state persistence key
   const TIMER_STATE_KEY = 'synced_timer_state';
+  
+  // Handle completion directly in hook
+  const completionHandledRef = useRef<string | null>(null);
+  const isProcessingCompletionRef = useRef<boolean>(false);
+  const timerClearedRef = useRef<boolean>(false);
+  const lastProcessedTimerRef = useRef<string | null>(null);
+  
+  // Import audio manager and toast
+  const { toast } = useToast();
+  
+  // Mutation to save time entry directly in hook
+  const createTimeEntryMutation = useMutation({
+    mutationFn: async (timeEntry: any) => {
+      const res = await apiRequest("POST", "/api/time-entries", timeEntry);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/daily"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/weekly"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/most-tracked"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/recent-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/topic-distribution"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/weekly-overview"] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Failed to save time entry:', error);
+    }
+  });
+  
+  // Handle completion directly in hook
+  const handleCompletionInHook = useCallback((state: SyncedTimerState) => {
+    if (!state.topicId || !state.startTime || !state.duration) return;
+    
+    // Check if timer was cleared - if so, don't process completion
+    if (timerClearedRef.current) {
+      console.log('🚫 Timer was cleared, skipping completion handler');
+      return;
+    }
+    
+    const timerKey = `${state.startTime}-${state.topicId}`;
+    
+    console.log(`🔍 [Instance ${instanceIdValue}] GLOBAL CHECK:`, {
+      timerKey,
+      globalLock: GLOBAL_COMPLETION_LOCK,
+      globalSaveInProgress: GLOBAL_SAVE_IN_PROGRESS,
+      localHandled: completionHandledRef.current,
+      localProcessing: isProcessingCompletionRef.current,
+      timerCleared: timerClearedRef.current,
+      totalInstances: DEBUG_INSTANCES.size,
+      allInstances: Array.from(DEBUG_INSTANCES.values())
+    });
+    
+    // GLOBAL CHECK - prevent ANY duplicate across ALL instances
+    if (GLOBAL_COMPLETION_LOCK === timerKey) {
+      console.log('🚫 GLOBAL: Timer already locked globally:', timerKey);
+      return;
+    }
+    
+    if (GLOBAL_SAVE_IN_PROGRESS) {
+      console.log('🚫 GLOBAL: Save already in progress globally');
+      return;
+    }
+    
+    // Local checks
+    if (completionHandledRef.current === timerKey) {
+      console.log('🚫 LOCAL: Timer already handled locally:', timerKey);
+      return;
+    }
+    
+    if (isProcessingCompletionRef.current) {
+      console.log('🚫 LOCAL: Already processing locally');
+      return;
+    }
+    
+    // LOCK GLOBALLY FIRST
+    GLOBAL_COMPLETION_LOCK = timerKey;
+    GLOBAL_SAVE_IN_PROGRESS = true;
+    
+    // Then mark locally
+    completionHandledRef.current = timerKey;
+    isProcessingCompletionRef.current = true;
+    
+    console.log(`🎯 [Instance ${instanceIdValue}] Processing timer completion ONCE:`, timerKey);
+    console.log(`🔒 [Instance ${instanceIdValue}] LOCKING GLOBALLY:`, {
+      timerKey,
+      beforeLock: { globalLock: GLOBAL_COMPLETION_LOCK, globalSave: GLOBAL_SAVE_IN_PROGRESS },
+      afterLock: { globalLock: timerKey, globalSave: true }
+    });
+    
+    // Play sound (if available)
+    try {
+      const audio = new Audio('/sounds/timer-complete.mp3');
+      audio.play().catch(() => console.log('Could not play completion sound'));
+    } catch (e) {
+      console.log('Audio not available');
+    }
+    
+    const endTime = new Date();
+    const startTimeDate = new Date(state.startTime);
+    
+    // For countdown timers, use the original duration
+    let calculatedDuration;
+    if (state.isCountDown && state.duration) {
+      calculatedDuration = state.duration;
+      console.log('📊 Hook: Countdown timer - using original duration:', calculatedDuration, 'seconds');
+    } else {
+      calculatedDuration = Math.floor((endTime.getTime() - startTimeDate.getTime()) / 1000);
+      console.log('📊 Hook: Regular timer - using elapsed time:', calculatedDuration, 'seconds');
+    }
+    
+    // Don't save if duration is too short
+    if (calculatedDuration < 1) {
+      console.log('⚠️ Hook: Duration too short, not saving');
+      isProcessingCompletionRef.current = false;
+      return;
+    }
+    
+    createTimeEntryMutation.mutate({
+      topicId: state.topicId,
+      description: state.description || null,
+      startTime: startTimeDate.toISOString(),
+      endTime: endTime.toISOString(),
+      duration: calculatedDuration,
+    }, {
+      onSuccess: () => {
+        console.log('✅ Hook: Save completed successfully for:', timerKey);
+        
+        // Release GLOBAL locks
+        GLOBAL_COMPLETION_LOCK = null;
+        GLOBAL_SAVE_IN_PROGRESS = false;
+        
+        // Release local locks
+        isProcessingCompletionRef.current = false;
+        
+        // Clear localStorage
+        localStorage.removeItem('synced_timer_state');
+        localStorage.removeItem('timetracker_ui_data');
+        localStorage.removeItem('timetracker_countdown');
+        
+        // Update local state after a brief delay to prevent blink
+        setTimeout(() => {
+          setLocalState({
+            seconds: 0,
+            isRunning: false,
+            isPaused: false,
+            isCompleted: false, // Set to false for clean reset
+            isCountDown: false,
+            startTime: null,
+            duration: null,
+            topicId: null,
+            description: null
+          });
+          console.log('🔄 UI state reset after completion');
+        }, 50);
+        
+        // Show toast if available
+        if (toast) {
+          toast({
+            title: "הטיימר הסתיים!",
+            description: state.isCountDown 
+              ? "טיימר הספירה לאחור שלך הסתיים והזמן נשמר."
+              : "הטיימר שלך הסתיים והזמן נשמר.",
+          });
+        }
+      },
+      onError: () => {
+        console.log('❌ Hook: Save failed for:', timerKey);
+        
+        // Release GLOBAL locks on error
+        GLOBAL_COMPLETION_LOCK = null;
+        GLOBAL_SAVE_IN_PROGRESS = false;
+        
+        // Release local locks
+        isProcessingCompletionRef.current = false;
+        completionHandledRef.current = null; // Allow retry
+      }
+    });
+  }, [createTimeEntryMutation, toast, instanceIdValue]);
   
   // Load timer state from localStorage
   const loadTimerState = (): SyncedTimerState | null => {
@@ -66,6 +269,11 @@ export function useSyncedTimer({
   // Save timer state to localStorage
   const saveTimerState = (state: SyncedTimerState): void => {
     try {
+      // Don't save completed states if timer was cleared
+      if (state.isCompleted && timerClearedRef.current) {
+        console.log('🚫 Not saving completed state - timer was cleared');
+        return;
+      }
       localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
       console.log('💾 Saved timer state to localStorage:', state);
     } catch (error) {
@@ -83,10 +291,31 @@ export function useSyncedTimer({
     }
   };
   
-  // Load saved state from localStorage
-  const savedState = loadTimerState();
-  
-  const [localState, setLocalState] = useState<SyncedTimerState>(savedState || {
+  // Initialize state with localStorage data only once
+  const [localState, setLocalState] = useState<SyncedTimerState>(() => {
+    // Load saved state from localStorage, but ignore completed states
+    const savedState = loadTimerState();
+    
+    // If saved state is completed, clear it and don't load it to prevent triggering completion handler
+    if (savedState && savedState.isCompleted) {
+      console.log('🧹 Found completed timer in localStorage during initialization, clearing it to prevent loop');
+      clearTimerState();
+      timerClearedRef.current = true;
+      lastProcessedTimerRef.current = savedState.startTime ? `${savedState.startTime}-${savedState.topicId}` : null;
+      return {
+        seconds: 0,
+        isRunning: false,
+        isPaused: false,
+        isCompleted: false,
+        isCountDown: false,
+        startTime: null,
+        duration: null,
+        topicId: null,
+        description: null
+      };
+    }
+    
+    const initialState = savedState || {
     seconds: 0,
     isRunning: false,
     isPaused: false,
@@ -96,6 +325,10 @@ export function useSyncedTimer({
     duration: null,
     topicId: null,
     description: null
+    };
+    
+    console.log('🔄 Initializing timer state:', initialState);
+    return initialState;
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,6 +338,11 @@ export function useSyncedTimer({
   const { data: serverTimer, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/timer/active'],
     queryFn: async () => {
+      // Don't fetch if timer is cleared locally
+      if (timerClearedRef.current) {
+        console.log('🚫 Skipping server fetch - timer cleared locally');
+        return null;
+      }
       const res = await apiRequest('GET', '/api/timer/active');
       return await res.json();
     },
@@ -206,15 +444,17 @@ export function useSyncedTimer({
 
   // Sync with server data (hybrid approach)
   useEffect(() => {
+    // Don't sync if we've already processed completion locally
+    if (timerClearedRef.current) {
+      console.log('🚫 Skipping server sync - timer already cleared locally');
+      return;
+    }
+    
     if (serverTimer) {
       // If timer is paused, don't recalculate time - keep current state
       if (serverTimer.isPaused) {
         setLocalState(prev => {
           if (prev.isRunning !== serverTimer.isRunning || prev.isPaused !== serverTimer.isPaused) {
-            console.log('🔄 Updating paused timer state from server:', { 
-              prev: { isRunning: prev.isRunning, isPaused: prev.isPaused }, 
-              server: { isRunning: serverTimer.isRunning, isPaused: serverTimer.isPaused }
-            });
             return {
               ...prev,
               isRunning: serverTimer.isRunning,
@@ -234,35 +474,34 @@ export function useSyncedTimer({
       const serverStartTime = new Date(serverTimer.startTime).getTime();
       const elapsedSeconds = Math.floor((now - serverStartTime) / 1000);
       
+      // Add network latency compensation for mobile devices
+      const networkLatencyBuffer = 1; // 1 second buffer for mobile network delays
+      const adjustedElapsedSeconds = Math.max(0, elapsedSeconds - networkLatencyBuffer);
+      
       let calculatedSeconds = 0;
       let isCompleted = false;
 
       if (serverTimer.duration && serverTimer.isCountDown && serverTimer.duration > 0) {
-        // Countdown timer - use server calculation for sync
-        calculatedSeconds = Math.max(0, serverTimer.duration - elapsedSeconds);
-        isCompleted = calculatedSeconds === 0;
+        // Countdown timer - use adjusted elapsed time to compensate for mobile latency
+        calculatedSeconds = Math.max(0, serverTimer.duration - adjustedElapsedSeconds);
+        isCompleted = calculatedSeconds === 0 && !localState.isCompleted; // Only set completed if not already completed
       } else if (serverTimer.isCountDown && (!serverTimer.duration || serverTimer.duration <= 0)) {
         // Invalid countdown timer - stop it
         calculatedSeconds = 0;
-        isCompleted = true;
+        isCompleted = !localState.isCompleted; // Only set completed if not already completed
       } else {
-        // Regular timer
+        // Regular timer - use original elapsed time for counting up
         calculatedSeconds = elapsedSeconds;
+        isCompleted = false; // Regular timers don't auto-complete
       }
 
       // Update state from server for running timers
       setLocalState(prev => {
         const timeDiff = Math.abs(prev.seconds - calculatedSeconds);
         
-        // Only update if there's a significant difference (more than 2 seconds)
-        // This prevents constant updates from network delays
-        if (timeDiff > 2 || prev.isRunning !== serverTimer.isRunning || prev.isPaused !== serverTimer.isPaused) {
-          console.log('🔄 Syncing timer from server:', {
-            prev: prev.seconds,
-            server: calculatedSeconds,
-            diff: timeDiff
-          });
-          
+        // Only update if there's a significant difference (more than 3 seconds for mobile tolerance)
+        // This prevents constant updates from network delays, especially on mobile
+        if (timeDiff > 3 || prev.isRunning !== serverTimer.isRunning || prev.isPaused !== serverTimer.isPaused) {
           return {
             ...prev,
             isRunning: serverTimer.isRunning,
@@ -291,52 +530,142 @@ export function useSyncedTimer({
 
   // Local timer tick
   useEffect(() => {
-    console.log('⏰ Local timer tick effect triggered:', { 
-      isRunning: localState.isRunning, 
-      isPaused: localState.isPaused, 
-      isCompleted: localState.isCompleted 
-    });
-    
-    if (localState.isRunning && !localState.isPaused && !localState.isCompleted) {
-      console.log('▶️ Starting local timer interval');
+    if (localState.isRunning && !localState.isPaused && !localState.isCompleted && !timerClearedRef.current) {
       intervalRef.current = setInterval(() => {
         setLocalState(prev => {
-          console.log('⏱️ Local timer tick, prev state:', prev);
+          // Double check that timer hasn't been cleared during interval
+          if (timerClearedRef.current) {
+            console.log('🚫 Timer was cleared during interval, stopping');
+            return prev;
+          }
+          
+          // Check if timer is already completed to prevent multiple completions
+          if (prev.isCompleted) {
+            console.log('🚫 Timer already completed, stopping interval');
+            return prev;
+          }
+          
           let newState;
           if (prev.isCountDown && prev.duration && prev.duration > 0) {
             const newSeconds = Math.max(0, prev.seconds - 1);
-            console.log('⏰ Countdown tick:', { prev: prev.seconds, new: newSeconds });
-            newState = {
+            const isJustCompleted = newSeconds === 0 && !prev.isCompleted;
+            
+            // Early check before creating new state
+            if (isJustCompleted) {
+              const timerKey = `${prev.startTime}-${prev.topicId}`;
+              
+              // Check if we've already processed this exact timer completion
+              if (lastProcessedTimerRef.current === timerKey) {
+                console.log(`🚫 [Instance ${instanceIdValue}] Timer completion already processed: ${timerKey} - early exit`);
+                // Return the previous state to prevent re-render
+                return prev;
+              }
+            }
+            
+            // If completing, don't update state here - let success handler do it
+            if (isJustCompleted) {
+              // Keep the current state, don't change it yet
+              newState = {
+                ...prev,
+                seconds: 0, // Show 0 immediately
+                isRunning: false // Stop the timer display
+              };
+            } else {
+              newState = {
               ...prev,
               seconds: newSeconds,
-              isCompleted: newSeconds === 0,
+                isCompleted: false,
               isRunning: newSeconds > 0
             };
+            }
+            
+            // Handle completion directly in hook
+            if (isJustCompleted) {
+              const timerKey = `${prev.startTime}-${prev.topicId}`;
+              
+              console.log(`🎯 [Instance ${instanceIdValue}] Timer just completed, handling immediately`);
+              console.log(`📊 [Instance ${instanceIdValue}] Timer state:`, {
+                seconds: 0,
+                isCompleted: true, // For logging purposes
+                topicId: prev.topicId,
+                startTime: prev.startTime,
+                duration: prev.duration
+              });
+              
+              lastProcessedTimerRef.current = timerKey;
+              
+              // Set cleared flag to prevent server sync from overriding
+              timerClearedRef.current = true;
+              
+              // Clear the interval immediately to prevent further ticks
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+                console.log('🛑 Cleared interval after completion');
+              }
+              
+              // Create a completed state object for the handler (not for UI)
+              const completedState = {
+                ...prev,
+                seconds: 0,
+                isCompleted: true,
+                isRunning: false
+              };
+              
+              // Handle completion and immediately update UI state
+              handleCompletionInHook(completedState);
+            }
           } else if (prev.isCountDown && (!prev.duration || prev.duration <= 0)) {
             // Invalid countdown timer - stop it
-            console.log('❌ Invalid countdown timer, stopping');
+            const isJustCompleted = !prev.isCompleted;
             newState = {
               ...prev,
               seconds: 0,
-              isCompleted: true,
+              isCompleted: isJustCompleted,
               isRunning: false
             };
+            
+            // Handle completion directly in hook
+            if (isJustCompleted) {
+              const timerKey = `${prev.startTime}-${prev.topicId}`;
+              
+              // Check if we've already processed this exact timer completion
+              if (lastProcessedTimerRef.current === timerKey) {
+                console.log(`🚫 [Instance ${instanceIdValue}] Invalid timer completion already processed: ${timerKey}`);
+                // Return the previous state to prevent re-render
+                return prev;
+              }
+              
+              console.log(`🎯 [Instance ${instanceIdValue}] Invalid timer completed, handling immediately`);
+              lastProcessedTimerRef.current = timerKey;
+              
+              // Clear the interval immediately to prevent further ticks
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+                console.log('🛑 Cleared interval after invalid completion');
+              }
+              
+              // Handle completion and immediately update UI state
+              handleCompletionInHook(newState);
+            }
           } else {
             const newSeconds = prev.seconds + 1;
-            console.log('⏰ Regular timer tick:', { prev: prev.seconds, new: newSeconds });
             newState = {
               ...prev,
               seconds: newSeconds
             };
           }
           
-          // Save state to localStorage
-          saveTimerState(newState);
+          // Save state to localStorage (but not when completing to prevent blink)
+          const shouldSave = !newState.isCompleted && newState.isRunning;
+          if (shouldSave) {
+            saveTimerState(newState);
+          }
           return newState;
         });
       }, 1000);
     } else {
-      console.log('⏸️ Stopping local timer interval');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -349,7 +678,7 @@ export function useSyncedTimer({
         intervalRef.current = null;
       }
     };
-  }, [localState.isRunning, localState.isPaused, localState.isCompleted, localState.isCountDown]);
+  }, [localState.isRunning, localState.isPaused, localState.isCompleted, localState.isCountDown, handleCompletionInHook, instanceIdValue]);
 
   // Auto-sync with server (less frequent to avoid conflicts)
   useEffect(() => {
@@ -363,17 +692,36 @@ export function useSyncedTimer({
   }, [autoSync, localState.isRunning, localState.isPaused, syncInterval, refetch]);
 
   const start = useCallback((topicId?: number, description?: string, duration?: number, isCountDown = false) => {
+    // Reset completion handling for new timer
+    completionHandledRef.current = null;
+    isProcessingCompletionRef.current = false;
+    timerClearedRef.current = false; // Reset cleared flag for new timer
+    lastProcessedTimerRef.current = null; // Reset processed timer tracking
+    
+    // Reset GLOBAL flags for new timer
+    GLOBAL_COMPLETION_LOCK = null;
+    GLOBAL_SAVE_IN_PROGRESS = false;
+    
+    // Clear localStorage state to prevent loading old completed state
+    clearTimerState();
+    
+    console.log('🔄 Starting new timer - reset ALL completion tracking (global + local) and cleared localStorage');
+    
     // Validate countdown timer duration
     if (isCountDown && duration !== undefined && duration <= 0) {
       console.error('Countdown timer duration must be greater than 0');
       return;
     }
     
-    // Update local state with description
+    // Update local state with fresh timer state
     setLocalState(prev => ({
       ...prev,
       topicId: topicId || null,
-      description: description || null
+      description: description || null,
+      isCompleted: false,
+      isRunning: false,
+      isPaused: false,
+      seconds: isCountDown && duration ? duration : 0
     }));
     
     startTimerMutation.mutate({

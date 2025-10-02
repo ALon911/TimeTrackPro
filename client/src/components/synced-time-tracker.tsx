@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -21,10 +21,14 @@ export function SyncedTimeTracker() {
   const [isSharing, setIsSharing] = useState<boolean>(false);
   const [hasSaved, setHasSaved] = useState<boolean>(false);
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
+  const saveInProgressRef = useRef<boolean>(false);
+  const lastCompletedTimerRef = useRef<string | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // No callback - we'll handle completion with useEffect only
+
   // Mutation to save time entry to database
   const createTimeEntryMutation = useMutation({
     mutationFn: async (timeEntry: {
@@ -86,58 +90,21 @@ export function SyncedTimeTracker() {
     isUpdating,
     isStopping,
     error: timerError
-  } = useSyncedTimer({ autoSync: true, syncInterval: 2000 });
+  } = useSyncedTimer({ 
+    autoSync: true, 
+    syncInterval: 2000
+    // No callback - we'll use useEffect instead
+  });
   
-  // Handle timer completion
-  useEffect(() => {
-    if (isCompleted && !hasSaved) {
-      console.log('🎉 Timer completed, saving to database...');
-      setHasSaved(true); // Prevent multiple saves
-      
-      audioManager.playTimerComplete();
-      
-      // Save time entry to database when timer completes
-      if (topicId && startTime) {
-        const endTime = new Date();
-        const startTimeDate = new Date(startTime);
-        const duration = Math.floor((endTime.getTime() - startTimeDate.getTime()) / 1000);
-        
-        console.log('💾 Saving time entry to database:', {
-          topicId,
-          description,
-          startTime: startTimeDate.toISOString(),
-          endTime: endTime.toISOString(),
-          duration,
-          isCountDown
-        });
-        
-        createTimeEntryMutation.mutate({
-          topicId,
-          description: timerDescription || description || null,
-          startTime: startTimeDate.toISOString(),
-          endTime: endTime.toISOString(),
-          duration: duration,
-        });
-      }
-      
-      // Clear localStorage when timer completes
-      localStorage.removeItem('synced_timer_state');
-      localStorage.removeItem('timetracker_ui_data');
-      localStorage.removeItem('timetracker_countdown');
-      
-      toast({
-        title: "הטיימר הסתיים!",
-        description: isCountDown 
-          ? "טיימר הספירה לאחור שלך הסתיים והזמן נשמר."
-          : "הטיימר שלך הסתיים והזמן נשמר.",
-      });
-    }
-  }, [isCompleted, topicId, startTime, description, hasSaved, createTimeEntryMutation, toast, isCountDown]);
+  // Timer completion is now handled entirely in the hook
   
   // Reset save flag when starting a new timer
   useEffect(() => {
     if (isRunning && !isPaused && !isCompleted) {
       setHasSaved(false);
+      saveInProgressRef.current = false;
+      lastCompletedTimerRef.current = null;
+      console.log('🔄 Timer started - reset component flags');
     }
   }, [isRunning, isPaused, isCompleted]);
 
@@ -376,9 +343,8 @@ export function SyncedTimeTracker() {
         </div>
         
         {isRunning && (
-          <div className="text-sm text-muted-foreground">
-            {isCountDown ? 'טיימר ספירה לאחור' : 'טיימר רגיל'} • 
-            {currentTopic ? ` נושא: ${currentTopic.name}` : ''}
+          <div className="text-base font-medium text-muted-foreground">
+            {currentTopic ? `נושא: ${currentTopic.name}` : ''}
             {timerDescription && ` • ${timerDescription}`}
           </div>
         )}
@@ -538,8 +504,9 @@ export function SyncedTimeTracker() {
               <Input
                 id="customMinutes"
                 type="number"
-                value={customMinutes}
+                value={customMinutes || ""}
                 onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
                 placeholder="הכנס דקות"
                 min="1"
                 max="1440"
