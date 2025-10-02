@@ -277,8 +277,8 @@ export default function ReportsPage() {
                   title="היום" 
                   value={formatTime(dailyStats?.total || 0)} 
                   icon={<Calendar className="h-4 w-4" />} 
-                  trend={dailyStats?.percentChange} 
-                  trendLabel={dailyStats?.percentChange > 0 ? 'יותר מאתמול' : 'פחות מאתמול'}
+                  trend={dailyStats?.increase ? dailyStats?.percentChange : -(dailyStats?.percentChange || 0)} 
+                  trendLabel={dailyStats?.percentChange > 0 ? 'מאתמול' : 'מאתמול'}
                   iconBg="bg-primary/10"
                   iconColor="text-primary"
                   secondaryValue={(dailyStats?.total === 0 || !dailyStats?.total) 
@@ -296,8 +296,8 @@ export default function ReportsPage() {
                   title="השבוע" 
                   value={formatTime(weeklyStats?.total || 0)} 
                   icon={<Clock className="h-4 w-4" />} 
-                  trend={weeklyStats?.percentChange} 
-                  trendLabel={weekRange}
+                  trend={weeklyStats?.increase ? weeklyStats?.percentChange : -(weeklyStats?.percentChange || 0)} 
+                  trendLabel="מהשבוע הקודם"
                   iconBg="bg-blue-100"
                   iconColor="text-blue-700"
                   secondaryValue={(weeklyStats?.total === 0 || !weeklyStats?.total) 
