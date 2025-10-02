@@ -339,7 +339,9 @@ export function SyncedTimeTracker() {
   
   
   // Format display time
-  const displayTime = formatTime(seconds);
+  const displayTime = !isRunning && !isPaused && customMinutes > 0 
+    ? formatTime(customMinutes * 60) 
+    : formatTime(seconds);
   
   // Get current topic name
   const currentTopic = topics?.find(topic => topic.id === topicId);
