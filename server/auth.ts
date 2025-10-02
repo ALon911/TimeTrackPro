@@ -89,6 +89,7 @@ export function setupAuth(app: Express) {
         username,
         email: req.body.email,
         password: await hashPassword(req.body.password),
+        displayName: req.body.displayName || null,
       });
 
       // Don't send the password hash back to the client

@@ -91,6 +91,7 @@ export class DatabaseStorage implements IStorage {
         username TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
+        display_name TEXT,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -200,8 +201,8 @@ export class DatabaseStorage implements IStorage {
       console.log('Seeding database with sample data...');
       
       // Create default user directly with SQL (password = 'password')
-      const userStmt = this.db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
-      const userResult = userStmt.run('demo_user', 'user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f');
+      const userStmt = this.db.prepare('INSERT INTO users (username, email, password, display_name) VALUES (?, ?, ?, ?)');
+      const userResult = userStmt.run('demo_user', 'user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f', 'Demo User');
       const userId = userResult.lastInsertRowid as number;
       
       // Create default topics directly with SQL
@@ -361,8 +362,15 @@ export class DatabaseStorage implements IStorage {
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const user = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined;
-    return user;
+    const user = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
+    if (!user) return undefined;
+    
+    // Map display_name to displayName for TypeScript compatibility
+    return {
+      ...user,
+      displayName: user.display_name,
+      createdAt: user.created_at
+    } as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -371,18 +379,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const user = this.db.prepare('SELECT * FROM users WHERE email = ?').get(email) as User | undefined;
-    return user;
+    const user = this.db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    if (!user) return undefined;
+    
+    // Map display_name to displayName for TypeScript compatibility
+    return {
+      ...user,
+      displayName: user.display_name,
+      createdAt: user.created_at
+    } as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const stmt = this.db.prepare('INSERT INTO users (username, email, password) VALUES (?, ?, ?)');
-    const result = stmt.run(insertUser.username, insertUser.email, insertUser.password);
+    const stmt = this.db.prepare('INSERT INTO users (username, email, password, display_name) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(insertUser.username, insertUser.email, insertUser.password, insertUser.displayName || null);
     const id = result.lastInsertRowid as number;
     return { ...insertUser, id, createdAt: new Date().toISOString() };
   }
 
-  async updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined> {
+  async updateUser(id: number, userData: Partial<{ email: string; displayName: string }>): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
@@ -392,6 +407,11 @@ export class DatabaseStorage implements IStorage {
     if (userData.email !== undefined) {
       updates.push('email = ?');
       params.push(userData.email);
+    }
+
+    if (userData.displayName !== undefined) {
+      updates.push('display_name = ?');
+      params.push(userData.displayName);
     }
 
     if (updates.length === 0) return user;

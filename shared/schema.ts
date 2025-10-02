@@ -25,6 +25,7 @@ export const users = sqliteTable("users", {
   username: text("username").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  displayName: text("display_name"), // Optional display name
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -34,6 +35,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
   password: true,
+  displayName: true,
 });
 
 // Teams schema (for group time tracking)

@@ -153,13 +153,13 @@ export class SQLiteStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const stmt = this.db.prepare('INSERT INTO users (username, password, email) VALUES (?, ?, ?)');
-    const result = stmt.run(insertUser.username, insertUser.password, insertUser.email || null);
+    const stmt = this.db.prepare('INSERT INTO users (username, password, email, display_name) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(insertUser.username, insertUser.password, insertUser.email || null, insertUser.displayName || null);
     const id = result.lastInsertRowid as number;
     return { ...insertUser, id };
   }
   
-  async updateUser(id: number, userData: Partial<{ username: string; email: string }>): Promise<User | undefined> {
+  async updateUser(id: number, userData: Partial<{ username: string; email: string; displayName: string }>): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
@@ -174,6 +174,11 @@ export class SQLiteStorage implements IStorage {
     if (userData.email !== undefined) {
       updates.push('email = ?');
       params.push(userData.email);
+    }
+
+    if (userData.displayName !== undefined) {
+      updates.push('display_name = ?');
+      params.push(userData.displayName);
     }
 
     if (updates.length === 0) return user;

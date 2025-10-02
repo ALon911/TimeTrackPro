@@ -141,7 +141,7 @@ export function Sidebar() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="mr-3">
-                    <div className="font-medium text-neutral-800">{user?.username}</div>
+                    <div className="font-medium text-neutral-800">{user?.displayName || user?.username}</div>
                     <div className="text-sm text-neutral-500">{user?.email || "ללא אימייל"}</div>
                   </div>
                 </div>

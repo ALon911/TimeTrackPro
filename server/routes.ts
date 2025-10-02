@@ -1325,6 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateSchema = z.object({
         username: z.string().min(2).optional(),
         email: z.string().email().optional(),
+        displayName: z.string().optional(),
       });
       
       const userData = updateSchema.parse(req.body);

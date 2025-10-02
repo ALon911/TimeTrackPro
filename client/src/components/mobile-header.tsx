@@ -27,7 +27,7 @@ export function MobileHeader() {
       
       <UserProfileDialog>
         <Avatar className="h-8 w-8 bg-primary text-white dark:text-slate-800 cursor-pointer">
-          <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
+          <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'מ'}</AvatarFallback>
         </Avatar>
       </UserProfileDialog>
     </header>

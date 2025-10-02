@@ -20,6 +20,7 @@ const loginSchema = z.object({
 const registerSchema = insertUserSchema.omit({ username: true }).extend({
   password: z.string().min(6, "סיסמה חייבת להכיל לפחות 6 תווים"),
   confirmPassword: z.string(),
+  displayName: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   path: ['confirmPassword'],
   message: 'הסיסמאות אינן תואמות',
@@ -46,6 +47,7 @@ export default function AuthPage() {
       email: "",
       password: "",
       confirmPassword: "",
+      displayName: "",
     },
   });
 
@@ -192,6 +194,23 @@ export default function AuthPage() {
                 </CardHeader>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
                   <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="register-display-name" className="text-right block">שם תצוגה (אופציונאלי)</Label>
+                      <Input
+                        id="register-display-name"
+                        type="text"
+                        placeholder="הכנס שם תצוגה"
+                        dir="ltr"
+                        className="text-left"
+                        {...registerForm.register("displayName")}
+                      />
+                      {registerForm.formState.errors.displayName && (
+                        <p className="text-sm text-red-500 text-right">
+                          {registerForm.formState.errors.displayName.message}
+                        </p>
+                      )}
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="register-email" className="text-right block">דוא״ל</Label>
                       <Input

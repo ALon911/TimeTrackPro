@@ -56,9 +56,9 @@ export function UserProfileDialog({ children }: UserProfileDialogProps) {
         </DialogHeader>
         <div className="flex flex-col items-center mb-4">
           <Avatar className="h-16 w-16 mb-2 bg-primary text-primary-foreground">
-            <AvatarFallback className="text-xl">{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
+            <AvatarFallback className="text-xl">{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'מ'}</AvatarFallback>
           </Avatar>
-          <h3 className="font-medium text-lg">{user?.username || 'משתמש'}</h3>
+          <h3 className="font-medium text-lg">{user?.displayName || user?.username || 'משתמש'}</h3>
           <p className="text-sm text-muted-foreground">{user?.email || ''}</p>
         </div>
 

@@ -152,12 +152,12 @@ export function Sidebar() {
           <UserProfileDialog>
             <div className="flex items-center cursor-pointer">
               <Avatar className="w-10 h-10 bg-primary text-primary-foreground">
-                <AvatarFallback>{user?.email?.charAt(0) || 'מ'}</AvatarFallback>
+                <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'מ'}</AvatarFallback>
               </Avatar>
-              <div className="mr-3">
-                <div className="font-medium">{user?.username || 'משתמש'}</div>
-                <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
-              </div>
+      <div className="mr-3">
+        <div className="font-medium">{user?.displayName || user?.username || 'משתמש'}</div>
+        <div className="text-sm text-muted-foreground">{user?.email || ''}</div>
+      </div>
             </div>
           </UserProfileDialog>
           

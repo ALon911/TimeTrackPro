@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -30,6 +30,7 @@ const profileFormSchema = z.object({
     .string()
     .min(1, { message: "דוא״ל הוא שדה חובה" })
     .email({ message: "אימייל אינו תקין" }),
+  displayName: z.string().optional(),
 });
 
 export default function SettingsPage() {
@@ -41,16 +42,32 @@ export default function SettingsPage() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       email: user?.email || "",
+      displayName: user?.displayName || "",
     },
   });
+
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        email: user.email || "",
+        displayName: user.displayName || "",
+      });
+    }
+  }, [user]);
   
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { email: string }) => {
-      const res = await apiRequest("PATCH", "/api/user", data);
+    mutationFn: async (data: { email: string; displayName?: string }) => {
+      const res = await apiRequest("PUT", "/api/user/profile", data);
       return await res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user"], data);
+      // Update form with new data
+      form.reset({
+        email: data.email,
+        displayName: data.displayName || "",
+      });
       toast({
         title: "הפרופיל עודכן בהצלחה",
         variant: "default",
@@ -116,12 +133,35 @@ export default function SettingsPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
+                    name="displayName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-right block">שם תצוגה</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="הכנס שם תצוגה"
+                            dir="ltr"
+                            className="text-left"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>דוא״ל</FormLabel>
+                        <FormLabel className="text-right block">דוא״ל</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input 
+                            {...field} 
+                            dir="ltr"
+                            className="text-left"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

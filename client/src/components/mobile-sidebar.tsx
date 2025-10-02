@@ -78,11 +78,11 @@ export function MobileSidebar({ onClose }: MobileSidebarProps) {
         <div className="flex items-center">
           <Avatar className="h-10 w-10 mr-3 bg-primary text-primary-foreground">
             <AvatarFallback>
-              {user?.email?.charAt(0)?.toUpperCase() || 'מ'}
+              {user?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'מ'}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{user?.email?.split('@')[0] || 'משתמש'}</h3>
+            <h3 className="font-medium">{user?.displayName || user?.username || 'משתמש'}</h3>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>

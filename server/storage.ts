@@ -42,7 +42,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>; // Kept for backward compatibility
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<{ email: string }>): Promise<User | undefined>;
+  updateUser(id: number, userData: Partial<{ email: string; displayName: string }>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   
   // Topic methods

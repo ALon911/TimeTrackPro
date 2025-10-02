@@ -22,7 +22,7 @@ type AuthContextType = {
 type LoginData = Pick<InsertUser, "email" | "password">;
 type ProfileUpdateData = {
   email: string;
-  username: string;
+  displayName?: string;
 };
 
 // Create a named export for consistent module structure
