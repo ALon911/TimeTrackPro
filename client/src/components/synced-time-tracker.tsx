@@ -206,6 +206,16 @@ export function SyncedTimeTracker() {
   const handleStart = useCallback(() => {
     console.log('🔘 Button clicked:', { isRunning, isPaused });
     
+    // Check if topic is selected when starting a new timer
+    if (!isRunning && !isPaused && !selectedTopic) {
+      toast({
+        title: "נושא לא נבחר",
+        description: "יש לבחור נושא כדי להפעיל את הטיימר",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // If timer is paused, resume it
     if (isPaused) {
       console.log('▶️ Resuming timer');
@@ -253,7 +263,7 @@ export function SyncedTimeTracker() {
       console.log('🚀 Starting countdown timer');
       startCountdownTimer(customMinutes);
     }
-  }, [isRunning, isPaused, resume, pause, customMinutes, startCountdownTimer, toast]);
+  }, [isRunning, isPaused, resume, pause, customMinutes, startCountdownTimer, toast, selectedTopic]);
   
   const handleStop = useCallback(() => {
     try {
@@ -443,7 +453,11 @@ export function SyncedTimeTracker() {
       <div className="space-y-2">
         <Label htmlFor="topic" className="text-right">בחר נושא</Label>
         <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-          <SelectTrigger className="w-full sm:w-1/3 text-right">
+          <SelectTrigger className={`w-full sm:w-1/3 text-right ${
+            !selectedTopic && (isStarting || customMinutes > 0) 
+              ? 'border-red-500 border-2 ring-2 ring-red-200' 
+              : ''
+          }`}>
             <SelectValue placeholder="בחר נושא למעקב" />
           </SelectTrigger>
           <SelectContent>
@@ -460,6 +474,11 @@ export function SyncedTimeTracker() {
             ))}
           </SelectContent>
         </Select>
+        {!selectedTopic && (isStarting || customMinutes > 0) && (
+          <p className="text-red-500 text-sm text-right mt-1">
+            יש לבחור נושא כדי להפעיל את הטיימר
+          </p>
+        )}
       </div>
       
       {/* Description */}
