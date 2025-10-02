@@ -457,6 +457,7 @@ export function SyncedTimeTracker() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="על מה אתה עובד?"
+          className="w-full sm:w-1/3"
         />
       </div>
       

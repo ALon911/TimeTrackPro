@@ -718,6 +718,7 @@ export function TimeTracker() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="תיאור קצר של המשימה"
             disabled={isRunning || isPaused}
+            className="w-full sm:w-1/3"
           />
         </div>
       </div>

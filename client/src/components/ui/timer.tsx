@@ -144,7 +144,7 @@ export function Timer({ topics, userId }: TimerProps) {
         <div className="flex-1">
           <Label className="block text-sm font-medium text-neutral-700 mb-1">תיאור</Label>
           <Input 
-            className="w-full p-3 border border-neutral-300 focus:ring-2 focus:ring-primary focus:border-primary" 
+            className="w-full sm:w-1/3 p-3 border border-neutral-300 focus:ring-2 focus:ring-primary focus:border-primary" 
             placeholder="מה אתה עושה?"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
