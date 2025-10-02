@@ -596,22 +596,27 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getWeeklyOverview(userId: number): Promise<WeeklyData[]> {
+    console.log(`🔍 getWeeklyOverview called for user ${userId} at ${new Date().toISOString()}`);
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
     
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayNamesHebrew = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    const dayNamesHebrew = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']; // Sunday=א, Monday=ב, ... Saturday=ש
     
     // Initialize with zero time for each day
     const weekData: WeeklyData[] = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
+      const dayOfWeekNum = day.getDay(); // Get the actual day of week (0=Sunday, 1=Monday, etc.)
+      console.log(`🗓️ Day ${i}: ${day.toISOString().split('T')[0]} -> getDay()=${dayOfWeekNum} -> Hebrew: ${dayNamesHebrew[dayOfWeekNum]}`);
       
       return {
         day: dayNames[i],
-        dayHebrew: dayNamesHebrew[i],
-        totalTime: 0
+        dayOfWeek: dayNamesHebrew[dayOfWeekNum], // Use the actual day of week number
+        totalDuration: 0,
+        totalTime: 0,
+        date: day.toISOString().split('T')[0]
       };
     });
     
@@ -632,9 +637,17 @@ export class SQLiteStorage implements IStorage {
       weekEnd.setDate(startOfWeek.getDate() + 7);
       
       if (entryTime >= weekStart && entryTime < weekEnd.getTime()) {
-        weekData[dayOfWeek].totalTime += entry.duration;
+        // Make sure we're adding to the correct day in our weekData array
+        // dayOfWeek corresponds directly to our weekData index since both start from Sunday (0)
+        if (dayOfWeek >= 0 && dayOfWeek < weekData.length) {
+          weekData[dayOfWeek].totalTime += entry.duration;
+          weekData[dayOfWeek].totalDuration += entry.duration;
+        }
       }
     });
+    
+    // Debug: Log the final data
+    console.log('Final weekData:', weekData.map(d => ({ dayOfWeek: d.dayOfWeek, totalDuration: d.totalDuration })));
     
     return weekData;
   }

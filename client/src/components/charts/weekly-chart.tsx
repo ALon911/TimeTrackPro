@@ -21,12 +21,18 @@ export function WeeklyChart() {
     );
   }
 
-  // Transform data for use with recharts
-  const chartData = data.map((item: any) => ({
-    day: item.dayOfWeek,
-    hours: item.totalDuration / 3600, // Convert seconds to hours
-    totalDuration: item.totalDuration,
-  }));
+  // Transform data for use with recharts and ensure correct order
+  // Create a mapping for Hebrew day order (right to left: Sunday to Saturday)
+  const dayOrder = ['ש', 'ו', 'ה', 'ד', 'ג', 'ב', 'א'];
+  
+  const chartData = data
+    .map((item: any) => ({
+      day: item.dayOfWeek,
+      hours: item.totalDuration / 3600, // Convert seconds to hours
+      totalDuration: item.totalDuration,
+      dayIndex: dayOrder.indexOf(item.dayOfWeek)
+    }))
+    .sort((a: any, b: any) => a.dayIndex - b.dayIndex); // Sort by day order (right to left)
 
   // Create a custom tooltip component
   const CustomTooltip = ({ active, payload }: any) => {

@@ -848,38 +848,65 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getWeeklyOverview(userId: number): Promise<WeeklyData[]> {
+    console.log(`🔍 getWeeklyOverview called for user ${userId} at ${new Date().toISOString()}`);
     const today = new Date();
+    console.log(`📅 Raw today: ${today.toString()}`);
+    console.log(`📅 Today getDay(): ${today.getDay()}`);
     today.setHours(0, 0, 0, 0);
+    console.log(`📅 Today after setHours: ${today.toString()}`);
     
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
+    console.log(`📅 Start of week: ${startOfWeek.toString()}`);
+    console.log(`📅 Start of week ISO: ${startOfWeek.toISOString()}`);
+    console.log(`📅 Start of week getDay(): ${startOfWeek.getDay()}`);
     
-    const endOfWeek = new Date(startOfWeek);
+    // Let's also check what date we think today is
+    console.log(`📅 Today's date string (ISO): ${today.toISOString().split('T')[0]}`);
+    console.log(`📅 Today's date string (local): ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+    console.log(`📅 Today should be Thursday (4), is it? ${today.getDay()}`);
+    
+    // The problem is timezone! Let's use local date formatting instead of ISO
+    console.log(`🔧 FIXING: Using local date instead of ISO date`);
+    
+    // Continue with the original logic
+    const startOfWeekFinal = new Date(today);
+    startOfWeekFinal.setDate(today.getDate() - today.getDay()); // Start from Sunday
+    
+    const endOfWeek = new Date(startOfWeekFinal);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
     
     const entries = await this.getTimeEntries(userId, {
-      startDate: startOfWeek,
+      startDate: startOfWeekFinal,
       endDate: endOfWeek
     });
     
-    const daysOfWeek = ['ש', 'ו', 'ה', 'ד', 'ג', 'ב', 'א']; // מימין לשמאל: שבת, שישי, חמישי, רביעי, שלישי, שני, ראשון
+    const dayNamesHebrew = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']; // Sunday=א, Monday=ב, ... Saturday=ש
     const weekData: WeeklyData[] = [];
     
     // Initialize data for each day of the week
     for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
+      const day = new Date(startOfWeekFinal);
       day.setDate(day.getDate() + i);
+      const dayOfWeekNum = day.getDay(); // Get the actual day of week (0=Sunday, 1=Monday, etc.)
+      console.log(`🗓️ Day ${i}: ${day.toISOString().split('T')[0]} -> getDay()=${dayOfWeekNum} -> Hebrew: ${dayNamesHebrew[dayOfWeekNum]}`);
+      
+      // Use local date formatting instead of ISO to avoid timezone issues
+      const localDateString = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      console.log(`🔧 Day ${i}: ISO=${day.toISOString().split('T')[0]} vs Local=${localDateString}`);
       
       weekData.push({
-        day: day.toISOString().split('T')[0], // YYYY-MM-DD
-        dayOfWeek: daysOfWeek[i],
+        day: localDateString, // Use local date instead of ISO
+        dayOfWeek: dayNamesHebrew[dayOfWeekNum], // Use the actual day of week number
         totalDuration: 0
       });
     }
     
     // Aggregate entries by day
     entries.forEach(entry => {
-      const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
+      const entryDateObj = new Date(entry.startTime);
+      const entryDate = `${entryDateObj.getFullYear()}-${String(entryDateObj.getMonth() + 1).padStart(2, '0')}-${String(entryDateObj.getDate()).padStart(2, '0')}`;
+      console.log(`📊 Entry date: ISO=${new Date(entry.startTime).toISOString().split('T')[0]} vs Local=${entryDate}`);
       const dayData = weekData.find(d => d.day === entryDate);
       
       if (dayData) {

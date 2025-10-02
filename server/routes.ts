@@ -265,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.getElementById('accept-spinner').style.display = 'block';
             
             // מוסיף את האימייל של המוזמן לגוף הבקשה, כך שהשרת ידע למי לקשר את ההזמנה
-            const invitationResponse = await fetch('/api/teams/invitations/' + token, {
+            const invitationResponse = await fetch('/api/teams/invitation/' + token, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' }
             });
@@ -544,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // נשיג את האימייל המקורי תחילה למקרה שנזדקק לו
           const emailPromise = providedEmail 
             ? Promise.resolve(providedEmail) 
-            : fetch(\`/api/teams/invitations/\${token}\`, {
+            : fetch(\`/api/teams/invitation/\${token}\`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
               })
@@ -588,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // נשיג את האימייל המקורי תחילה למקרה שנזדקק לו
           const emailPromise = providedEmail 
             ? Promise.resolve(providedEmail) 
-            : fetch(\`/api/teams/invitations/\${token}\`, {
+            : fetch(\`/api/teams/invitation/\${token}\`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
               })
@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // נקודת סיום להשגת פרטי הזמנה לפי טוקן
-  app.get("/api/teams/invitations/:token", async (req, res) => {
+  app.get("/api/teams/invitation/:token", async (req, res) => {
     try {
       const token = req.params.token;
       
@@ -1295,11 +1295,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/stats/weekly-overview", isAuthenticated, async (req, res) => {
     try {
+      console.log('🚀 Route /api/stats/weekly-overview called for user:', req.user!.id);
+      // Disable caching for this endpoint
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       const userId = req.user!.id;
       
       const stats = await storage.getWeeklyOverview(userId);
+      console.log('📊 Weekly overview result:', JSON.stringify(stats, null, 2));
       res.json(stats);
     } catch (error) {
+      console.error('❌ Error in weekly-overview:', error);
       res.status(500).json({ message: "Failed to fetch weekly overview" });
     }
   });

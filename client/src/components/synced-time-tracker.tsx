@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { PlayIcon, PauseIcon, TimerIcon, Clock5Icon, BellIcon, XIcon, Share2Icon, Loader2 } from 'lucide-react';
 import { audioManager } from "@/lib/audio-utils";
-import { useSyncedTimer } from '@/hooks/use-synced-timer';
+import { useSimpleTimer } from '@/hooks/use-simple-timer';
 
 export function SyncedTimeTracker() {
   const { data: topics, isLoading } = useQuery({ 
@@ -90,11 +90,7 @@ export function SyncedTimeTracker() {
     isUpdating,
     isStopping,
     error: timerError
-  } = useSyncedTimer({ 
-    autoSync: true, 
-    syncInterval: 2000
-    // No callback - we'll use useEffect instead
-  });
+  } = useSimpleTimer();
   
   // Timer completion is now handled entirely in the hook
   
@@ -141,7 +137,7 @@ export function SyncedTimeTracker() {
     if (timerError) {
       toast({
         title: "שגיאת טיימר",
-        description: "אירעה שגיאה בסנכרון הטיימר.",
+        description: "אירעה שגיאה בטיימר.",
         variant: "destructive",
       });
     }
@@ -165,7 +161,7 @@ export function SyncedTimeTracker() {
     
     toast({
       title: "טיימר ספירה לאחור התחיל",
-      description: `טיימר הספירה לאחור של ${minutes} דקות פועל כעת ומסונכרן בכל המכשירים.`,
+      description: `טיימר הספירה לאחור של ${minutes} דקות פועל כעת.`,
     });
   }, [selectedTopic, description, start, toast]);
   
@@ -190,7 +186,7 @@ export function SyncedTimeTracker() {
         resume();
         toast({
           title: "הטיימר חודש",
-          description: "הטיימר שלך חודש ומסונכרן.",
+          description: "הטיימר שלך חודש.",
         });
       } catch (error) {
         console.error('❌ Resume failed:', error);
@@ -207,7 +203,7 @@ export function SyncedTimeTracker() {
         pause();
         toast({
           title: "הטיימר הושהה",
-          description: "הטיימר שלך הושהה ומסונכרן.",
+          description: "הטיימר שלך הושהה.",
         });
       } catch (error) {
         console.error('❌ Pause failed:', error);
@@ -239,7 +235,7 @@ export function SyncedTimeTracker() {
       setDescription("");
       toast({
         title: "הטיימר נעצר",
-        description: "הטיימר שלך נעצר ומסונכרן.",
+        description: "הטיימר שלך נעצר.",
       });
     } catch (error) {
       console.error('❌ Stop failed:', error);
@@ -517,20 +513,11 @@ export function SyncedTimeTracker() {
         </div>
       )}
       
-      {/* Sync Status */}
-      <div className="text-center text-sm text-muted-foreground">
-        {isRunning && (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span>מסונכרן בכל המכשירים</span>
-          </div>
-        )}
-      </div>
       
       {/* Loading State */}
       {timerLoading && (
         <div className="text-center text-sm text-muted-foreground">
-          מסנכרן טיימר...
+          טוען טיימר...
         </div>
       )}
     </div>
