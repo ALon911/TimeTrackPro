@@ -129,7 +129,9 @@ export function useSyncedTimer({
         ...data,
         isRunning: true,
         isPaused: false,
-        isCompleted: false
+        isCompleted: false,
+        // For countdown timers, immediately set seconds to duration to prevent 00:00 flash
+        seconds: data.isCountDown && data.duration ? data.duration : prev.seconds
       }));
       queryClient.invalidateQueries({ queryKey: ['/api/timer/active'] });
     },

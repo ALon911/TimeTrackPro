@@ -339,9 +339,20 @@ export function SyncedTimeTracker() {
   
   
   // Format display time
-  const displayTime = !isRunning && !isPaused && customMinutes > 0 
-    ? formatTime(customMinutes * 60) 
-    : formatTime(seconds);
+  const displayTime = (() => {
+    // If timer is running or paused, always show actual seconds
+    if (isRunning || isPaused) {
+      return formatTime(seconds);
+    }
+    
+    // If timer is not running and we have a preset selected, show preset time
+    if (customMinutes > 0) {
+      return formatTime(customMinutes * 60);
+    }
+    
+    // Default: show current seconds (usually 0)
+    return formatTime(seconds);
+  })();
   
   // Get current topic name
   const currentTopic = topics?.find(topic => topic.id === topicId);
