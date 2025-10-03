@@ -848,28 +848,9 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getWeeklyOverview(userId: number): Promise<WeeklyData[]> {
-    console.log(`🔍 getWeeklyOverview called for user ${userId} at ${new Date().toISOString()}`);
     const today = new Date();
-    console.log(`📅 Raw today: ${today.toString()}`);
-    console.log(`📅 Today getDay(): ${today.getDay()}`);
     today.setHours(0, 0, 0, 0);
-    console.log(`📅 Today after setHours: ${today.toString()}`);
     
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
-    console.log(`📅 Start of week: ${startOfWeek.toString()}`);
-    console.log(`📅 Start of week ISO: ${startOfWeek.toISOString()}`);
-    console.log(`📅 Start of week getDay(): ${startOfWeek.getDay()}`);
-    
-    // Let's also check what date we think today is
-    console.log(`📅 Today's date string (ISO): ${today.toISOString().split('T')[0]}`);
-    console.log(`📅 Today's date string (local): ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
-    console.log(`📅 Today should be Thursday (4), is it? ${today.getDay()}`);
-    
-    // The problem is timezone! Let's use local date formatting instead of ISO
-    console.log(`🔧 FIXING: Using local date instead of ISO date`);
-    
-    // Continue with the original logic
     const startOfWeekFinal = new Date(today);
     startOfWeekFinal.setDate(today.getDate() - today.getDay()); // Start from Sunday
     
@@ -889,11 +870,9 @@ export class DatabaseStorage implements IStorage {
       const day = new Date(startOfWeekFinal);
       day.setDate(day.getDate() + i);
       const dayOfWeekNum = day.getDay(); // Get the actual day of week (0=Sunday, 1=Monday, etc.)
-      console.log(`🗓️ Day ${i}: ${day.toISOString().split('T')[0]} -> getDay()=${dayOfWeekNum} -> Hebrew: ${dayNamesHebrew[dayOfWeekNum]}`);
       
       // Use local date formatting instead of ISO to avoid timezone issues
       const localDateString = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-      console.log(`🔧 Day ${i}: ISO=${day.toISOString().split('T')[0]} vs Local=${localDateString}`);
       
       weekData.push({
         day: localDateString, // Use local date instead of ISO
@@ -906,7 +885,6 @@ export class DatabaseStorage implements IStorage {
     entries.forEach(entry => {
       const entryDateObj = new Date(entry.startTime);
       const entryDate = `${entryDateObj.getFullYear()}-${String(entryDateObj.getMonth() + 1).padStart(2, '0')}-${String(entryDateObj.getDate()).padStart(2, '0')}`;
-      console.log(`📊 Entry date: ISO=${new Date(entry.startTime).toISOString().split('T')[0]} vs Local=${entryDate}`);
       const dayData = weekData.find(d => d.day === entryDate);
       
       if (dayData) {

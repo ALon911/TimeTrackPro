@@ -40,17 +40,51 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
   const { toast } = useToast();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [state, setState] = useState<TimerState>({
-    seconds: 0,
-    isRunning: false,
-    isPaused: false,
-    isCompleted: false,
-    isCountDown: false,
-    startTime: null,
-    duration: null,
-    topicId: null,
-    description: null
-  });
+  // Load initial state from localStorage
+  const loadStateFromStorage = (): TimerState => {
+    try {
+      const saved = localStorage.getItem('simple-timer-state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('🔄 Loaded timer state from localStorage:', parsed);
+        return parsed;
+      }
+    } catch (e) {
+      console.log('❌ Failed to load timer state from localStorage:', e);
+    }
+    return {
+      seconds: 0,
+      isRunning: false,
+      isPaused: false,
+      isCompleted: false,
+      isCountDown: false,
+      startTime: null,
+      duration: null,
+      topicId: null,
+      description: null
+    };
+  };
+
+  const [state, setState] = useState<TimerState>(loadStateFromStorage);
+
+  // Save state to localStorage
+  const saveStateToStorage = useCallback((newState: TimerState) => {
+    try {
+      localStorage.setItem('simple-timer-state', JSON.stringify(newState));
+      console.log('💾 Saved timer state to localStorage:', newState);
+    } catch (e) {
+      console.log('❌ Failed to save timer state to localStorage:', e);
+    }
+  }, []);
+
+  // Update state and save to localStorage
+  const updateState = useCallback((newState: TimerState | ((prev: TimerState) => TimerState)) => {
+    setState(prev => {
+      const updated = typeof newState === 'function' ? newState(prev) : newState;
+      saveStateToStorage(updated);
+      return updated;
+    });
+  }, [saveStateToStorage]);
 
   // Save time entry mutation
   const saveTimeEntryMutation = useMutation({
@@ -142,7 +176,7 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
     if (state.isRunning && !state.isPaused && !state.isCompleted) {
       console.log('🚀 Starting timer interval');
       intervalRef.current = setInterval(() => {
-        setState(prev => {
+        updateState(prev => {
           if (prev.isCountDown && prev.duration && prev.duration > 0) {
             // Countdown timer
             const newSeconds = Math.max(0, prev.seconds - 1);
@@ -162,6 +196,14 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
               // Save time and play sound (natural completion)
               saveElapsedTime(prev, true);
               playCompletionSound();
+              
+              // Clear localStorage after completion
+              try {
+                localStorage.removeItem('simple-timer-state');
+                console.log('🗑️ Cleared timer state from localStorage after completion');
+              } catch (e) {
+                console.log('❌ Failed to clear timer state from localStorage:', e);
+              }
               
               return {
                 ...prev,
@@ -202,7 +244,65 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
         intervalRef.current = null;
       }
     };
-  }, [state.isRunning, state.isPaused, state.isCompleted, saveElapsedTime, playCompletionSound]);
+  }, [state.isRunning, state.isPaused, state.isCompleted, saveElapsedTime, playCompletionSound, updateState]);
+
+  // Restore timer state when component mounts
+  useEffect(() => {
+    const savedState = loadStateFromStorage();
+    if (savedState.isRunning && !savedState.isCompleted) {
+      console.log('🔄 Restoring running timer from localStorage:', savedState);
+      
+      // Calculate elapsed time since last save
+      if (savedState.startTime) {
+        const now = new Date();
+        const startTime = new Date(savedState.startTime);
+        const elapsedSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+        
+        if (savedState.isCountDown && savedState.duration) {
+          // For countdown, subtract elapsed time
+          const newSeconds = Math.max(0, savedState.duration - elapsedSeconds);
+          console.log(`⏰ Countdown restored: ${savedState.seconds} → ${newSeconds} (elapsed: ${elapsedSeconds})`);
+          
+          if (newSeconds <= 0) {
+            // Timer should have completed while away
+            console.log('🎯 Timer completed while away!');
+            saveElapsedTime(savedState, true);
+            playCompletionSound();
+            
+            // Clear localStorage
+            try {
+              localStorage.removeItem('simple-timer-state');
+              console.log('🗑️ Cleared timer state from localStorage after completion');
+            } catch (e) {
+              console.log('❌ Failed to clear timer state from localStorage:', e);
+            }
+            
+            updateState({
+              ...savedState,
+              seconds: 0,
+              isRunning: false,
+              isCompleted: true
+            });
+            return;
+          }
+          
+          updateState({
+            ...savedState,
+            seconds: newSeconds
+          });
+        } else {
+          // For regular timer, add elapsed time
+          const newSeconds = savedState.seconds + elapsedSeconds;
+          console.log(`⏰ Count up restored: ${savedState.seconds} → ${newSeconds} (elapsed: ${elapsedSeconds})`);
+          
+          updateState({
+            ...savedState,
+            seconds: newSeconds
+          });
+        }
+      }
+    }
+  }, []); // Only run once on mount
 
   const start = useCallback((topicId?: number, description?: string, duration?: number, isCountDown = false) => {
     console.log('🚀 Starting timer:', { topicId, description, duration, isCountDown });
@@ -211,7 +311,7 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
     // Duration is already in seconds from the component
     const seconds = isCountDown && duration ? duration : 0;
     
-    setState({
+    updateState({
       seconds,
       isRunning: true,
       isPaused: false,
@@ -222,25 +322,25 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
       topicId: topicId || null,
       description: description || null
     });
-  }, []);
+  }, [updateState]);
 
   const pause = useCallback(() => {
     console.log('⏸️ Pausing timer');
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
       isRunning: false,
       isPaused: true
     }));
-  }, []);
+  }, [updateState]);
 
   const resume = useCallback(() => {
     console.log('▶️ Resuming timer');
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
       isRunning: true,
       isPaused: false
     }));
-  }, []);
+  }, [updateState]);
 
   const stop = useCallback(() => {
     console.log('🛑 Stopping timer manually');
@@ -248,18 +348,26 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
     // Save elapsed time before stopping (manual stop)
     saveElapsedTime(state, false);
     
-    setState(prev => ({
+    updateState(prev => ({
       ...prev,
       isRunning: false,
       isPaused: false,
       isCompleted: true,
       seconds: 0
     }));
-  }, [state, saveElapsedTime]);
+  }, [state, saveElapsedTime, updateState]);
 
   const reset = useCallback(() => {
     console.log('🔄 Resetting timer');
-    setState({
+    // Clear localStorage when resetting
+    try {
+      localStorage.removeItem('simple-timer-state');
+      console.log('🗑️ Cleared timer state from localStorage');
+    } catch (e) {
+      console.log('❌ Failed to clear timer state from localStorage:', e);
+    }
+    
+    updateState({
       seconds: 0,
       isRunning: false,
       isPaused: false,
@@ -270,7 +378,7 @@ export function useSimpleTimer(): UseSimpleTimerReturn {
       topicId: null,
       description: null
     });
-  }, []);
+  }, [updateState]);
 
   const formatTime = useCallback((seconds: number): string => {
     const hours = Math.floor(seconds / 3600);

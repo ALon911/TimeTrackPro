@@ -572,8 +572,8 @@ export function useSyncedTimer({
     lastEffectRunRef.current = now;
     
     console.log('⏰ Timer useEffect triggered:', {
-      isRunning: localState.isRunning,
-      isPaused: localState.isPaused,
+      isRunning: localState.isRunning, 
+      isPaused: localState.isPaused, 
       isCompleted: localState.isCompleted,
       timerCleared: timerClearedRef.current,
       hasInterval: !!intervalRef.current,
@@ -631,11 +631,11 @@ export function useSyncedTimer({
               };
             } else {
               newState = {
-                ...prev,
-                seconds: newSeconds,
+              ...prev,
+              seconds: newSeconds,
                 isCompleted: false,
-                isRunning: newSeconds > 0
-              };
+              isRunning: newSeconds > 0
+            };
             }
             
             // Handle completion directly in hook
