@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* כללי סגנון מותאמים לתמיכה ב-RTL */
+.select-content {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.select-item {
+  justify-content: flex-start !important; /* הפוך את הכיוון כי אנחנו בדירקשן RTL */
+  padding-right: 8px !important;
+  padding-left: 8px !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.select-item-content {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important; /* גם פה משתמשים בפלקס-סטארט ב-RTL */
+  gap: 8px !important;
+}
+
+/* לוודא מיקום טקסט בצד ימין בכל רכיבי בחירה */
+.select-trigger {
+  text-align: right !important;
+  direction: rtl !important;
+  padding-right: 8px !important;
+}
+
+.select-value {
+  text-align: right !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  direction: rtl !important;
+}
+
+/* החלפת כיוון האייקון בסלקט */
+.select-trigger .icon {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* וידוא שהפקדים בטופס מאופסים לימין */
+input, select, textarea {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* Override for login/register inputs */
+input[dir="ltr"] {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+/* Override for select triggers with text-right class */
+.select-trigger.text-right,
+[role="combobox"].text-right {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+html {
+  font-family: 'Heebo', sans-serif;
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+  
+  --chart-1: 207 90% 54%;
+  --chart-2: 271 83% 63%;
+  --chart-3: 326 73% 62%;
+  --chart-4: 161 94% 43%;
+  --chart-5: 40 96% 53%;
+  
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 20 14.3% 4.1%;
+  --sidebar-primary: 207 90% 54%;
+  --sidebar-primary-foreground: 211 100% 99%;
+  --sidebar-accent: 207 85% 97%;
+  --sidebar-accent-foreground: 207 90% 54%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 207 90% 54%;
+}
+
+.dark {
+  --background: 218 35% 10%;
+  --foreground: 210 20% 98%;
+  --muted: 215 25% 20%;
+  --muted-foreground: 215 15% 75%;
+  --popover: 218 35% 10%;
+  --popover-foreground: 210 20% 98%;
+  --card: 218 35% 12%;
+  --card-foreground: 210 20% 98%;
+  --border: 215 25% 22%;
+  --input: 215 25% 22%;
+  --primary: 210 90% 60%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 215 25% 22%;
+  --secondary-foreground: 210 20% 98%;
+  --accent: 215 30% 25%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 210 20% 98%;
+  --ring: 215 25% 27%;
+  
+  --chart-1: 210 90% 60%;
+  --chart-2: 271 83% 65%;
+  --chart-3: 326 73% 65%;
+  --chart-4: 161 94% 48%;
+  --chart-5: 40 96% 58%;
+  
+  --sidebar-background: 222 40% 12%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 210 90% 60%;
+  --sidebar-primary-foreground: 210 20% 98%;
+  --sidebar-accent: 215 35% 20%;
+  --sidebar-accent-foreground: 210 90% 65%;
+  --sidebar-border: 215 30% 22%;
+  --sidebar-ring: 210 90% 60%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* RTL override for certain elements */
+.rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Fix mobile nav padding */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
+}
+
+/* Pie chart styles */
+.pie-chart {
+  position: relative;
+}
+
+.pie-segment {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 50%, 100% 50%, 100% 0, 50% 0);
+}
