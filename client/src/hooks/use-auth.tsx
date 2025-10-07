@@ -45,6 +45,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      // Clear all cached data on login to prevent stale data
+      queryClient.invalidateQueries();
       toast({
         title: "התחברת בהצלחה",
         description: "ברוך הבא!",
@@ -86,6 +88,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      // Clear all cached data on logout
+      queryClient.invalidateQueries();
       toast({
         title: "התנתקת בהצלחה",
         description: "להתראות!",
