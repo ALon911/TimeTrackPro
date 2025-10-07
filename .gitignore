@@ -5,3 +5,19 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .env
+
+# Database files and backups
+db/*.db
+db/*.sqlite
+db/*.sqlite3
+db/backup-*
+db/*-backup-*
+
+# Migration and temporary files
+migrate-*
+backup-*
+*_migration_*
+*_backup_*
+
+# Development and backup files
+attached_assets/

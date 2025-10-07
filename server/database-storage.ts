@@ -63,7 +63,10 @@ export class DatabaseStorage implements IStorage {
       });
       
       this.initializeDatabase();
-      this.seedDatabaseIfEmpty();
+      // Seed database asynchronously (don't await in constructor)
+      this.seedDatabaseIfEmpty().catch(error => {
+        console.error('❌ Failed to seed database:', error);
+      });
       
       console.log('✅ Database initialized successfully');
     } catch (error) {
@@ -71,13 +74,12 @@ export class DatabaseStorage implements IStorage {
       
       // If database initialization fails, try to regenerate it
       console.log('🔄 Attempting to regenerate database...');
-      try {
-        this.regenerateDatabase();
+      this.regenerateDatabase().then(() => {
         console.log('✅ Database regenerated successfully');
-      } catch (regenerateError) {
+      }).catch(regenerateError => {
         console.error('❌ Failed to regenerate database:', regenerateError);
         throw new Error(`Database initialization and regeneration failed: ${error.message}`);
-      }
+      });
     }
   }
 
@@ -191,7 +193,7 @@ export class DatabaseStorage implements IStorage {
     console.log('✅ Database schema initialized successfully');
   }
 
-  private seedDatabaseIfEmpty() {
+  private async seedDatabaseIfEmpty() {
     console.log('🌱 Checking if database needs seeding...');
     
     // Check if users table is empty
@@ -200,9 +202,11 @@ export class DatabaseStorage implements IStorage {
     if (userCount.count === 0) {
       console.log('Seeding database with sample data...');
       
-      // Create default user directly with SQL (password = 'password')
+      // Create default user with hashed password
+      const { hashPassword } = await import('./auth');
+      const hashedPassword = await hashPassword('password');
       const userStmt = this.db.prepare('INSERT INTO users (username, email, password, display_name) VALUES (?, ?, ?, ?)');
-      const userResult = userStmt.run('demo_user', 'user@example.com', '4e1b73dd02446f5afdee3b8af07440a4e7988e07883fa37deca51e9c6bd88cd02b9c6f99f97946f94d312d9b7845216bee32be594d11e7db5cd1352271e83ec.62dea3d9e3aaa69f', 'Demo User');
+      const userResult = userStmt.run('demo_user', 'user@example.com', hashedPassword, 'Demo User');
       const userId = userResult.lastInsertRowid as number;
       
       // Create default topics directly with SQL
@@ -321,7 +325,7 @@ export class DatabaseStorage implements IStorage {
    * Regenerates the database by recreating all tables and seeding with default data
    * This method can be called when the database file is deleted or corrupted
    */
-  public regenerateDatabase(): void {
+  public async regenerateDatabase(): Promise<void> {
     console.log('🔄 Regenerating database...');
     
     try {
@@ -351,9 +355,13 @@ export class DatabaseStorage implements IStorage {
       
       // Initialize schema and seed data
       this.initializeDatabase();
-      this.seedDatabaseIfEmpty();
-      
-      console.log('✅ Database regenerated successfully');
+      // Seed database asynchronously
+      this.seedDatabaseIfEmpty().then(() => {
+        console.log('✅ Database regenerated successfully');
+      }).catch(error => {
+        console.error('❌ Failed to seed database during regeneration:', error);
+        throw error;
+      });
     } catch (error) {
       console.error('❌ Failed to regenerate database:', error);
       throw new Error(`Database regeneration failed: ${error.message}`);
@@ -422,6 +430,17 @@ export class DatabaseStorage implements IStorage {
     stmt.run(...params);
     
     return this.getUser(id);
+  }
+
+  async updateUserPassword(id: number, newPasswordHash: string): Promise<boolean> {
+    try {
+      const stmt = this.db.prepare('UPDATE users SET password = ? WHERE id = ?');
+      const result = stmt.run(newPasswordHash, id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error updating user password:', error);
+      return false;
+    }
   }
 
   // Topic methods

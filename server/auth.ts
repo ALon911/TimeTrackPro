@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import argon2 from "argon2";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -15,17 +16,68 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+// Check if a hash is scrypt format (contains a dot)
+function isScryptHash(hash: string) {
+  return hash.includes('.') && hash.split('.').length === 2;
+}
+
+// Check if a hash is Argon2id format (starts with $argon2id$)
+function isArgon2idHash(hash: string) {
+  return hash.startsWith('$argon2id$');
+}
+
+export async function hashPassword(password: string) {
+  // Always use Argon2id for new passwords
+  return await argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 2 ** 16, // 64 MB
+    timeCost: 3,
+    parallelism: 1,
+    hashLength: 32
+  });
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  // Check if the stored hash is Argon2id format
+  if (isArgon2idHash(stored)) {
+    try {
+      return await argon2.verify(stored, supplied);
+    } catch (error) {
+      return false;
+    }
+  }
+  
+  // Check if the stored hash is scrypt format (legacy)
+  if (isScryptHash(stored)) {
+    try {
+      const [hashed, salt] = stored.split('.');
+      const hashedBuf = Buffer.from(hashed, 'hex');
+      const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+      const isValid = timingSafeEqual(hashedBuf, suppliedBuf);
+      
+      return isValid;
+    } catch (error) {
+      return false;
+    }
+  }
+  
+  // Unknown hash format
+  console.warn('⚠️ Unknown password hash format');
+  return false;
+}
+
+async function upgradePasswordToArgon2id(userId: number, password: string) {
+  try {
+    const newHash = await hashPassword(password);
+    const success = await storage.updateUserPassword(userId, newHash);
+    if (success) {
+      console.log(`✅ User ${userId} password upgraded to Argon2id`);
+    }
+    return success;
+  } catch (error) {
+    console.error('Error upgrading password:', error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -52,11 +104,22 @@ export function setupAuth(app: Express) {
     }, async (email, password, done) => {
       try {
         const user = await storage.getUserByEmail(email);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user) {
           return done(null, false);
-        } else {
-          return done(null, user);
         }
+
+        const isValid = await comparePasswords(password, user.password);
+        if (!isValid) {
+          return done(null, false);
+        }
+
+        // If user has scrypt hash, upgrade to Argon2id
+        if (isScryptHash(user.password)) {
+          console.log('🔄 Upgrading user password from scrypt to Argon2id...');
+          await upgradePasswordToArgon2id(user.id, password);
+        }
+
+        return done(null, user);
       } catch (error) {
         return done(error);
       }

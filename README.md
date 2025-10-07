@@ -236,3 +236,4 @@ If you encounter any issues or have questions:
 **Made with ❤️ by [ALon911](https://github.com/ALon911)**
 
 *Track your time, boost your productivity!* 🚀
+

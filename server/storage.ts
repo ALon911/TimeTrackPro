@@ -35,7 +35,7 @@ export interface IStorage {
   
   // Database health and regeneration methods
   isDatabaseHealthy(): boolean;
-  regenerateDatabase(): void;
+  regenerateDatabase(): Promise<void>;
   
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -43,6 +43,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<{ email: string; displayName: string }>): Promise<User | undefined>;
+  updateUserPassword(id: number, newPasswordHash: string): Promise<boolean>;
   deleteUser(id: number): Promise<boolean>;
   
   // Topic methods
