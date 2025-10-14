@@ -45,6 +45,7 @@ app.use((req, res, next) => {
     "http://localhost:56375",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "https://timetrack.alonworks.com",
   ];
   const origin = req.headers.origin;
   const isLocalhostOrigin = origin != null && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
