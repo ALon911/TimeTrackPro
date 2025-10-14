@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from 'dotenv';
@@ -31,6 +32,39 @@ process.on('uncaughtException', (error) => {
 });
 
 const app = express();
+
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    "http://localhost:8081",
+    "http://localhost:19006",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://192.168.31.143:8081",
+    "exp://192.168.31.143:8081",
+    "http://localhost:55940",
+    "http://localhost:56375",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+  ];
+  const origin = req.headers.origin;
+  const isLocalhostOrigin = origin != null && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  const isAllowed = origin != null && (allowedOrigins.includes(origin) || isLocalhostOrigin);
+  if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('Responding to OPTIONS preflight request');
+    return res.status(204).send();
+  }
+
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

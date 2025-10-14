@@ -88,6 +88,7 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax'
     },
     store: storage.sessionStore,
   };
@@ -160,7 +161,7 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err: any) => {
         if (err) return next(err);
-        res.status(201).json(userWithoutPassword);
+        res.status(201).json({ user: userWithoutPassword });
       });
     } catch (error) {
       next(error);
@@ -180,7 +181,7 @@ export function setupAuth(app: Express) {
         // Don't send the password hash back to the client
         const { password, ...userWithoutPassword } = user;
         
-        res.status(200).json(userWithoutPassword);
+        res.status(200).json({ user: userWithoutPassword });
       });
     })(req, res, next);
   });
@@ -198,7 +199,7 @@ export function setupAuth(app: Express) {
     // Don't send the password hash back to the client
     const { password, ...userWithoutPassword } = req.user;
     
-    res.json(userWithoutPassword);
+    res.json({ user: userWithoutPassword });
   });
 }
 

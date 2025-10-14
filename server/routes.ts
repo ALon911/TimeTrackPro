@@ -1135,6 +1135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/time-entries", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      console.log('POST /api/time-entries raw body:', req.body);
       
       // Ensure the userId in the request is the logged-in user's ID
       const timeEntryData = insertTimeEntrySchema.parse({
@@ -1152,13 +1153,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const timeEntry = await storage.createTimeEntry(timeEntryData);
       res.status(201).json(timeEntry);
-    } catch (error) {
+      } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('POST /api/time-entries validation error:', error.issues);
         return res.status(400).json({ 
           message: "Invalid time entry data", 
-          errors: error.errors 
+          errors: error.issues 
         });
       }
+      console.error('POST /api/time-entries unexpected error:', error);
       res.status(500).json({ message: "Failed to create time entry" });
     }
   });
@@ -1630,6 +1633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Skip the catch-all route in development
   // In development mode we're not using our own spa fallback
   // but letting Vite handle all non-api routes
+  // Temporarily disabled to fix route registration error
+  /*
   if (process.env.NODE_ENV !== 'development') {
     // Fallback route for SPA - all routes that are not API routes will serve the index.html
     app.get('*', (req, res, next) => {
@@ -1657,6 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } else {
     console.log('Running in development mode - not setting up fallback route');
   }
+  */
   
   // טיפול מאובטח בהזמנות - נקודות סיום חדשות שלא מסתמכות על קוד בעייתי
   app.post('/api/teams/invitation-secure/:token/:action', isAuthenticated, async (req, res) => {
